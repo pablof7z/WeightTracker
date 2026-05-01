@@ -30,6 +30,13 @@ public final class NotificationService: ObservableObject {
     }
 
     public func scheduleEvaluatedTriggers() async {
+        // Only schedule if the user has explicitly granted authorization.
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else {
+            return
+        }
+
         cancelAll()
         let defaults = UserDefaults.standard
         let masterEnabled = defaults.object(forKey: AppPrefKey.notifMaster) as? Bool ?? true

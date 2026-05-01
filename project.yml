@@ -48,7 +48,6 @@ targets:
           - UIInterfaceOrientationPortrait
         NSHealthShareUsageDescription: "WeightTracker reads your body mass from Apple Health to keep your readings up to date with your scale or Watch."
         NSHealthUpdateUsageDescription: "WeightTracker writes weights you log here back to Apple Health so all your apps stay in sync."
-        NSUserNotificationsUsageDescription: "WeightTracker sends quiet reminders only when a tracking gap forms or your active cut needs attention."
         BGTaskSchedulerPermittedIdentifiers:
           - app.pfer.weighttracker.refresh
         UIBackgroundModes:
@@ -79,7 +78,6 @@ targets:
         com.apple.developer.icloud-services:
           - CloudKit
         com.apple.developer.ubiquity-container-identifiers: []
-        aps-environment: development
     dependencies:
       - target: WeightTrackerWatch Watch App
         embed: true

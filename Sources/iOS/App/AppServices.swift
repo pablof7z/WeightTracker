@@ -22,7 +22,7 @@ final class AppServices: ObservableObject {
     }
 
     func bootstrap() async {
-        await notifications.requestAuthorizationIfNeeded()
+        // Don't auto-request notification permission — let onboarding/Settings ask explicitly.
         await healthKit.startObservingIfAuthorized()
         await notifications.scheduleEvaluatedTriggers()
     }
