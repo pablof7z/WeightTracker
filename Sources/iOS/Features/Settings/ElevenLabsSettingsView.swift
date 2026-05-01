@@ -3,50 +3,62 @@ import SwiftUI
 struct ElevenLabsSettingsView: View {
     @AppStorage(AppPrefKey.elevenLabsSTTModel) private var sttModel: String = AppConstants.defaultElevenLabsSTTModel
 
-    @State private var apiKey = ElevenLabsCredentialStore.loadAPIKey() ?? ""
-    @State private var savedMessage: String?
+    @State private var connection = ElevenLabsCredentialStore.loadConnection()
+    @State private var connector = BYOKElevenLabsConnector()
+    @State private var isConnecting = false
+    @State private var errorMessage: String?
 
-    private var hasStoredKey: Bool {
-        ElevenLabsCredentialStore.loadAPIKey()?.isEmpty == false
+    private var hasLegacyKey: Bool {
+        connection == nil && ElevenLabsCredentialStore.loadAPIKey()?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
     var body: some View {
         Form {
             Section {
-                Label(
-                    hasStoredKey ? "Local key stored" : "No local key stored",
-                    systemImage: hasStoredKey ? "checkmark.seal.fill" : "key"
-                )
-                .foregroundStyle(hasStoredKey ? Color.accentColor : Color.secondary)
-
-                SecureField("ElevenLabs API key", text: $apiKey)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-
-                Button("Save API key") {
-                    ElevenLabsCredentialStore.saveAPIKey(apiKey.trimmingCharacters(in: .whitespacesAndNewlines))
-                    flash("Saved")
-                }
-                .buttonStyle(.bordered)
-                .disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                if hasStoredKey {
-                    Button("Clear API key", role: .destructive) {
-                        ElevenLabsCredentialStore.delete()
-                        apiKey = ""
-                        flash("Cleared")
-                    }
-                }
-
-                if let savedMessage {
-                    Text(savedMessage)
-                        .font(.caption)
+                if let connection {
+                    Label("Connected", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    LabeledContent("Key", value: connection.keyLabel)
+                    LabeledContent("Connected", value: connection.connectedAt.formatted(date: .abbreviated, time: .shortened))
+                } else if hasLegacyKey {
+                    Text("A local ElevenLabs key is present. Reconnect with BYOK to replace it.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("No ElevenLabs key is connected.")
                         .foregroundStyle(.secondary)
                 }
+
+                Button {
+                    Task { await connect() }
+                } label: {
+                    HStack {
+                        Text(connection == nil && !hasLegacyKey ? "Connect with BYOK" : "Reconnect with BYOK")
+                        if isConnecting {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isConnecting)
+
+                if connection != nil || hasLegacyKey {
+                    Button("Disconnect ElevenLabs", role: .destructive) {
+                        ElevenLabsCredentialStore.delete()
+                        connection = nil
+                        errorMessage = nil
+                    }
+                }
             } header: {
-                Text("API key")
+                Text("ElevenLabs")
             } footer: {
-                Text("The key is stored in Keychain on this device and used for voice check-in transcription.")
+                Text("BYOK lets you choose a labeled ElevenLabs key and returns it to this app once. The key is stored in Keychain for voice check-in transcription.")
+            }
+
+            if let errorMessage {
+                Section {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                }
             }
 
             Section("Transcription") {
@@ -58,19 +70,19 @@ struct ElevenLabsSettingsView: View {
         .navigationTitle("ElevenLabs")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            apiKey = ElevenLabsCredentialStore.loadAPIKey() ?? ""
+            connection = ElevenLabsCredentialStore.loadConnection()
         }
     }
 
-    private func flash(_ message: String) {
-        savedMessage = message
-        Task {
-            try? await Task.sleep(for: .seconds(1.5))
-            await MainActor.run {
-                if savedMessage == message {
-                    savedMessage = nil
-                }
-            }
+    private func connect() async {
+        isConnecting = true
+        errorMessage = nil
+        defer { isConnecting = false }
+
+        do {
+            connection = try await connector.connect()
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }
