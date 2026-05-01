@@ -13,6 +13,7 @@ struct ChartView: View {
     @State private var showClusters: Bool = true
     @State private var showGaps: Bool = true
     @State private var pinnedToCut: Bool = true
+    @State private var colorBySleep: Bool = false
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var range: ChartRange {
@@ -50,15 +51,24 @@ struct ChartView: View {
                             showClusters: showClusters,
                             showGaps: showGaps,
                             activeCut: pinnedToCut ? viewModel.activeCut : nil,
-                            scrollEndDate: pinnedToCut ? viewModel.cutScrollEnd : nil
+                            scrollEndDate: pinnedToCut ? viewModel.cutScrollEnd : nil,
+                            colorBySleep: colorBySleep,
+                            sleepLookup: { date in
+                                viewModel.sleepBefore(date: date)
+                            }
                         )
                         .padding(.horizontal)
+
+                        if colorBySleep {
+                            SleepOverlayLegend()
+                        }
                     }
 
                     ChartOverlayToggles(
                         showAverage: $showAverage,
                         showClusters: $showClusters,
-                        showGaps: $showGaps
+                        showGaps: $showGaps,
+                        showSleepColor: $colorBySleep
                     )
 
                     Spacer(minLength: 24)

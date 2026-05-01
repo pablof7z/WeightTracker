@@ -13,6 +13,8 @@ struct WeightChart: View {
     let showGaps: Bool
     var activeCut: ActiveCut? = nil
     var scrollEndDate: Date? = nil
+    var colorBySleep: Bool = false
+    var sleepLookup: (Date) -> SleepNight? = { _ in nil }
 
     var body: some View {
         let endDate = scrollEndDate ?? readings.last?.date ?? Date()
@@ -65,8 +67,8 @@ struct WeightChart: View {
                     y: .value("Weight", display(r.weightKg))
                 )
                 .symbol(.circle)
-                .symbolSize(20)
-                .foregroundStyle(WTColor.dailyDot)
+                .symbolSize(colorBySleep ? 36 : 20)
+                .foregroundStyle(colorForReading(r))
             }
 
             if showAverage {
@@ -173,5 +175,15 @@ struct WeightChart: View {
         case .bulk: return WTColor.bulkTint
         case .maintenance, .flat: return WTColor.maintTint
         }
+    }
+
+    private func colorForReading(_ r: Reading) -> Color {
+        guard colorBySleep else { return WTColor.dailyDot }
+        guard let night = sleepLookup(r.date) else { return Color.gray.opacity(0.5) }
+        let h = night.asleepHours
+        if h < 5.0 { return Color.red.opacity(0.85) }
+        if h < 6.5 { return Color.orange.opacity(0.85) }
+        if h < 7.5 { return Color.yellow.opacity(0.85) }
+        return Color.green.opacity(0.85)
     }
 }

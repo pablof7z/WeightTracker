@@ -4,6 +4,7 @@ struct ChartOverlayToggles: View {
     @Binding var showAverage: Bool
     @Binding var showClusters: Bool
     @Binding var showGaps: Bool
+    @Binding var showSleepColor: Bool
 
     var body: some View {
         LiquidGlassContainer(spacing: 10) {
@@ -11,20 +12,32 @@ struct ChartOverlayToggles: View {
                 toggle("Avg", isOn: $showAverage, color: WTColor.avgLine)
                 toggle("Clusters", isOn: $showClusters, color: .blue)
                 toggle("Gaps", isOn: $showGaps, color: .orange)
+                toggle("Sleep", isOn: $showSleepColor, color: .indigo, systemImage: "moon.fill")
             }
         }
         .padding(.horizontal)
     }
 
     @ViewBuilder
-    private func toggle(_ title: String, isOn: Binding<Bool>, color: Color) -> some View {
+    private func toggle(
+        _ title: String,
+        isOn: Binding<Bool>,
+        color: Color,
+        systemImage: String? = nil
+    ) -> some View {
         Button {
             isOn.wrappedValue.toggle()
         } label: {
             HStack(spacing: 6) {
-                Circle()
-                    .fill(color)
-                    .frame(width: 8, height: 8)
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.caption2)
+                        .foregroundStyle(color)
+                } else {
+                    Circle()
+                        .fill(color)
+                        .frame(width: 8, height: 8)
+                }
                 Text(title)
                     .font(.caption.weight(.medium))
             }

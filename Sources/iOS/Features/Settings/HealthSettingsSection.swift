@@ -9,6 +9,9 @@ struct HealthSettingsSection: View {
     @State private var isReplaying = false
     @State private var replayResult: String?
 
+    @State private var isBackfillingSleep = false
+    @State private var sleepBackfillCount: Int?
+
     var body: some View {
         Section("Apple Health") {
             if appServices.healthKit.isAvailable {
@@ -44,11 +47,42 @@ struct HealthSettingsSection: View {
                 if let replayResult {
                     Text(replayResult).font(.footnote).foregroundStyle(.secondary)
                 }
+
+                Button {
+                    Task { await backfillSleep() }
+                } label: {
+                    HStack {
+                        Label("Backfill sleep history", systemImage: "moon.zzz")
+                        if isBackfillingSleep {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isBackfillingSleep)
             } else {
                 Text("Apple Health is not available on this device.")
                     .foregroundStyle(.secondary)
             }
         }
+        .alert("Sleep backfill complete", isPresented: Binding(
+            get: { sleepBackfillCount != nil },
+            set: { if !$0 { sleepBackfillCount = nil } }
+        )) {
+            Button("OK", role: .cancel) { sleepBackfillCount = nil }
+        } message: {
+            if let n = sleepBackfillCount {
+                Text("Imported \(n) night\(n == 1 ? "" : "s") from Apple Health.")
+            }
+        }
+    }
+
+    private func backfillSleep() async {
+        isBackfillingSleep = true
+        defer { isBackfillingSleep = false }
+        _ = await appServices.sleepHealthKit.requestAuthorization()
+        let n = await appServices.sleepHealthKit.backfillHistory()
+        sleepBackfillCount = n
     }
 
     private func replayHistory() async {

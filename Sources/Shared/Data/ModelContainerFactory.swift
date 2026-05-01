@@ -3,7 +3,7 @@ import SwiftData
 
 public enum ModelContainerFactory {
     public static func makeContainer() -> ModelContainer {
-        let schema = Schema([Reading.self])
+        let schema = Schema([Reading.self, SleepNight.self])
         // App Group URL for sharing with watchOS
         let groupURL = FileManager.default
             .containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier)

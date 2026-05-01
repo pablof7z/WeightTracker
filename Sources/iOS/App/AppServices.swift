@@ -10,6 +10,7 @@ final class AppServices: ObservableObject {
     let repository: ReadingRepository
     let healthKit: HealthKitManager
     let notifications: NotificationService
+    let sleepHealthKit: SleepHealthKit
 
     @Published var lastSyncDate: Date?
 
@@ -19,11 +20,13 @@ final class AppServices: ObservableObject {
         self.repository = SwiftDataReadingRepository(container: container)
         self.healthKit = HealthKitManager(repository: repository)
         self.notifications = NotificationService(repository: repository)
+        self.sleepHealthKit = SleepHealthKit(repository: repository)
     }
 
     func bootstrap() async {
         // Don't auto-request notification permission — let onboarding/Settings ask explicitly.
         await healthKit.startObservingIfAuthorized()
+        await sleepHealthKit.startObservingIfAuthorized()
         await notifications.scheduleEvaluatedTriggers()
     }
 }

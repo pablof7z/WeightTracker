@@ -14,6 +14,11 @@ public protocol ReadingRepository: AnyObject {
     func deleteAll()
     func deleteRange(_ range: ClosedRange<Date>)
     func bulkInsert(_ readings: [Reading], replacingExisting: Bool)
+
+    // Sleep
+    func allSleepNights() -> [SleepNight]
+    func sleepNight(on date: Date) -> SleepNight?
+    func bulkInsertSleep(_ nights: [SleepNight], replacingExisting: Bool)
 }
 
 @MainActor
@@ -81,6 +86,34 @@ public final class SwiftDataReadingRepository: ReadingRepository {
         for incoming in readings {
             if replacingExisting, let existing = reading(on: incoming.date) {
                 context.delete(existing)
+            }
+            context.insert(incoming)
+        }
+        save()
+    }
+
+    // MARK: - Sleep
+
+    public func allSleepNights() -> [SleepNight] {
+        let descriptor = FetchDescriptor<SleepNight>(sortBy: [SortDescriptor(\.nightDate, order: .forward)])
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    public func sleepNight(on date: Date) -> SleepNight? {
+        let key = Reading.dayStart(of: date)
+        let predicate = #Predicate<SleepNight> { $0.nightDate == key }
+        let descriptor = FetchDescriptor<SleepNight>(predicate: predicate)
+        return try? context.fetch(descriptor).first
+    }
+
+    public func bulkInsertSleep(_ nights: [SleepNight], replacingExisting: Bool) {
+        for incoming in nights {
+            if let existing = sleepNight(on: incoming.nightDate) {
+                if replacingExisting {
+                    context.delete(existing)
+                } else {
+                    continue
+                }
             }
             context.insert(incoming)
         }

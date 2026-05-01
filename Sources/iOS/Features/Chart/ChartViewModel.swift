@@ -8,6 +8,9 @@ final class ChartViewModel: ObservableObject {
     @Published var gaps: [Gap] = []
     @Published var movingAverage: [(date: Date, kg: Double)] = []
     @Published var activeCut: ActiveCut?
+    @Published var sleepNights: [SleepNight] = []
+
+    private var sleepNightByDay: [Date: SleepNight] = [:]
 
     func reload(from repository: ReadingRepository) {
         let all = repository.allReadings()
@@ -17,6 +20,19 @@ final class ChartViewModel: ObservableObject {
         self.gaps = GapAnalyzer.gaps(between: cs, readings: all)
         self.movingAverage = Self.trailingAverage(readings: all, days: 30)
         self.activeCut = ActiveCutStore.load()
+        let nights = repository.allSleepNights()
+        self.sleepNights = nights
+        var byDay: [Date: SleepNight] = [:]
+        for n in nights {
+            byDay[Reading.dayStart(of: n.nightDate)] = n
+        }
+        self.sleepNightByDay = byDay
+    }
+
+    /// Returns the sleep night whose nightDate matches the day-start of `date`.
+    func sleepBefore(date: Date) -> SleepNight? {
+        let key = Reading.dayStart(of: date)
+        return sleepNightByDay[key]
     }
 
     /// When an active cut exists, returns the number of days from cut start to max(targetEndDate, today)
