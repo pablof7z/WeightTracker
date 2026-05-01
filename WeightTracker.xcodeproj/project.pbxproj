@@ -1,0 +1,748 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B6C01D5BA8E657E91853D4F /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 741E0C3C6691D4A414A5028D /* HealthKitManager.swift */; };
+		0F45EF58EEAFE132477BA962 /* ReadingRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A5688E1F47C7C58388DCB68 /* ReadingRepository.swift */; };
+		1AED5072A2F974A4884F0E6E /* TriggerEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A67B3BC1FCBF8FC7D8FED316 /* TriggerEvaluator.swift */; };
+		27168DB595057CCFB03C9A25 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 316BA28A697280C75906DF5D /* Theme.swift */; };
+		290B1017B66FC3519267A9FA /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 316BA28A697280C75906DF5D /* Theme.swift */; };
+		2DD48423630D2DDF12B47ED0 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88663F7427B9D9226727C273 /* AppPreferences.swift */; };
+		2F1D950AF8A1C65840E3C4F7 /* ActiveCutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB0F89A626C378086B6F440 /* ActiveCutStore.swift */; };
+		3630166751F8C3686872CD1D /* ModelContainerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */; };
+		38B6BA460B65C5185FB710D2 /* ReadingRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A5688E1F47C7C58388DCB68 /* ReadingRepository.swift */; };
+		38F92DC25F189FF1C75F0B76 /* NotificationPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE13239FB6FB767EF9E6A2EA /* NotificationPreferences.swift */; };
+		397539FC80C3754DBA66660B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BA321C930D8536E473C82B /* SettingsView.swift */; };
+		3F19E07477AD273CD4DEB8EE /* ReadingSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2887D0AEEDA020AC376DC7BB /* ReadingSource.swift */; };
+		3F6ABC41A5F6F1CC3E4E85FF /* Cut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7F1E9AA0F7B1F74B43DBD1 /* Cut.swift */; };
+		44B8E41121A80FC1223F41BC /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931640299175194B18A7044D /* TrendsView.swift */; };
+		475E09F6DCC5FDF8F773CE18 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88663F7427B9D9226727C273 /* AppPreferences.swift */; };
+		48E93E160BB323D49A35F6A0 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */; };
+		4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D7278094BFFC6DD7B42A10 /* CutsView.swift */; };
+		51B9232D2384F50FD78F453F /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED41C7492E4BBB583CBC765 /* AppServices.swift */; };
+		5FA82D661B8372A7015F8FDE /* Units.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9016343CDFC01EAEB5DD55 /* Units.swift */; };
+		63C485D79482671E8F8F514C /* WeightTrackerWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5B82AA7E6139793E75C38F /* WeightTrackerWatchApp.swift */; };
+		687CE2D3C1694496A2180309 /* WatchEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52BBD06B7D5B4CDF8ACCE11F /* WatchEntryView.swift */; };
+		75F537DAE83FA43529B0F866 /* WeightTrackerWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DF32432F839E099D4B007C11 /* WeightTrackerWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7E81D27D9ADA7665A15F9FB1 /* ActiveCutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB0F89A626C378086B6F440 /* ActiveCutStore.swift */; };
+		7EFB776B17C45415280C82CD /* ModelContainerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */; };
+		8E0397CB350508B2CE347258 /* Cut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7F1E9AA0F7B1F74B43DBD1 /* Cut.swift */; };
+		98D7A494F3D05AF7681CFF43 /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323AA207967785DEB21CF800 /* Cluster.swift */; };
+		9A6798B06B0147C50E3E1BF4 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC72524D70DFFE6A05C1D9B /* TodayView.swift */; };
+		AC789BCEDA226C5B4BDE179E /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 741E0C3C6691D4A414A5028D /* HealthKitManager.swift */; };
+		AE80612DD33F90FB53CEF230 /* ReadingSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2887D0AEEDA020AC376DC7BB /* ReadingSource.swift */; };
+		AEE776CD1B8FC79E0377D2C6 /* WeightTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D23A0835AD55B705F61A44B /* WeightTrackerApp.swift */; };
+		B08E6B45D65488B25D0012CE /* Units.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9016343CDFC01EAEB5DD55 /* Units.swift */; };
+		B2CFBEEDA8126D7C8CBD2C23 /* TriggerEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A67B3BC1FCBF8FC7D8FED316 /* TriggerEvaluator.swift */; };
+		B37AEA50C27AE74BEF8B90D1 /* Reading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002B14864E7DD0FF715D2C3E /* Reading.swift */; };
+		BCF29796A527562B26A3F075 /* NotificationPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE13239FB6FB767EF9E6A2EA /* NotificationPreferences.swift */; };
+		C45E5697F4265B9D7E654173 /* OnboardingFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0C63C08173E783F542DC0B /* OnboardingFlow.swift */; };
+		C791ACBB684AFD387D7A1422 /* Reading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002B14864E7DD0FF715D2C3E /* Reading.swift */; };
+		C9319B907F388B7AB9CDBF6E /* ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB8B5BDEE06E1CC669AD209 /* ChartView.swift */; };
+		DA9A262BAABC5F03F5B1990C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6EEEAF3E15B83A91F5A6AD9C /* Assets.xcassets */; };
+		DC635217767E7DC1B0035169 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */; };
+		E8ACA6A45CC5938D41A24FC0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B67C0FF305F635FE93305906 /* PrivacyInfo.xcprivacy */; };
+		EEC1648B41DDC5A9A4531E88 /* Gap.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1419CA0A2E104910DA7109C /* Gap.swift */; };
+		F407BE8E27625E88405BADD5 /* Gap.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1419CA0A2E104910DA7109C /* Gap.swift */; };
+		F7588019980F3754ABB5CD1F /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323AA207967785DEB21CF800 /* Cluster.swift */; };
+		F9E33D66EB89B292EA64EBDE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2AADE6A603A3462CDA171429 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3EA14B57BF00EB36ADD452C4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E79B9867D4DD09D1783B7D29 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AE42E7F4EBD41458E76604B8;
+			remoteInfo = "WeightTrackerWatch Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2B9236DA7685F515C962D851 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				75F537DAE83FA43529B0F866 /* WeightTrackerWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		002B14864E7DD0FF715D2C3E /* Reading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reading.swift; sourceTree = "<group>"; };
+		0AB0F89A626C378086B6F440 /* ActiveCutStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCutStore.swift; sourceTree = "<group>"; };
+		1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelContainerFactory.swift; sourceTree = "<group>"; };
+		1D23A0835AD55B705F61A44B /* WeightTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightTrackerApp.swift; sourceTree = "<group>"; };
+		2887D0AEEDA020AC376DC7BB /* ReadingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSource.swift; sourceTree = "<group>"; };
+		2A5688E1F47C7C58388DCB68 /* ReadingRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingRepository.swift; sourceTree = "<group>"; };
+		2AADE6A603A3462CDA171429 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		316BA28A697280C75906DF5D /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		323AA207967785DEB21CF800 /* Cluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cluster.swift; sourceTree = "<group>"; };
+		32D7278094BFFC6DD7B42A10 /* CutsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutsView.swift; sourceTree = "<group>"; };
+		3D7F1E9AA0F7B1F74B43DBD1 /* Cut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cut.swift; sourceTree = "<group>"; };
+		45B3186F71A6123EE0DDF888 /* WeightTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WeightTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		52BBD06B7D5B4CDF8ACCE11F /* WatchEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchEntryView.swift; sourceTree = "<group>"; };
+		5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		6A9016343CDFC01EAEB5DD55 /* Units.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Units.swift; sourceTree = "<group>"; };
+		6EEEAF3E15B83A91F5A6AD9C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		741E0C3C6691D4A414A5028D /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
+		7ED41C7492E4BBB583CBC765 /* AppServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppServices.swift; sourceTree = "<group>"; };
+		88663F7427B9D9226727C273 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
+		931640299175194B18A7044D /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		A67B3BC1FCBF8FC7D8FED316 /* TriggerEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriggerEvaluator.swift; sourceTree = "<group>"; };
+		B67C0FF305F635FE93305906 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		B8BA321C930D8536E473C82B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		BAB8B5BDEE06E1CC669AD209 /* ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartView.swift; sourceTree = "<group>"; };
+		BBC72524D70DFFE6A05C1D9B /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		CE5B82AA7E6139793E75C38F /* WeightTrackerWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightTrackerWatchApp.swift; sourceTree = "<group>"; };
+		D1419CA0A2E104910DA7109C /* Gap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gap.swift; sourceTree = "<group>"; };
+		DE0C63C08173E783F542DC0B /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
+		DE13239FB6FB767EF9E6A2EA /* NotificationPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPreferences.swift; sourceTree = "<group>"; };
+		DF32432F839E099D4B007C11 /* WeightTrackerWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WeightTrackerWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		04CB69BCE92A1B4F6C1BCFF1 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				0AB0F89A626C378086B6F440 /* ActiveCutStore.swift */,
+				DE13239FB6FB767EF9E6A2EA /* NotificationPreferences.swift */,
+				5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */,
+				A67B3BC1FCBF8FC7D8FED316 /* TriggerEvaluator.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+		0BB65CCFB91C7F865D98EF97 /* Cuts */ = {
+			isa = PBXGroup;
+			children = (
+				32D7278094BFFC6DD7B42A10 /* CutsView.swift */,
+			);
+			path = Cuts;
+			sourceTree = "<group>";
+		};
+		125DD708CB84771B469D3D54 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				6EEEAF3E15B83A91F5A6AD9C /* Assets.xcassets */,
+				B67C0FF305F635FE93305906 /* PrivacyInfo.xcprivacy */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		1733B0EC8BD146BAB63BFBF2 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				B8BA321C930D8536E473C82B /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		2181AE3A2E38A73A0125EC0C /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */,
+				2A5688E1F47C7C58388DCB68 /* ReadingRepository.swift */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		36088C85138A13E830AB1623 /* Health */ = {
+			isa = PBXGroup;
+			children = (
+				741E0C3C6691D4A414A5028D /* HealthKitManager.swift */,
+			);
+			path = Health;
+			sourceTree = "<group>";
+		};
+		41BECB07327DB4248F4F302E /* Watch */ = {
+			isa = PBXGroup;
+			children = (
+				52BBD06B7D5B4CDF8ACCE11F /* WatchEntryView.swift */,
+				CE5B82AA7E6139793E75C38F /* WeightTrackerWatchApp.swift */,
+			);
+			path = Watch;
+			sourceTree = "<group>";
+		};
+		45E109339BD01C7B99223A66 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				125DD708CB84771B469D3D54 /* iOS */,
+				4AE1C1C562C6AD585EB4AB5C /* Watch */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		4AE1C1C562C6AD585EB4AB5C /* Watch */ = {
+			isa = PBXGroup;
+			children = (
+				2AADE6A603A3462CDA171429 /* Assets.xcassets */,
+			);
+			path = Watch;
+			sourceTree = "<group>";
+		};
+		53CAB98BB1CF3FC295FCCCAB /* CSV */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = CSV;
+			sourceTree = "<group>";
+		};
+		5707ACCC02CF1398FEF10D20 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				6C9C9615745141B5ED38BA13 /* iOS */,
+				DACDFC868F7FADC0282D9F5E /* Shared */,
+				41BECB07327DB4248F4F302E /* Watch */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		5D3E237724151859BEB62515 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				45B3186F71A6123EE0DDF888 /* WeightTracker.app */,
+				DF32432F839E099D4B007C11 /* WeightTrackerWatch Watch App.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		659CEC23FF7EEA3315C3E7CC /* Today */ = {
+			isa = PBXGroup;
+			children = (
+				BBC72524D70DFFE6A05C1D9B /* TodayView.swift */,
+			);
+			path = Today;
+			sourceTree = "<group>";
+		};
+		6C9C9615745141B5ED38BA13 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				CCE9F63F7BD851C77D3F3EEB /* App */,
+				DCF48E73107BBAA96D4A6E29 /* Features */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		6D8F7BC0533A6EB77ECE51BD /* Chart */ = {
+			isa = PBXGroup;
+			children = (
+				BAB8B5BDEE06E1CC669AD209 /* ChartView.swift */,
+			);
+			path = Chart;
+			sourceTree = "<group>";
+		};
+		837A9FF1A28910DED85662EC /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				88663F7427B9D9226727C273 /* AppPreferences.swift */,
+				323AA207967785DEB21CF800 /* Cluster.swift */,
+				3D7F1E9AA0F7B1F74B43DBD1 /* Cut.swift */,
+				D1419CA0A2E104910DA7109C /* Gap.swift */,
+				002B14864E7DD0FF715D2C3E /* Reading.swift */,
+				2887D0AEEDA020AC376DC7BB /* ReadingSource.swift */,
+				316BA28A697280C75906DF5D /* Theme.swift */,
+				6A9016343CDFC01EAEB5DD55 /* Units.swift */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		85207A1340A4560D21092FDD /* Util */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Util;
+			sourceTree = "<group>";
+		};
+		C4E94B5803AD3DE479086F9F /* Analysis */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Analysis;
+			sourceTree = "<group>";
+		};
+		CCE9F63F7BD851C77D3F3EEB /* App */ = {
+			isa = PBXGroup;
+			children = (
+				7ED41C7492E4BBB583CBC765 /* AppServices.swift */,
+				1D23A0835AD55B705F61A44B /* WeightTrackerApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		DACDFC868F7FADC0282D9F5E /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				C4E94B5803AD3DE479086F9F /* Analysis */,
+				53CAB98BB1CF3FC295FCCCAB /* CSV */,
+				2181AE3A2E38A73A0125EC0C /* Data */,
+				837A9FF1A28910DED85662EC /* Domain */,
+				36088C85138A13E830AB1623 /* Health */,
+				04CB69BCE92A1B4F6C1BCFF1 /* Notifications */,
+				85207A1340A4560D21092FDD /* Util */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		DCF48E73107BBAA96D4A6E29 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				6D8F7BC0533A6EB77ECE51BD /* Chart */,
+				0BB65CCFB91C7F865D98EF97 /* Cuts */,
+				EE8FC8608E32B466D63AB3E0 /* Onboarding */,
+				1733B0EC8BD146BAB63BFBF2 /* Settings */,
+				659CEC23FF7EEA3315C3E7CC /* Today */,
+				E7D4C39B6C2BB004A0CF305B /* Trends */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		E7D4C39B6C2BB004A0CF305B /* Trends */ = {
+			isa = PBXGroup;
+			children = (
+				931640299175194B18A7044D /* TrendsView.swift */,
+			);
+			path = Trends;
+			sourceTree = "<group>";
+		};
+		EE8FC8608E32B466D63AB3E0 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				DE0C63C08173E783F542DC0B /* OnboardingFlow.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		FED243C5175E11B864DBFFBC = {
+			isa = PBXGroup;
+			children = (
+				45E109339BD01C7B99223A66 /* Resources */,
+				5707ACCC02CF1398FEF10D20 /* Sources */,
+				5D3E237724151859BEB62515 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AE42E7F4EBD41458E76604B8 /* WeightTrackerWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EA3F6E19771C74BF20671B10 /* Build configuration list for PBXNativeTarget "WeightTrackerWatch Watch App" */;
+			buildPhases = (
+				7BCE45E35A234740016ADD22 /* Sources */,
+				631D0AFA539D8DAD4096437B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "WeightTrackerWatch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "WeightTrackerWatch Watch App";
+			productReference = DF32432F839E099D4B007C11 /* WeightTrackerWatch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D6F884D9A279CBFD70F5E5A2 /* WeightTracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 40C83BAE9E5FAFF117F70573 /* Build configuration list for PBXNativeTarget "WeightTracker" */;
+			buildPhases = (
+				BBA0DD713024F7D7FCC83248 /* Sources */,
+				631BB16232B37DB334C4E4CC /* Resources */,
+				2B9236DA7685F515C962D851 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E83833161E586BE227142E8B /* PBXTargetDependency */,
+			);
+			name = WeightTracker;
+			packageProductDependencies = (
+			);
+			productName = WeightTracker;
+			productReference = 45B3186F71A6123EE0DDF888 /* WeightTracker.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E79B9867D4DD09D1783B7D29 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					AE42E7F4EBD41458E76604B8 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					D6F884D9A279CBFD70F5E5A2 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 9E85DBF8A7F324E093967F67 /* Build configuration list for PBXProject "WeightTracker" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = FED243C5175E11B864DBFFBC;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 54;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D6F884D9A279CBFD70F5E5A2 /* WeightTracker */,
+				AE42E7F4EBD41458E76604B8 /* WeightTrackerWatch Watch App */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		631BB16232B37DB334C4E4CC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DA9A262BAABC5F03F5B1990C /* Assets.xcassets in Resources */,
+				E8ACA6A45CC5938D41A24FC0 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		631D0AFA539D8DAD4096437B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F9E33D66EB89B292EA64EBDE /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7BCE45E35A234740016ADD22 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2F1D950AF8A1C65840E3C4F7 /* ActiveCutStore.swift in Sources */,
+				475E09F6DCC5FDF8F773CE18 /* AppPreferences.swift in Sources */,
+				F7588019980F3754ABB5CD1F /* Cluster.swift in Sources */,
+				8E0397CB350508B2CE347258 /* Cut.swift in Sources */,
+				F407BE8E27625E88405BADD5 /* Gap.swift in Sources */,
+				0B6C01D5BA8E657E91853D4F /* HealthKitManager.swift in Sources */,
+				3630166751F8C3686872CD1D /* ModelContainerFactory.swift in Sources */,
+				BCF29796A527562B26A3F075 /* NotificationPreferences.swift in Sources */,
+				DC635217767E7DC1B0035169 /* NotificationService.swift in Sources */,
+				B37AEA50C27AE74BEF8B90D1 /* Reading.swift in Sources */,
+				38B6BA460B65C5185FB710D2 /* ReadingRepository.swift in Sources */,
+				AE80612DD33F90FB53CEF230 /* ReadingSource.swift in Sources */,
+				290B1017B66FC3519267A9FA /* Theme.swift in Sources */,
+				1AED5072A2F974A4884F0E6E /* TriggerEvaluator.swift in Sources */,
+				B08E6B45D65488B25D0012CE /* Units.swift in Sources */,
+				687CE2D3C1694496A2180309 /* WatchEntryView.swift in Sources */,
+				63C485D79482671E8F8F514C /* WeightTrackerWatchApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BBA0DD713024F7D7FCC83248 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7E81D27D9ADA7665A15F9FB1 /* ActiveCutStore.swift in Sources */,
+				2DD48423630D2DDF12B47ED0 /* AppPreferences.swift in Sources */,
+				51B9232D2384F50FD78F453F /* AppServices.swift in Sources */,
+				C9319B907F388B7AB9CDBF6E /* ChartView.swift in Sources */,
+				98D7A494F3D05AF7681CFF43 /* Cluster.swift in Sources */,
+				3F6ABC41A5F6F1CC3E4E85FF /* Cut.swift in Sources */,
+				4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */,
+				EEC1648B41DDC5A9A4531E88 /* Gap.swift in Sources */,
+				AC789BCEDA226C5B4BDE179E /* HealthKitManager.swift in Sources */,
+				7EFB776B17C45415280C82CD /* ModelContainerFactory.swift in Sources */,
+				38F92DC25F189FF1C75F0B76 /* NotificationPreferences.swift in Sources */,
+				48E93E160BB323D49A35F6A0 /* NotificationService.swift in Sources */,
+				C45E5697F4265B9D7E654173 /* OnboardingFlow.swift in Sources */,
+				C791ACBB684AFD387D7A1422 /* Reading.swift in Sources */,
+				0F45EF58EEAFE132477BA962 /* ReadingRepository.swift in Sources */,
+				3F19E07477AD273CD4DEB8EE /* ReadingSource.swift in Sources */,
+				397539FC80C3754DBA66660B /* SettingsView.swift in Sources */,
+				27168DB595057CCFB03C9A25 /* Theme.swift in Sources */,
+				9A6798B06B0147C50E3E1BF4 /* TodayView.swift in Sources */,
+				44B8E41121A80FC1223F41BC /* TrendsView.swift in Sources */,
+				B2CFBEEDA8126D7C8CBD2C23 /* TriggerEvaluator.swift in Sources */,
+				5FA82D661B8372A7015F8FDE /* Units.swift in Sources */,
+				AEE776CD1B8FC79E0377D2C6 /* WeightTrackerApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E83833161E586BE227142E8B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AE42E7F4EBD41458E76604B8 /* WeightTrackerWatch Watch App */;
+			targetProxy = 3EA14B57BF00EB36ADD452C4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0F8E6FCF8F6A0F983B5F7650 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/iOS/WeightTracker.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = Resources/iOS/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pfer.weighttracker;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		1464FC6D66BB895B6249BED9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/Watch/WeightTrackerWatch.entitlements;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = Resources/Watch/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pfer.weighttracker.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		1D21608CFE536A036E8E0119 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/iOS/WeightTracker.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = Resources/iOS/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pfer.weighttracker;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		54A5A4E9DB68856C21C1D36B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		A83748DBCE9D735EDE863BD3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		C81B7485A68A7398D6AC7B54 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/Watch/WeightTrackerWatch.entitlements;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = Resources/Watch/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pfer.weighttracker.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		40C83BAE9E5FAFF117F70573 /* Build configuration list for PBXNativeTarget "WeightTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1D21608CFE536A036E8E0119 /* Debug */,
+				0F8E6FCF8F6A0F983B5F7650 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9E85DBF8A7F324E093967F67 /* Build configuration list for PBXProject "WeightTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				54A5A4E9DB68856C21C1D36B /* Debug */,
+				A83748DBCE9D735EDE863BD3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EA3F6E19771C74BF20671B10 /* Build configuration list for PBXNativeTarget "WeightTrackerWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C81B7485A68A7398D6AC7B54 /* Debug */,
+				1464FC6D66BB895B6249BED9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E79B9867D4DD09D1783B7D29 /* Project object */;
+}
