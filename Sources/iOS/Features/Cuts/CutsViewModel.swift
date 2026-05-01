@@ -6,6 +6,7 @@ final class CutsViewModel: ObservableObject {
     @Published var activeCut: ActiveCut?
     @Published var historicalCuts: [HistoricalCut] = []
     @Published var mostRecentReading: Reading?
+    @Published var allReadings: [Reading] = []
 
     private let services: AppServices
 
@@ -16,6 +17,7 @@ final class CutsViewModel: ObservableObject {
     func reload() {
         activeCut = ActiveCutStore.load()
         let readings = services.repository.allReadings()
+        allReadings = readings
         mostRecentReading = readings.last
         let clusters = ClusterDetector.clusters(from: readings)
         let detected = HistoricalCutDetector.detect(in: clusters, readings: readings)

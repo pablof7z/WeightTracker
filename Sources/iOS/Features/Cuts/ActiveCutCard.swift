@@ -7,6 +7,7 @@ struct ActiveCutCard: View {
     let status: CutsViewModel.CutStatus?
     let projectedEndWeightKg: Double?
     let unit: WeightUnit
+    var readings: [Reading] = []
     var onMarkDone: () -> Void
 
     private static let dateFmt: DateFormatter = {
@@ -58,6 +59,16 @@ struct ActiveCutCard: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+
+            CutInlineChart(
+                readings: readings,
+                startDate: cut.startDate,
+                endDate: max(cut.targetEndDate, Date()),
+                unit: unit,
+                targetWeightKg: cut.targetWeightKg,
+                startWeightKg: cut.startWeightKg
+            )
+            .padding(.top, 4)
 
             Button(role: .destructive, action: onMarkDone) {
                 Label("Mark done", systemImage: "checkmark.circle.fill")

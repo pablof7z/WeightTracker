@@ -20,7 +20,8 @@ struct TodayView: View {
                 VStack(spacing: 20) {
                     NumericPad(
                         value: $viewModel.displayValue,
-                        unitSymbol: weightUnit.symbol
+                        unitSymbol: weightUnit.symbol,
+                        onUnitTap: toggleUnit
                     )
                     .padding(.top, 16)
 
@@ -58,6 +59,13 @@ struct TodayView: View {
                 viewModel.prefill(from: services.repository, unit: weightUnit)
             }
         }
+    }
+
+    private func toggleUnit() {
+        let next: WeightUnit = (weightUnit == .lbs) ? .kg : .lbs
+        let kg = UnitConvert.storeWeight(viewModel.displayValue, from: weightUnit)
+        viewModel.displayValue = (UnitConvert.displayWeight(kg: kg, in: next) * 10.0).rounded() / 10.0
+        weightUnitRaw = next.rawValue
     }
 
     private var dateChip: some View {

@@ -43,6 +43,7 @@
 		4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D7278094BFFC6DD7B42A10 /* CutsView.swift */; };
 		4C8AD4070A912E9F24545358 /* EraSummaryTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490D47FB0B7A1C43B497D81B /* EraSummaryTable.swift */; };
 		4D7380185FB3BF303834D70C /* ChartOverlayToggles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711BBC2A64EA99CFD26B6A30 /* ChartOverlayToggles.swift */; };
+		5178402B720BD8ADEA206581 /* CutInlineChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC29786B5FB91E692CEFBA16 /* CutInlineChart.swift */; };
 		51B9232D2384F50FD78F453F /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED41C7492E4BBB583CBC765 /* AppServices.swift */; };
 		5E9F709592D919747F7DE7CA /* EditCutSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B6E4F9BA240C6FCE7B3B19 /* EditCutSheet.swift */; };
 		5EE87B996027695D3F501911 /* SleepOverlayLegend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A097238E63F35469E137EA10 /* SleepOverlayLegend.swift */; };
@@ -197,6 +198,7 @@
 		B8BA321C930D8536E473C82B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		BAB8B5BDEE06E1CC669AD209 /* ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartView.swift; sourceTree = "<group>"; };
 		BBC72524D70DFFE6A05C1D9B /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		BC29786B5FB91E692CEFBA16 /* CutInlineChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutInlineChart.swift; sourceTree = "<group>"; };
 		BDE678CB61C4C50F510F4FD9 /* ConfirmationCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationCard.swift; sourceTree = "<group>"; };
 		C2123E9C82B2C7B0FE5ADE0A /* DriftBarChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriftBarChart.swift; sourceTree = "<group>"; };
 		C58D8AAC80C055C280257CBC /* GapAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GapAnalyzer.swift; sourceTree = "<group>"; };
@@ -236,6 +238,7 @@
 			isa = PBXGroup;
 			children = (
 				2F94EC41A47C8E84605BB138 /* ActiveCutCard.swift */,
+				BC29786B5FB91E692CEFBA16 /* CutInlineChart.swift */,
 				32D7278094BFFC6DD7B42A10 /* CutsView.swift */,
 				C82656A20FFD2B09430FD206 /* CutsViewModel.swift */,
 				E7B6E4F9BA240C6FCE7B3B19 /* EditCutSheet.swift */,
@@ -648,6 +651,7 @@
 				D5CEB2E240321E6559C221AB /* ClusterDetector.swift in Sources */,
 				B181C74CA78B9B1834B2A49C /* ConfirmationCard.swift in Sources */,
 				3F6ABC41A5F6F1CC3E4E85FF /* Cut.swift in Sources */,
+				5178402B720BD8ADEA206581 /* CutInlineChart.swift in Sources */,
 				4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */,
 				E455B2D98C0FFED47B47ABB2 /* CutsViewModel.swift in Sources */,
 				4A1D4A0A86447FAA5874E617 /* DataSettingsSection.swift in Sources */,

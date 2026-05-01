@@ -8,19 +8,36 @@ struct NumericPad: View {
     var tapStep: Double = 0.1
     /// Step for long-press (default ±1.0)
     var longPressStep: Double = 1.0
+    /// Optional: tap on the number to toggle unit
+    var onUnitTap: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 12) {
-            Text(formatted)
-                .font(.system(size: 96, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .minimumScaleFactor(0.5)
-                .lineLimit(1)
-                .accessibilityLabel("Current weight \(formatted) \(unitSymbol)")
-
-            Text(unitSymbol)
-                .font(.title3.weight(.medium))
-                .foregroundStyle(.secondary)
+            Button {
+                onUnitTap?()
+            } label: {
+                VStack(spacing: 4) {
+                    Text(formatted)
+                        .font(.system(size: 96, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                        .foregroundStyle(.primary)
+                    HStack(spacing: 4) {
+                        Text(unitSymbol)
+                            .font(.title3.weight(.medium))
+                            .foregroundStyle(.secondary)
+                        if onUnitTap != nil {
+                            Image(systemName: "arrow.left.arrow.right")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(onUnitTap == nil)
+            .accessibilityLabel("Current weight \(formatted) \(unitSymbol). Tap to switch unit.")
 
             LiquidGlassContainer(spacing: 28) {
                 HStack(spacing: 28) {

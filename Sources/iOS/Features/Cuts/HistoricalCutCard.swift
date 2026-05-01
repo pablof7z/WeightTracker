@@ -4,6 +4,7 @@ struct HistoricalCutCard: View {
     let cut: HistoricalCut
     let unit: WeightUnit
     let yearsAgo: Int
+    var readings: [Reading] = []
 
     private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
@@ -28,6 +29,15 @@ struct HistoricalCutCard: View {
                 metric(title: "Avg rate", value: formatRate())
                 metric(title: "When", value: yearsAgoLabel)
             }
+
+            CutInlineChart(
+                readings: readings,
+                startDate: cut.startDate,
+                endDate: cut.endDate,
+                unit: unit,
+                startWeightKg: cut.startWeightKg
+            )
+            .padding(.top, 4)
         }
         .padding()
         .glass(in: RoundedRectangle(cornerRadius: 12))

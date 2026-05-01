@@ -72,7 +72,8 @@ struct CutsView: View {
                 neededRateLbPerWeek: viewModel.neededRateLbPerWeek(),
                 status: viewModel.status(),
                 projectedEndWeightKg: viewModel.projectedEndWeightKg(),
-                unit: unit
+                unit: unit,
+                readings: viewModel.allReadings
             ) {
                 Task { await viewModel.markDone() }
             }
@@ -113,7 +114,8 @@ struct CutsView: View {
                     HistoricalCutCard(
                         cut: cut,
                         unit: unit,
-                        yearsAgo: viewModel.yearsAgo(of: cut.startDate)
+                        yearsAgo: viewModel.yearsAgo(of: cut.startDate),
+                        readings: viewModel.allReadings
                     )
                 }
             }
