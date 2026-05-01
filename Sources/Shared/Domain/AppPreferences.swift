@@ -27,6 +27,9 @@ public enum AppPrefKey {
     // HealthKit
     public static let healthKitReadEnabled = "hk.readEnabled"
     public static let healthKitWriteEnabled = "hk.writeEnabled"
+
+    // AI
+    public static let openRouterModel = "ai.openRouterModel"
 }
 
 public enum AppGroup {
@@ -38,4 +41,5 @@ public enum AppConstants {
     public static let bgRefreshIdentifier = "app.pfer.weighttracker.refresh"
     public static let defaultGoalLb: Double = 158.0
     public static let defaultCutDurationWeeks: Int = 16
+    public static let defaultOpenRouterModel = "openai/gpt-5.2"
 }

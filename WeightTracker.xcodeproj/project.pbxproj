@@ -9,7 +9,9 @@
 /* Begin PBXBuildFile section */
 		00EEB85EEA7FAD976F937D70 /* DriftEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */; };
 		069E3F988C4115CBA0401659 /* CSVUnitDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE77AF97769C30641AE800A6 /* CSVUnitDetector.swift */; };
+		0AD4EB7C0CA8FEB54528007B /* ProviderLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5813F2E2F81D2BCB4075507E /* ProviderLogoView.swift */; };
 		0B6C01D5BA8E657E91853D4F /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 741E0C3C6691D4A414A5028D /* HealthKitManager.swift */; };
+		0C24D620800651EDCBDF39CB /* OpenRouterModelSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F50ED98DC0D5BA7B656F2FDB /* OpenRouterModelSelectorView.swift */; };
 		0F45EF58EEAFE132477BA962 /* ReadingRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A5688E1F47C7C58388DCB68 /* ReadingRepository.swift */; };
 		12C33D93AE37E78396BAFE14 /* HistoricalCutDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9195D1CB66BB1F0ECEC35628 /* HistoricalCutDetector.swift */; };
 		142114882711D840FF6FED6C /* SleepCorrelation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C3AD389F5EBF5644F1E5F1 /* SleepCorrelation.swift */; };
@@ -118,6 +120,7 @@
 		E8ACA6A45CC5938D41A24FC0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B67C0FF305F635FE93305906 /* PrivacyInfo.xcprivacy */; };
 		E97D783DBD98C650C3BE36BA /* CutProjectionChartContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FBDAE013B33AE9B7726F5C5 /* CutProjectionChartContent.swift */; };
 		EA70D69C27553DC63B3A7C65 /* OnboardingCut.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB1CA5833F194B00D42438EC /* OnboardingCut.swift */; };
+		EA7CF1D5EE7D5304C891660A /* OpenRouterModelCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770A8DC9999BEF20A1736C0C /* OpenRouterModelCatalog.swift */; };
 		EBCEFD8250BE93D59F8E3B09 /* RemindersSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 961E30BD0A86D4BCDEF5E26C /* RemindersSettingsSection.swift */; };
 		ECAE9FDC40F11D3C3C4D53D7 /* WeightChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC6183B9AD63226DDC54D6E5 /* WeightChart.swift */; };
 		EEC1648B41DDC5A9A4531E88 /* Gap.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1419CA0A2E104910DA7109C /* Gap.swift */; };
@@ -184,11 +187,13 @@
 		52BBD06B7D5B4CDF8ACCE11F /* WatchEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchEntryView.swift; sourceTree = "<group>"; };
 		5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		5E1C3A773A1E53D2B4DDE18C /* DataSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSettingsView.swift; sourceTree = "<group>"; };
+		5813F2E2F81D2BCB4075507E /* ProviderLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderLogoView.swift; sourceTree = "<group>"; };
 		5F63296C48489DEFE67600DE /* LiquidGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlass.swift; sourceTree = "<group>"; };
 		65C9D9B90EE07BFC553AC57F /* ImportCSVSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportCSVSheet.swift; sourceTree = "<group>"; };
 		6A9016343CDFC01EAEB5DD55 /* Units.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Units.swift; sourceTree = "<group>"; };
 		6AD01D7AC7D909F277DF8DAD /* LLMSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSettingsView.swift; sourceTree = "<group>"; };
 		6EEEAF3E15B83A91F5A6AD9C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		770A8DC9999BEF20A1736C0C /* OpenRouterModelCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenRouterModelCatalog.swift; sourceTree = "<group>"; };
 		706CFB73D30C301DD4679BF2 /* ActiveCutMinichart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCutMinichart.swift; sourceTree = "<group>"; };
 		711BBC2A64EA99CFD26B6A30 /* ChartOverlayToggles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartOverlayToggles.swift; sourceTree = "<group>"; };
 		741E0C3C6691D4A414A5028D /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
@@ -246,6 +251,7 @@
 		EC6183B9AD63226DDC54D6E5 /* WeightChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightChart.swift; sourceTree = "<group>"; };
 		ED2C1CB0F4BF104B7D9054D5 /* FullscreenChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullscreenChart.swift; sourceTree = "<group>"; };
 		F16C1161038489D5FBBF859E /* BYOKOpenRouterConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BYOKOpenRouterConnector.swift; sourceTree = "<group>"; };
+		F50ED98DC0D5BA7B656F2FDB /* OpenRouterModelSelectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenRouterModelSelectorView.swift; sourceTree = "<group>"; };
 		F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriftEstimator.swift; sourceTree = "<group>"; };
 		FB1CA5833F194B00D42438EC /* OnboardingCut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCut.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -304,6 +310,8 @@
 				AFAF0FF41333E3668D2EC219 /* ICloudSettingsView.swift */,
 				65C9D9B90EE07BFC553AC57F /* ImportCSVSheet.swift */,
 				6AD01D7AC7D909F277DF8DAD /* LLMSettingsView.swift */,
+				F50ED98DC0D5BA7B656F2FDB /* OpenRouterModelSelectorView.swift */,
+				5813F2E2F81D2BCB4075507E /* ProviderLogoView.swift */,
 				961E30BD0A86D4BCDEF5E26C /* RemindersSettingsSection.swift */,
 				BE956A8881D2EC0C108E31A1 /* RemindersSettingsView.swift */,
 				B8BA321C930D8536E473C82B /* SettingsView.swift */,
@@ -476,6 +484,7 @@
 			isa = PBXGroup;
 			children = (
 				F16C1161038489D5FBBF859E /* BYOKOpenRouterConnector.swift */,
+				770A8DC9999BEF20A1736C0C /* OpenRouterModelCatalog.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -748,6 +757,9 @@
 				B4D473E68FB36593CB7E820C /* OnboardingImport.swift in Sources */,
 				18910517366F5498E41FBAA5 /* OnboardingReminders.swift in Sources */,
 				70EF21E961F42E75B8DA1D8D /* OnboardingWhatItIs.swift in Sources */,
+				EA7CF1D5EE7D5304C891660A /* OpenRouterModelCatalog.swift in Sources */,
+				0C24D620800651EDCBDF39CB /* OpenRouterModelSelectorView.swift in Sources */,
+				0AD4EB7C0CA8FEB54528007B /* ProviderLogoView.swift in Sources */,
 				4B9B4B2C7F68EF6FCF826146 /* OptionalDetailsRow.swift in Sources */,
 				C791ACBB684AFD387D7A1422 /* Reading.swift in Sources */,
 				0F45EF58EEAFE132477BA962 /* ReadingRepository.swift in Sources */,
