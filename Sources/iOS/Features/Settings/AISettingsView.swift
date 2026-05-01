@@ -14,15 +14,20 @@ struct AISettingsView: View {
                 } label: {
                     Label("ElevenLabs", systemImage: "waveform")
                 }
-                NavigationLink {
-                    CoachNostrSettingsView()
-                } label: {
-                    Label("Nostr Coach", systemImage: "antenna.radiowaves.left.and.right")
-                }
             } header: {
                 Text("Providers")
             } footer: {
-                Text("AI powers the cut coach, voice check-ins, and Nostr sharing features.")
+                Text("AI powers the cut coach and voice check-ins.")
+            }
+
+            Section {
+                NavigationLink {
+                    UsageCostSettingsView()
+                } label: {
+                    Label("Cost", systemImage: "dollarsign.circle.fill")
+                }
+            } header: {
+                Text("Usage")
             }
         }
         .navigationTitle("AI")

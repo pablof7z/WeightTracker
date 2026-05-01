@@ -1,7 +1,7 @@
 import SwiftUI
 
 private enum SettingsDestination: Hashable {
-    case display, reminders, health, icloud, data, ai, about
+    case display, reminders, health, icloud, data, agent, ai, about
 }
 
 struct SettingsView: View {
@@ -28,6 +28,9 @@ struct SettingsView: View {
                     }
                 }
                 Section("Intelligence") {
+                    NavigationLink(value: SettingsDestination.agent) {
+                        Label("Agent", systemImage: "person.text.rectangle.fill")
+                    }
                     NavigationLink(value: SettingsDestination.ai) {
                         Label("AI", systemImage: "sparkles")
                     }
@@ -46,6 +49,7 @@ struct SettingsView: View {
                 case .health:    HealthSettingsView()
                 case .icloud:    ICloudSettingsView()
                 case .data:      DataSettingsView()
+                case .agent:     AgentSettingsView()
                 case .ai:        AISettingsView()
                 case .about:     AboutView()
                 }

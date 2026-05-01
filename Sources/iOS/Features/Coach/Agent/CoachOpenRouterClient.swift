@@ -67,7 +67,10 @@ struct CoachOpenRouterClient {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
+        let start = Date()
         let (data, response) = try await URLSession.shared.data(for: request)
+        let latencyMs = Int(Date().timeIntervalSince(start) * 1000)
+
         guard let http = response as? HTTPURLResponse else {
             throw CoachOpenRouterError.invalidResponse("missing HTTP response")
         }
@@ -79,6 +82,21 @@ struct CoachOpenRouterClient {
         guard let top = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw CoachOpenRouterError.decoding("response is not JSON")
         }
+
+        if let usageRaw = top["usage"] {
+            let usageData = try? JSONSerialization.data(withJSONObject: usageRaw)
+            let usage = usageData.flatMap { try? JSONDecoder().decode(OpenRouterUsagePayload.self, from: $0) }
+            let modelUsed = (top["model"] as? String) ?? model
+            Task { @MainActor in
+                CostLedger.shared.log(
+                    feature: feature,
+                    model: modelUsed,
+                    usage: usage,
+                    latencyMs: latencyMs
+                )
+            }
+        }
+
         guard
             let choices = top["choices"] as? [[String: Any]],
             let first = choices.first,

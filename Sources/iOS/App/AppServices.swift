@@ -54,6 +54,9 @@ final class AppServices: ObservableObject {
         )
         self.cutCoach = cutCoachService
 
+        let nostrAgent = CoachNostrAgentService()
+        self.coachNostrAgent = nostrAgent
+
         let coachModel = UserDefaults.standard.string(forKey: AppPrefKey.openRouterModel)
             ?? AppConstants.defaultOpenRouterModel
         let agent = CoachAgentSession(
@@ -65,12 +68,13 @@ final class AppServices: ObservableObject {
             model: coachModel,
             onMutation: {
                 cutCoachService.refresh(trigger: .toolMutationFollowup)
+            },
+            recordMemory: { text in
+                try nostrAgent.recordMemory(text: text)
             }
         )
         self.coachAgent = agent
 
-        let nostrAgent = CoachNostrAgentService()
-        self.coachNostrAgent = nostrAgent
         nostrAgent.onKind1Mention = { [agent, nostrAgent] event in
             let thread = await nostrAgent.fetchThread(for: event)
             await agent.run(transcript: event.content, trigger: .nostrConversation)

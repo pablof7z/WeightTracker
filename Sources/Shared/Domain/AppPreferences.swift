@@ -32,6 +32,15 @@ public enum AppPrefKey {
     public static let openRouterModel = "ai.openRouterModel"
     public static let elevenLabsSTTModel = "ai.elevenLabsSTTModel"
 
+    // Agent
+    public static let agentNostrEnabled = "agent.nostr.enabled"
+    public static let agentNostrRelayURL = "agent.nostr.relayURL"
+    public static let agentNostrSince = "agent.nostr.since"
+    public static let agentNostrProfileName = "agent.nostr.profileName"
+    public static let agentNostrProfileAbout = "agent.nostr.profileAbout"
+    public static let agentSystemPrompt = "agent.systemPrompt"
+    public static let agentNostrState = "agent.nostr.state.v1"
+
     // Macro priors (silent defaults; no Settings UI in M1)
     public static let userSex = "macros.userSex"
     public static let userAgeYears = "macros.userAgeYears"

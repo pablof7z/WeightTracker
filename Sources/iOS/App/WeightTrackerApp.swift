@@ -46,6 +46,7 @@ struct RootView: View {
                 OnboardingFlow()
             }
         }
+        .background(NostrApprovalPresenter())
     }
 }
 
