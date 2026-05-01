@@ -7,6 +7,7 @@ final class CutsViewModel: ObservableObject {
     @Published var historicalCuts: [HistoricalCut] = []
     @Published var mostRecentReading: Reading?
     @Published var allReadings: [Reading] = []
+    @Published var projection: CutProjectionResult?
 
     private let services: AppServices
 
@@ -22,6 +23,7 @@ final class CutsViewModel: ObservableObject {
         let clusters = ClusterDetector.clusters(from: readings)
         let detected = HistoricalCutDetector.detect(in: clusters, readings: readings)
         historicalCuts = detected.sorted { $0.startDate > $1.startDate }
+        projection = CutProjection.project(active: activeCut, readings: readings, historicalCuts: detected)
     }
 
     func startCut(_ cut: ActiveCut) async {

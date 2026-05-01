@@ -73,7 +73,8 @@ struct CutsView: View {
                 status: viewModel.status(),
                 projectedEndWeightKg: viewModel.projectedEndWeightKg(),
                 unit: unit,
-                readings: viewModel.allReadings
+                readings: viewModel.allReadings,
+                projection: viewModel.projection
             ) {
                 Task { await viewModel.markDone() }
             }

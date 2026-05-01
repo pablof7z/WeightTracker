@@ -14,6 +14,7 @@ struct ChartView: View {
     @State private var showGaps: Bool = true
     @State private var pinnedToCut: Bool = true
     @State private var colorBySleep: Bool = false
+    @State private var showFullscreen: Bool = false
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var range: ChartRange {
@@ -55,6 +56,8 @@ struct ChartView: View {
                             }
                         )
                         .padding(.horizontal)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showFullscreen = true }
 
                         if colorBySleep {
                             SleepOverlayLegend()
@@ -73,6 +76,26 @@ struct ChartView: View {
             }
             .navigationTitle("Chart")
             .onAppear { viewModel.reload(from: services.repository) }
+            .fullScreenCover(isPresented: $showFullscreen) {
+                FullscreenChartView(
+                    title: "Weight",
+                    subtitle: nil,
+                    series: [
+                        .init(
+                            name: "Actual",
+                            style: .actualSolidPrimary,
+                            points: viewModel.readings.map { ($0.date, $0.weightKg) }
+                        ),
+                        .init(
+                            name: "30-day avg",
+                            style: .averagePurple,
+                            points: viewModel.movingAverage.map { ($0.date, $0.kg) }
+                        )
+                    ],
+                    unit: weightUnit,
+                    targetWeightKg: viewModel.activeCut?.targetWeightKg
+                )
+            }
         }
     }
 

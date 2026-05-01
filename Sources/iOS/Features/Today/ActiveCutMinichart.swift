@@ -17,6 +17,8 @@ struct ActiveCutMinichart: View {
     let projection: CutProjectionResult
     let unit: WeightUnit
 
+    @State private var showFullscreen = false
+
     private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "MMM d"
@@ -46,7 +48,7 @@ struct ActiveCutMinichart: View {
 
     var body: some View {
         Button {
-            NotificationCenter.default.post(name: .openCutsTab, object: nil)
+            showFullscreen = true
         } label: {
             VStack(alignment: .leading, spacing: 6) {
                 header
@@ -180,7 +182,33 @@ struct ActiveCutMinichart: View {
             .glass(in: RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Active cut chart. Tap to see full Cut details.")
+        .accessibilityLabel("Active cut chart. Tap to open fullscreen.")
+        .fullScreenCover(isPresented: $showFullscreen) {
+            FullscreenChartView(
+                title: "Active Cut",
+                subtitle: "\(Self.dateFmt.string(from: active.startDate)) → \(Self.dateFmt.string(from: active.targetEndDate))",
+                series: buildSeries(),
+                unit: unit,
+                targetWeightKg: active.targetWeightKg
+            )
+        }
+    }
+
+    private func buildSeries() -> [FullscreenChartView.Series] {
+        var out: [FullscreenChartView.Series] = []
+        out.append(.init(name: "Actual", style: .actualSolidPrimary, points: inCutReadings.map { ($0.date, $0.weightKg) }))
+        if !projection.isTargetReached {
+            if let bestEnd = projection.bestEndKg {
+                out.append(.init(name: "Best", style: .projectionDashedGreen, points: [(projection.anchorDate, projection.anchorKg), (projection.targetEndDate, bestEnd)]))
+            }
+            if let worstEnd = projection.worstEndKg {
+                out.append(.init(name: "Worst", style: .projectionDashedRed, points: [(projection.anchorDate, projection.anchorKg), (projection.targetEndDate, worstEnd)]))
+            }
+            if !projection.avgPath.isEmpty {
+                out.append(.init(name: "Avg", style: .projectionSolidBlue, points: projection.avgPath))
+            }
+        }
+        return out
     }
 
     private var header: some View {

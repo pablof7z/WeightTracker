@@ -26,6 +26,7 @@
 		2DD48423630D2DDF12B47ED0 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88663F7427B9D9226727C273 /* AppPreferences.swift */; };
 		2E8E0FC1C032557EF6F8F585 /* WipeAllSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58AFD2B5A1E27647DD58BFA /* WipeAllSheet.swift */; };
 		2F1D950AF8A1C65840E3C4F7 /* ActiveCutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB0F89A626C378086B6F440 /* ActiveCutStore.swift */; };
+		2F864632C360E3B960F9C455 /* FullscreenChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2C1CB0F4BF104B7D9054D5 /* FullscreenChart.swift */; };
 		31C0FFCDE18E3F7192FD1FAD /* RemindersSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE956A8881D2EC0C108E31A1 /* RemindersSettingsView.swift */; };
 		342D86FF413E003D624EC15D /* ExportCSVSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E7D426EA7AB76BDF8D761F /* ExportCSVSheet.swift */; };
 		3630166751F8C3686872CD1D /* ModelContainerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */; };
@@ -111,6 +112,7 @@
 		E455B2D98C0FFED47B47ABB2 /* CutsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82656A20FFD2B09430FD206 /* CutsViewModel.swift */; };
 		E88B0B4292E155914476E1DF /* TodayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB81FF4D99BC5DECAAFF13D /* TodayViewModel.swift */; };
 		E8ACA6A45CC5938D41A24FC0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B67C0FF305F635FE93305906 /* PrivacyInfo.xcprivacy */; };
+		E97D783DBD98C650C3BE36BA /* CutProjectionChartContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FBDAE013B33AE9B7726F5C5 /* CutProjectionChartContent.swift */; };
 		EA70D69C27553DC63B3A7C65 /* OnboardingCut.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB1CA5833F194B00D42438EC /* OnboardingCut.swift */; };
 		EBCEFD8250BE93D59F8E3B09 /* RemindersSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 961E30BD0A86D4BCDEF5E26C /* RemindersSettingsSection.swift */; };
 		ECAE9FDC40F11D3C3C4D53D7 /* WeightChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC6183B9AD63226DDC54D6E5 /* WeightChart.swift */; };
@@ -162,6 +164,7 @@
 		2AADE6A603A3462CDA171429 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2B5DFE75A4F90C056C4A41A0 /* DeleteRangeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeleteRangeSheet.swift; sourceTree = "<group>"; };
 		2F94EC41A47C8E84605BB138 /* ActiveCutCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCutCard.swift; sourceTree = "<group>"; };
+		2FBDAE013B33AE9B7726F5C5 /* CutProjectionChartContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutProjectionChartContent.swift; sourceTree = "<group>"; };
 		316BA28A697280C75906DF5D /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		323AA207967785DEB21CF800 /* Cluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cluster.swift; sourceTree = "<group>"; };
 		32D7278094BFFC6DD7B42A10 /* CutsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutsView.swift; sourceTree = "<group>"; };
@@ -234,6 +237,7 @@
 		E7B6E4F9BA240C6FCE7B3B19 /* EditCutSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCutSheet.swift; sourceTree = "<group>"; };
 		EB98B44B5F210DC2141981C7 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		EC6183B9AD63226DDC54D6E5 /* WeightChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightChart.swift; sourceTree = "<group>"; };
+		ED2C1CB0F4BF104B7D9054D5 /* FullscreenChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullscreenChart.swift; sourceTree = "<group>"; };
 		F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriftEstimator.swift; sourceTree = "<group>"; };
 		FB1CA5833F194B00D42438EC /* OnboardingCut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCut.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -377,6 +381,8 @@
 			children = (
 				706CFB73D30C301DD4679BF2 /* ActiveCutMinichart.swift */,
 				BDE678CB61C4C50F510F4FD9 /* ConfirmationCard.swift */,
+				2FBDAE013B33AE9B7726F5C5 /* CutProjectionChartContent.swift */,
+				ED2C1CB0F4BF104B7D9054D5 /* FullscreenChart.swift */,
 				41A6CA8A241A74E61AAB2518 /* NumericPad.swift */,
 				99DFBAF64EB896AA0611A3C9 /* OptionalDetailsRow.swift */,
 				BBC72524D70DFFE6A05C1D9B /* TodayView.swift */,
@@ -681,6 +687,7 @@
 				3F6ABC41A5F6F1CC3E4E85FF /* Cut.swift in Sources */,
 				5178402B720BD8ADEA206581 /* CutInlineChart.swift in Sources */,
 				B21652B0CD195D615A00F798 /* CutProjection.swift in Sources */,
+				E97D783DBD98C650C3BE36BA /* CutProjectionChartContent.swift in Sources */,
 				4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */,
 				E455B2D98C0FFED47B47ABB2 /* CutsViewModel.swift in Sources */,
 				4A1D4A0A86447FAA5874E617 /* DataSettingsSection.swift in Sources */,
@@ -694,6 +701,7 @@
 				1C8076B276A7BCE1EEC12101 /* EraSummary.swift in Sources */,
 				4C8AD4070A912E9F24545358 /* EraSummaryTable.swift in Sources */,
 				342D86FF413E003D624EC15D /* ExportCSVSheet.swift in Sources */,
+				2F864632C360E3B960F9C455 /* FullscreenChart.swift in Sources */,
 				EEC1648B41DDC5A9A4531E88 /* Gap.swift in Sources */,
 				FE850E510164631B9A9607D9 /* GapAnalyzer.swift in Sources */,
 				3B04EB3EECA963AE465D7C7C /* GapDetailSheet.swift in Sources */,
