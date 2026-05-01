@@ -4,11 +4,8 @@ import Combine
 struct NumericPad: View {
     @Binding var value: Double
     let unitSymbol: String
-    /// Step for tap (default ±0.1)
     var tapStep: Double = 0.1
-    /// Step for long-press (default ±1.0)
     var longPressStep: Double = 1.0
-    /// Optional: tap on the number to toggle unit
     var onUnitTap: (() -> Void)? = nil
 
     var body: some View {

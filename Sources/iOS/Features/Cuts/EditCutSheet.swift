@@ -37,8 +37,6 @@ struct EditCutSheet: View {
         return nil
     }
 
-    /// Has the user nudged the target weight away from the original cut's
-    /// target? If so, we show a non-blocking banner offering to review macros.
     private var targetChanged: Bool {
         let originalDisplay = UnitConvert.displayWeight(kg: original.targetWeightKg, in: unit)
         return abs(targetDisplayWeight - originalDisplay) >= 0.05

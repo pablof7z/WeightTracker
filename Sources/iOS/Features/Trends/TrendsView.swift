@@ -39,6 +39,7 @@ struct TrendsView: View {
             Image(systemName: "chart.line.uptrend.xyaxis")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("No trends yet")
                 .font(.headline)
             Text("Log a few weights and your trend insights will appear here.")

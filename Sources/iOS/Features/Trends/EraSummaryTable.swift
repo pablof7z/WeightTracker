@@ -93,8 +93,7 @@ struct EraSummaryTable: View {
 
     private func signedDelta(lb: Double) -> String {
         let v = weightUnit == .lbs ? lb : UnitConvert.lbToKg(lb)
-        let prefix = v >= 0 ? "+" : ""
-        return "\(prefix)\(String(format: "%.1f", v))"
+        return String(format: "%+.1f", v)
     }
 
     private func percent(_ ratio: Double) -> String {

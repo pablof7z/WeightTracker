@@ -290,6 +290,7 @@ private struct OpenRouterModelRow: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.accentColor)
                             .imageScale(.small)
+                            .accessibilityHidden(true)
                     }
                 }
 
@@ -492,10 +493,7 @@ private struct ModelBadge: View {
             .lineLimit(1)
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color(.tertiarySystemFill))
-            )
+            .glass(in: Capsule())
     }
 }
 

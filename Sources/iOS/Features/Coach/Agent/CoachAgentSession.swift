@@ -31,7 +31,8 @@ final class CoachAgentSession: ObservableObject {
         model: String = AppConstants.defaultOpenRouterModel,
         maxTurns: Int = 8,
         activeCutProvider: @escaping () -> ActiveCut? = { ActiveCutStore.load() },
-        onMutation: (() -> Void)? = nil
+        onMutation: (() -> Void)? = nil,
+        recordMemory: ((String) throws -> CoachAgentMemory)? = nil
     ) {
         self.client = client
         self.auditStore = auditStore
@@ -44,7 +45,8 @@ final class CoachAgentSession: ObservableObject {
             macroUntrackedRangeStore: macroUntrackedRangeStore,
             auditStore: auditStore,
             activeCutProvider: activeCutProvider,
-            onMutation: onMutation
+            onMutation: onMutation,
+            recordMemory: recordMemory
         )
     }
 
@@ -89,7 +91,14 @@ final class CoachAgentSession: ObservableObject {
         }
 
         var messages: [[String: Any]] = [
-            ["role": "system", "content": CoachAgentPrompt.systemMessage(snapshotJSON: snapshotJSON)],
+            [
+                "role": "system",
+                "content": CoachAgentPrompt.systemMessage(
+                    snapshotJSON: snapshotJSON,
+                    agentDefinition: CoachNostrAgentSettings.load().systemPrompt,
+                    memories: CoachNostrAgentState.load().memories
+                )
+            ],
             ["role": "user", "content": trimmed]
         ]
         var toolCallCount = 0
@@ -240,21 +249,35 @@ final class CoachAgentSession: ObservableObject {
 }
 
 private enum CoachAgentPrompt {
-    static let version = "coach-agent-v1"
+    static let version = "coach-agent-v2"
 
-    static func systemMessage(snapshotJSON: Data) -> String {
+    static func systemMessage(
+        snapshotJSON: Data,
+        agentDefinition: String = CoachNostrAgentSettings.defaultSystemPrompt,
+        memories: [CoachAgentMemory] = []
+    ) -> String {
         let snapshot = String(data: snapshotJSON, encoding: .utf8) ?? "{}"
+        let trimmedDefinition = agentDefinition.trimmingCharacters(in: .whitespacesAndNewlines)
+        let definitionBlock = trimmedDefinition.isEmpty ? "" : """
+
+        Agent definition:
+        \(trimmedDefinition)
+        """
+        let memoryLines = memories.prefix(12).map { "- \($0.text)" }.joined(separator: "\n")
+        let memoriesBlock = memoryLines.isEmpty ? "" : """
+
+        Agent memories:
+        \(memoryLines)
+        """
         return """
         You are the WeightTracker coach agent runtime for a deliberate weight cut.
-
-        Product voice:
-        - Be factual and terse.
-        - No encouragement, praise, pep talk, moral judgment, streak language, or filler.
-        - When data is missing, ask for the smallest useful missing detail.
+        \(definitionBlock)
+        \(memoriesBlock)
 
         Tool policy:
         - Prefer read tools before mutations when the current state is ambiguous.
-        - Only mutate through these safe tools: append_coach_note, replace_current_macro_plan, log_macro_deviation, mark_untracked_range.
+        - Only mutate through these safe tools: append_coach_note, record_memory, replace_current_macro_plan, log_macro_deviation, mark_untracked_range.
+        - Use record_memory only for stable facts that should affect future coach conversations.
         - Do not invent readings, sleep, activity, food logs, or macro adherence.
         - There is no persist_coach_run tool. Run, note, and tool-call persistence is handled by the host audit store.
         - If a mutation is rejected, use the tool error to self-correct once or explain the blocker.

@@ -1,15 +1,12 @@
 import SwiftUI
 import Charts
 
-/// Small inline weight chart for a cut window, used inside Cut cards.
 struct CutInlineChart: View {
     let readings: [Reading]
     let startDate: Date
     let endDate: Date
     let unit: WeightUnit
-    /// Optional target weight to draw as a dashed horizontal line.
     var targetWeightKg: Double? = nil
-    /// Optional starting weight to draw as a dashed horizontal line.
     var startWeightKg: Double? = nil
 
     private var inWindow: [Reading] {
@@ -42,6 +39,7 @@ struct CutInlineChart: View {
             HStack(spacing: 8) {
                 Image(systemName: "chart.xyaxis.line")
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 Text("No readings in this period")
                     .font(.caption)
                     .foregroundStyle(.secondary)

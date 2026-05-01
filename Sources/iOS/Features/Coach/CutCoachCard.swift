@@ -182,7 +182,7 @@ struct CutCoachCard: View {
                                 .font(.caption.weight(.medium))
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
-                                .background(.regularMaterial, in: Capsule())
+                                .glass(in: Capsule())
                         }
                         .buttonStyle(.plain)
                     }

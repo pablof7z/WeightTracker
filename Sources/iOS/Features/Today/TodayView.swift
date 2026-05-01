@@ -205,6 +205,13 @@ struct TodayView: View {
 
     // MARK: - Title
 
+    private static let weekdayFormatter: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "EEEE"; return f
+    }()
+    private static let mediumDateFormatter: DateFormatter = {
+        let f = DateFormatter(); f.dateStyle = .medium; return f
+    }()
+
     private var cutDayNumber: Int? {
         guard let cut = viewModel.activeCut else { return nil }
         let cal = Calendar.current
@@ -226,20 +233,14 @@ struct TodayView: View {
         if cal.isDateInYesterday(viewModel.date) { return "Yesterday" }
         let daysAgo = cal.dateComponents([.day], from: viewModel.date, to: Date()).day ?? 0
         if daysAgo > 0 && daysAgo < 7 {
-            let fmt = DateFormatter()
-            fmt.dateFormat = "EEEE"
-            return fmt.string(from: viewModel.date)
+            return Self.weekdayFormatter.string(from: viewModel.date)
         }
-        let fmt = DateFormatter()
-        fmt.dateStyle = .medium
-        return fmt.string(from: viewModel.date)
+        return Self.mediumDateFormatter.string(from: viewModel.date)
     }
 
     private var subtitleText: String {
         if cutDayNumber != nil {
-            let fmt = DateFormatter()
-            fmt.dateStyle = .medium
-            return fmt.string(from: viewModel.date)
+            return Self.mediumDateFormatter.string(from: viewModel.date)
         }
         return viewModel.hasEntry ? "Logged" : "No entry"
     }

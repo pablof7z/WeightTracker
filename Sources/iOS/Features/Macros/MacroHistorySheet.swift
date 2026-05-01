@@ -66,7 +66,7 @@ struct MacroHistorySheet: View {
                             Text(p.tag.rawValue)
                                 .font(.caption2)
                                 .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.15), in: Capsule())
+                                .glass(in: Capsule())
                         }
                         Text(rangeText(start: p.startDate, end: p.endDate))
                             .font(.caption)

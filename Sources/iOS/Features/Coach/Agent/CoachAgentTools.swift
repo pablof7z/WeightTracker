@@ -65,13 +65,14 @@ private struct CoachToolEnvelope: Encodable {
 }
 
 enum CoachTool: String, CaseIterable, Sendable {
-    static let schemaVersion = "coach-tools-v1"
+    static let schemaVersion = "coach-tools-v2"
 
     case getCoachSnapshot = "get_coach_snapshot"
     case listMacroPlanPeriods = "list_macro_plan_periods"
     case listMacroDeviations = "list_macro_deviations"
     case listUntrackedRanges = "list_untracked_ranges"
     case appendCoachNote = "append_coach_note"
+    case recordMemory = "record_memory"
     case replaceCurrentMacroPlan = "replace_current_macro_plan"
     case logMacroDeviation = "log_macro_deviation"
     case markUntrackedRange = "mark_untracked_range"
@@ -139,6 +140,17 @@ enum CoachTool: String, CaseIterable, Sendable {
                         "visibility": .string(description: "Visibility for the note.", enumValues: ["userVisible", "auditOnly"]),
                         "cutStartDate": .string(description: "Optional yyyy-MM-dd cut start. Omit to use the active cut."),
                         "day": .string(description: "Optional yyyy-MM-dd day the note refers to.")
+                    ],
+                    required: ["text"]
+                )
+            )
+        case .recordMemory:
+            return .init(
+                name: rawValue,
+                description: "Persist a durable factual memory that should be available in future coach agent prompts. Use sparingly for stable preferences, constraints, or recurring context.",
+                parameters: .object(
+                    properties: [
+                        "text": .string(description: "Stable factual memory text, 1000 characters or fewer.")
                     ],
                     required: ["text"]
                 )
@@ -219,6 +231,10 @@ struct AppendCoachNoteArgs: Decodable {
     var day: String?
 }
 
+struct RecordMemoryArgs: Decodable {
+    var text: String
+}
+
 struct ReplaceCurrentMacroPlanArgs: Decodable {
     var cutStartDate: String?
     var kcal: Int
@@ -281,6 +297,10 @@ struct CoachNoteMutationResult: Codable, Equatable, Sendable {
     var visibility: String
     var cutStartDate: Date?
     var day: Date?
+}
+
+struct CoachMemoryMutationResult: Codable, Equatable, Sendable {
+    var memory: CoachAgentMemory
 }
 
 struct CoachMacroPlanMutationResult: Codable, Equatable, Sendable {

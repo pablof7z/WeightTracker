@@ -25,6 +25,7 @@ struct CoachAgentToolDispatcher {
     let auditStore: CoachAgentAuditStore
     let activeCutProvider: () -> ActiveCut?
     let onMutation: (() -> Void)?
+    let recordMemory: ((String) throws -> CoachAgentMemory)?
     let nowProvider: () -> Date
     let calendar: Calendar
 
@@ -36,6 +37,7 @@ struct CoachAgentToolDispatcher {
         auditStore: CoachAgentAuditStore,
         activeCutProvider: @escaping () -> ActiveCut? = { ActiveCutStore.load() },
         onMutation: (() -> Void)? = nil,
+        recordMemory: ((String) throws -> CoachAgentMemory)? = nil,
         nowProvider: @escaping () -> Date = Date.init,
         calendar: Calendar = .current
     ) {
@@ -46,6 +48,7 @@ struct CoachAgentToolDispatcher {
         self.auditStore = auditStore
         self.activeCutProvider = activeCutProvider
         self.onMutation = onMutation
+        self.recordMemory = recordMemory
         self.nowProvider = nowProvider
         self.calendar = calendar
     }
@@ -192,6 +195,9 @@ struct CoachAgentToolDispatcher {
         case .appendCoachNote:
             let args = try decode(argsJSON, as: AppendCoachNoteArgs.self)
             return try await appendCoachNote(args, runID: runID)
+        case .recordMemory:
+            let args = try decode(argsJSON, as: RecordMemoryArgs.self)
+            return try recordMemory(args)
         case .replaceCurrentMacroPlan:
             let args = try decode(argsJSON, as: ReplaceCurrentMacroPlanArgs.self)
             return try replaceCurrentMacroPlan(args)
@@ -279,6 +285,28 @@ struct CoachAgentToolDispatcher {
             data: resultData,
             targetEntity: "coach_note",
             targetID: noteID,
+            beforeJSON: nil,
+            afterJSON: resultData
+        )
+    }
+
+    private func recordMemory(_ args: RecordMemoryArgs) throws -> DispatchExecutionResult {
+        guard let recordMemory else {
+            throw CoachToolDispatchError.missingContext("Agent memory storage is unavailable")
+        }
+        let text = args.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            throw CoachToolDispatchError.invalidArgs("record_memory.text cannot be empty")
+        }
+        guard text.count <= 1_000 else {
+            throw CoachToolDispatchError.invalidArgs("record_memory.text must be 1000 characters or fewer")
+        }
+        let memory = try recordMemory(text)
+        let resultData = try encode(CoachMemoryMutationResult(memory: memory))
+        return DispatchExecutionResult(
+            data: resultData,
+            targetEntity: "agent_memory",
+            targetID: memory.id,
             beforeJSON: nil,
             afterJSON: resultData
         )

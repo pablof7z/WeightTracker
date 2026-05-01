@@ -190,6 +190,8 @@
 		FA61ABC85E1C02EC720D96C6 /* MacroUntrackedRangeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F4681672989E29283A409E /* MacroUntrackedRangeStore.swift */; };
 		FE850E510164631B9A9607D9 /* GapAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58D8AAC80C055C280257CBC /* GapAnalyzer.swift */; };
 		FF68638BE51E3AF56EC2C032 /* CoachNostrSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2019E2250330C0F991662E7C /* CoachNostrSettingsView.swift */; };
+		A3F7E291CC4B58D7FF029E1A /* CostLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F8D302DD5C69E8A01300F2 /* CostLedger.swift */; };
+		C5F9A413EE6D7AF9B1241030 /* UsageCostSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6A0B524FF7E8B0AC2352141 /* UsageCostSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -357,6 +359,8 @@
 		FA19B51973F7C1686F33E286 /* MacroUntrackedRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroUntrackedRange.swift; sourceTree = "<group>"; };
 		FB1CA5833F194B00D42438EC /* OnboardingCut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCut.swift; sourceTree = "<group>"; };
 		FD57DBFB48B45BB66ED3DB29 /* NostrRelay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrRelay.swift; sourceTree = "<group>"; };
+		B4F8D302DD5C69E8A01300F2 /* CostLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CostLedger.swift; sourceTree = "<group>"; };
+		D6A0B524FF7E8B0AC2352141 /* UsageCostSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageCostSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -432,6 +436,7 @@
 				BE956A8881D2EC0C108E31A1 /* RemindersSettingsView.swift */,
 				B8BA321C930D8536E473C82B /* SettingsView.swift */,
 				B58AFD2B5A1E27647DD58BFA /* WipeAllSheet.swift */,
+				D6A0B524FF7E8B0AC2352141 /* UsageCostSettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -659,6 +664,7 @@
 				0DF9A3115764DAF26A640622 /* HTTP.swift */,
 				770A8DC9999BEF20A1736C0C /* OpenRouterModelCatalog.swift */,
 				9A8D24E1EC41DDF0D475F66D /* ProviderError.swift */,
+				B4F8D302DD5C69E8A01300F2 /* CostLedger.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -913,6 +919,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB71335E779058F26C2122A7 /* AISettingsView.swift in Sources */,
+				C5F9A413EE6D7AF9B1241030 /* UsageCostSettingsView.swift in Sources */,
 				40B015C6912B734AD622149A /* AboutSection.swift in Sources */,
 				D8264C6227F355FF9317D35F /* AboutView.swift in Sources */,
 				66018E562743FA6CC5DD60DA /* ActiveCutCard.swift in Sources */,
@@ -944,6 +951,7 @@
 				22075804F805319A506DF8CC /* CoachNostrAgentService.swift in Sources */,
 				FF68638BE51E3AF56EC2C032 /* CoachNostrSettingsView.swift in Sources */,
 				43B283054884E8D66F36E505 /* CoachOpenRouterClient.swift in Sources */,
+				A3F7E291CC4B58D7FF029E1A /* CostLedger.swift in Sources */,
 				B181C74CA78B9B1834B2A49C /* ConfirmationCard.swift in Sources */,
 				3F6ABC41A5F6F1CC3E4E85FF /* Cut.swift in Sources */,
 				9FE7CA28F9636EC6CF4A8B0C /* CutCoach.swift in Sources */,

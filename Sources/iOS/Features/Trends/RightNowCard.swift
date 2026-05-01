@@ -76,8 +76,7 @@ struct RightNowCard: View {
                 .foregroundStyle(.secondary)
             if let v = valueLb {
                 let displayDelta = weightUnit == .lbs ? v : UnitConvert.lbToKg(v)
-                let prefix = displayDelta >= 0 ? "+" : ""
-                Text("\(prefix)\(formatNumber(displayDelta)) \(weightUnit.symbol)")
+                Text("\(String(format: "%+.1f", displayDelta)) \(weightUnit.symbol)")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(deltaColor(displayDelta))
             } else {
@@ -105,8 +104,7 @@ struct RightNowCard: View {
     private var gapMessage: some View {
         if let days = viewModel.gapDaysSinceLast, let drift = viewModel.estimatedDriftLb {
             let driftDisplay = weightUnit == .lbs ? drift : UnitConvert.lbToKg(drift)
-            let prefix = driftDisplay >= 0 ? "+" : ""
-            Text("It's been \(days) day\(days == 1 ? "" : "s") since you last logged. Based on your history, your weight has likely drifted \(prefix)\(formatNumber(driftDisplay)) \(weightUnit.symbol).")
+            Text("It's been \(days) day\(days == 1 ? "" : "s") since you last logged. Based on your history, your weight has likely drifted \(String(format: "%+.1f", driftDisplay)) \(weightUnit.symbol).")
                 .font(.subheadline)
                 .foregroundStyle(.primary)
         }

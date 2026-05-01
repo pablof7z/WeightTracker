@@ -54,7 +54,7 @@ struct DriftBarChart: View {
                             .foregroundStyle(.primary)
                             .monospacedDigit()
                             .padding(4)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                            .glass(in: RoundedRectangle(cornerRadius: 6))
                     }
                 }
             }

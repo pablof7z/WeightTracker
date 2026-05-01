@@ -5,12 +5,7 @@ extension Notification.Name {
     static let openCutsTab = Notification.Name("openCutsTab")
 }
 
-/// Compact 100pt-tall chart on the Today screen showing the active cut's
-/// trajectory plus best/avg/worst projections to the target end date.
-///
-/// The avg path carries real residual wiggle (deterministic per cut start) so
-/// the user can see what realistic week-to-week variation looks like, instead
-/// of a falsely smooth line.
+/// Avg path carries deterministic residual wiggle so users see realistic week-to-week variation, not a falsely smooth projection.
 struct ActiveCutMinichart: View {
     let active: ActiveCut
     let inCutReadings: [Reading]
@@ -54,12 +49,10 @@ struct ActiveCutMinichart: View {
                 header
 
                 Chart {
-                    // Target line (dashed gray).
                     RuleMark(y: .value("Target", display(active.targetWeightKg)))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
                         .foregroundStyle(.gray)
 
-                    // Actuals (solid line + dots in primary).
                     ForEach(inCutReadings, id: \.id) { r in
                         LineMark(
                             x: .value("Date", r.date),
@@ -79,7 +72,6 @@ struct ActiveCutMinichart: View {
                     }
 
                     if !projection.isTargetReached {
-                        // Best line (dashed green): two endpoints.
                         if let bestEnd = projection.bestEndKg {
                             LineMark(
                                 x: .value("Date", projection.anchorDate),
@@ -100,7 +92,6 @@ struct ActiveCutMinichart: View {
                             .interpolationMethod(.linear)
                         }
 
-                        // Worst line (dashed muted red).
                         if let worstEnd = projection.worstEndKg {
                             LineMark(
                                 x: .value("Date", projection.anchorDate),
@@ -134,7 +125,6 @@ struct ActiveCutMinichart: View {
                         }
                     }
 
-                    // Anchor donut: white fill + blue stroke (overlay two PointMarks).
                     PointMark(
                         x: .value("Date", projection.anchorDate),
                         y: .value("Weight", display(projection.anchorKg))
@@ -151,7 +141,6 @@ struct ActiveCutMinichart: View {
                     .symbol(.circle.strokeBorder(lineWidth: 2))
                     .foregroundStyle(Self.avgColor)
 
-                    // Target reached annotation.
                     if projection.isTargetReached {
                         PointMark(
                             x: .value("Date", projection.anchorDate),

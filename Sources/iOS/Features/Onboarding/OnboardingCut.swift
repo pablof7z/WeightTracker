@@ -24,6 +24,7 @@ struct OnboardingCut: View {
                 Image(systemName: "scissors")
                     .font(.system(size: 48))
                     .foregroundStyle(.green)
+                    .accessibilityHidden(true)
                 Text("Pick a cut target (optional)")
                     .font(.title.bold())
                 Text("Set a target weight and a duration. We'll track your daily pace and project where you'll land — you can adjust either anytime.")

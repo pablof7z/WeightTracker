@@ -9,6 +9,7 @@ struct ConfirmationCard: View {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
+                    .accessibilityHidden(true)
                 Text("Saved")
                     .font(.headline)
                 Spacer()
@@ -50,6 +51,7 @@ struct ConfirmationCard: View {
             HStack {
                 Image(systemName: "calendar")
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 Text(confirmation.date, format: .dateTime.month(.abbreviated).day())
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
