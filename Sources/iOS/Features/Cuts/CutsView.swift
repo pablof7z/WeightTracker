@@ -6,7 +6,7 @@ struct CutsView: View {
     @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
     @State private var showStartSheet = false
     @State private var showEditSheet = false
-    @State private var showCoachAudit = false
+    @State private var showHistory = false
 
     private var unit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
 
@@ -15,12 +15,18 @@ struct CutsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     activeSection
-                    historicalSection
                 }
                 .padding()
             }
             .navigationTitle("Cuts")
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showHistory = true
+                    } label: {
+                        Label("History", systemImage: "clock")
+                    }
+                }
                 if viewModel.activeCut == nil {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
@@ -60,13 +66,10 @@ struct CutsView: View {
                     )
                 }
             }
-            .sheet(isPresented: $showCoachAudit) {
-                auditSheet
+            .sheet(isPresented: $showHistory) {
+                historySheet
             }
             .onAppear { viewModel.reload() }
-            .onReceive(services.cutCoach.$recommendation) { recommendation in
-                viewModel.applyCutCoachRecommendation(recommendation)
-            }
             .refreshable { viewModel.reload() }
         }
     }
@@ -86,13 +89,6 @@ struct CutsView: View {
                     projection: viewModel.projection
                 ) {
                     Task { await viewModel.markDone() }
-                }
-
-                if let plan = viewModel.cutCoachPlan {
-                    CutCoachCard(
-                        plan: plan,
-                        onShowAudit: { showCoachAudit = true }
-                    )
                 }
 
                 MacroCard(cutStartDate: cut.startDate)
@@ -126,32 +122,40 @@ struct CutsView: View {
         }
     }
 
-    private var auditSheet: some View {
-        CoachAuditSheet()
-            .environmentObject(services)
-    }
-
-    @ViewBuilder
-    private var historicalSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Historical Cuts")
-                .font(.headline)
-            if viewModel.historicalCuts.isEmpty {
-                Text("Past weight-loss runs appear here automatically once enough history is logged.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .glass(in: RoundedRectangle(cornerRadius: 12))
-            } else {
-                ForEach(viewModel.historicalCuts) { cut in
-                    HistoricalCutCard(
-                        cut: cut,
-                        unit: unit,
-                        readings: viewModel.allReadings
-                    )
+    private var historySheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    if viewModel.historicalCuts.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
+                            Text("No history yet")
+                                .font(.headline)
+                            Text("Past weight-loss runs appear here automatically once enough history is logged.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(40)
+                        .glass(in: RoundedRectangle(cornerRadius: 16))
+                    } else {
+                        ForEach(viewModel.historicalCuts) { cut in
+                            HistoricalCutCard(
+                                cut: cut,
+                                unit: unit,
+                                readings: viewModel.allReadings
+                            )
+                        }
+                    }
                 }
+                .padding()
             }
+            .navigationTitle("Cut History")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
