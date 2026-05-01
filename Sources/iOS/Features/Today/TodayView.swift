@@ -17,9 +17,11 @@ struct TodayView: View {
     @State private var swipeAccum: CGFloat = 0
     @State private var dismissTask: Task<Void, Never>?
     @State private var saveTask: Task<Void, Never>?
+    @State private var weightInputActive = false
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var bodyUnit: BodyUnit { BodyUnit(rawValue: bodyUnitRaw) ?? .inches }
+    private var showWeightControls: Bool { !viewModel.hasEntry || weightInputActive }
 
     private var canGoForward: Bool {
         Calendar.current.startOfDay(for: viewModel.date) < Calendar.current.startOfDay(for: Date())
@@ -36,13 +38,19 @@ struct TodayView: View {
                         value: Binding(
                             get: { viewModel.displayValue },
                             set: { newValue in
+                                if viewModel.hasEntry {
+                                    weightInputActive = true
+                                }
                                 viewModel.displayValue = newValue
                                 viewModel.bumpEditTick()
                             }
                         ),
                         unitSymbol: weightUnit.symbol,
+                        controlsVisible: showWeightControls,
+                        onValueTap: viewModel.hasEntry ? { revealWeightControls() } : nil,
                         onUnitTap: toggleUnit
                     )
+                    .animation(.easeInOut(duration: 0.18), value: showWeightControls)
                     .opacity(viewModel.hasEntry ? 1.0 : 0.45)
                     .padding(.top, 16)
 
@@ -173,12 +181,14 @@ struct TodayView: View {
             .onAppear {
                 if !didLoad {
                     viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+                    weightInputActive = false
                     reloadTodayCoachNote()
                     didLoad = true
                 }
             }
             .onChange(of: weightUnitRaw) { _, _ in
                 viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+                weightInputActive = false
                 reloadTodayCoachNote()
             }
             .onChange(of: viewModel.lastSaved) { _, newValue in
@@ -282,6 +292,7 @@ struct TodayView: View {
         let load = {
             withAnimation(.easeInOut(duration: 0.2)) {
                 viewModel.lastSaved = nil
+                weightInputActive = false
                 viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
                 reloadTodayCoachNote()
             }
@@ -302,6 +313,13 @@ struct TodayView: View {
         let kg = UnitConvert.storeWeight(viewModel.displayValue, from: weightUnit)
         viewModel.displayValue = (UnitConvert.displayWeight(kg: kg, in: next) * 10.0).rounded() / 10.0
         weightUnitRaw = next.rawValue
+    }
+
+    private func revealWeightControls() {
+        guard viewModel.hasEntry else { return }
+        withAnimation(.easeInOut(duration: 0.18)) {
+            weightInputActive = true
+        }
     }
 
     private func startVoiceCheckIn() {

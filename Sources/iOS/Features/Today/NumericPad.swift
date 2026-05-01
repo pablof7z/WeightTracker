@@ -6,52 +6,63 @@ struct NumericPad: View {
     let unitSymbol: String
     var tapStep: Double = 0.1
     var longPressStep: Double = 1.0
+    var controlsVisible: Bool = true
+    var onValueTap: (() -> Void)? = nil
     var onUnitTap: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 12) {
             Button {
+                onValueTap?()
+            } label: {
+                Text(formatted)
+                    .font(.system(size: 96, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .foregroundStyle(.primary)
+            }
+            .buttonStyle(.plain)
+            .disabled(onValueTap == nil)
+            .accessibilityLabel(onValueTap != nil ? "Current weight \(formatted) \(unitSymbol). Tap to edit." : "Current weight \(formatted) \(unitSymbol).")
+
+            Button {
                 onUnitTap?()
             } label: {
-                VStack(spacing: 4) {
-                    Text(formatted)
-                        .font(.system(size: 96, weight: .semibold, design: .rounded))
-                        .monospacedDigit()
-                        .minimumScaleFactor(0.5)
-                        .lineLimit(1)
-                        .foregroundStyle(.primary)
-                    HStack(spacing: 4) {
-                        Text(unitSymbol)
-                            .font(.title3.weight(.medium))
-                            .foregroundStyle(.secondary)
-                        if onUnitTap != nil {
-                            Image(systemName: "arrow.left.arrow.right")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
+                HStack(spacing: 4) {
+                    Text(unitSymbol)
+                        .font(.title3.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    if onUnitTap != nil {
+                        Image(systemName: "arrow.left.arrow.right")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
                     }
                 }
             }
             .buttonStyle(.plain)
             .disabled(onUnitTap == nil)
-            .accessibilityLabel(onUnitTap != nil ? "Current weight \(formatted) \(unitSymbol). Tap to switch unit." : "Current weight \(formatted) \(unitSymbol).")
+            .accessibilityLabel(onUnitTap != nil ? "Current unit \(unitSymbol). Tap to switch unit." : "Current unit \(unitSymbol).")
 
-            LiquidGlassContainer(spacing: 28) {
-                HStack(spacing: 28) {
-                    PadButton(symbol: "minus") {
-                        value = clamped(round1(value - tapStep))
-                    } onLongPressTick: {
-                        value = clamped(round1(value - longPressStep))
-                    }
+            if controlsVisible {
+                LiquidGlassContainer(spacing: 28) {
+                    HStack(spacing: 28) {
+                        PadButton(symbol: "minus") {
+                            value = clamped(round1(value - tapStep))
+                        } onLongPressTick: {
+                            value = clamped(round1(value - longPressStep))
+                        }
 
-                    PadButton(symbol: "plus") {
-                        value = clamped(round1(value + tapStep))
-                    } onLongPressTick: {
-                        value = clamped(round1(value + longPressStep))
+                        PadButton(symbol: "plus") {
+                            value = clamped(round1(value + tapStep))
+                        } onLongPressTick: {
+                            value = clamped(round1(value + longPressStep))
+                        }
                     }
                 }
+                .padding(.top, 8)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            .padding(.top, 8)
         }
         .sensoryFeedback(.impact(weight: .light), trigger: value)
         .sensoryFeedback(.selection, trigger: unitSymbol)
