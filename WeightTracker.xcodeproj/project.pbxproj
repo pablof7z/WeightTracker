@@ -19,11 +19,14 @@
 		1CE12B2CEA376FF6E19D7AD5 /* LiquidGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F63296C48489DEFE67600DE /* LiquidGlass.swift */; };
 		20231178BB04FED8B18F3270 /* ICloudSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC5302916DBFE5717B94CE9 /* ICloudSettingsSection.swift */; };
 		20A9AA7D728673EBEB9684D5 /* DeleteRangeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B5DFE75A4F90C056C4A41A0 /* DeleteRangeSheet.swift */; };
+		23B6338B3ACDD4D11BCB2F25 /* DataSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1C3A773A1E53D2B4DDE18C /* DataSettingsView.swift */; };
 		27168DB595057CCFB03C9A25 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 316BA28A697280C75906DF5D /* Theme.swift */; };
 		290B1017B66FC3519267A9FA /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 316BA28A697280C75906DF5D /* Theme.swift */; };
+		2BC147896F0DDEE6D0926EA1 /* ICloudSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFAF0FF41333E3668D2EC219 /* ICloudSettingsView.swift */; };
 		2DD48423630D2DDF12B47ED0 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88663F7427B9D9226727C273 /* AppPreferences.swift */; };
 		2E8E0FC1C032557EF6F8F585 /* WipeAllSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58AFD2B5A1E27647DD58BFA /* WipeAllSheet.swift */; };
 		2F1D950AF8A1C65840E3C4F7 /* ActiveCutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB0F89A626C378086B6F440 /* ActiveCutStore.swift */; };
+		31C0FFCDE18E3F7192FD1FAD /* RemindersSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE956A8881D2EC0C108E31A1 /* RemindersSettingsView.swift */; };
 		342D86FF413E003D624EC15D /* ExportCSVSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E7D426EA7AB76BDF8D761F /* ExportCSVSheet.swift */; };
 		3630166751F8C3686872CD1D /* ModelContainerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */; };
 		383CF9A879B8629EABBFDD07 /* GapAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58D8AAC80C055C280257CBC /* GapAnalyzer.swift */; };
@@ -39,6 +42,7 @@
 		475E09F6DCC5FDF8F773CE18 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88663F7427B9D9226727C273 /* AppPreferences.swift */; };
 		48E93E160BB323D49A35F6A0 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */; };
 		4A1D4A0A86447FAA5874E617 /* DataSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96478037D9871087CA7134DE /* DataSettingsSection.swift */; };
+		4B57A3D8E48FA019AF429BE4 /* DisplaySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70C63917B079998021C2DB9 /* DisplaySettingsView.swift */; };
 		4B9B4B2C7F68EF6FCF826146 /* OptionalDetailsRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DFBAF64EB896AA0611A3C9 /* OptionalDetailsRow.swift */; };
 		4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D7278094BFFC6DD7B42A10 /* CutsView.swift */; };
 		4C8AD4070A912E9F24545358 /* EraSummaryTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490D47FB0B7A1C43B497D81B /* EraSummaryTable.swift */; };
@@ -99,6 +103,7 @@
 		CC2549824257017B38301223 /* DriftEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */; };
 		D5CEB2E240321E6559C221AB /* ClusterDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6A7869DAD317B65225D4C1D /* ClusterDetector.swift */; };
 		D70ECEF2C22E0E1F2ECCFA7C /* SleepHealthKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7F173B36708CA358984F10F /* SleepHealthKit.swift */; };
+		D8264C6227F355FF9317D35F /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB98B44B5F210DC2141981C7 /* AboutView.swift */; };
 		D9280A3E23887867E06FD19C /* WatchEntryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6A6A42C1DBDD86D5ABD0F6 /* WatchEntryViewModel.swift */; };
 		DA0BBA60D25FC9D1E82B17BA /* BackgroundTaskRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8885B77FE02003877B5CDD /* BackgroundTaskRegistration.swift */; };
 		DA9A262BAABC5F03F5B1990C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6EEEAF3E15B83A91F5A6AD9C /* Assets.xcassets */; };
@@ -114,6 +119,7 @@
 		F038D6C11ABD9581D00AB7FA /* ActiveCutMinichart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 706CFB73D30C301DD4679BF2 /* ActiveCutMinichart.swift */; };
 		F407BE8E27625E88405BADD5 /* Gap.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1419CA0A2E104910DA7109C /* Gap.swift */; };
 		F7588019980F3754ABB5CD1F /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323AA207967785DEB21CF800 /* Cluster.swift */; };
+		F9840EC41412ADCF76F72B8E /* HealthSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B411796641B6CA76D1D8B6F9 /* HealthSettingsView.swift */; };
 		F9E33D66EB89B292EA64EBDE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2AADE6A603A3462CDA171429 /* Assets.xcassets */; };
 		FE850E510164631B9A9607D9 /* GapAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58D8AAC80C055C280257CBC /* GapAnalyzer.swift */; };
 /* End PBXBuildFile section */
@@ -169,6 +175,7 @@
 		4B8885B77FE02003877B5CDD /* BackgroundTaskRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskRegistration.swift; sourceTree = "<group>"; };
 		52BBD06B7D5B4CDF8ACCE11F /* WatchEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchEntryView.swift; sourceTree = "<group>"; };
 		5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		5E1C3A773A1E53D2B4DDE18C /* DataSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSettingsView.swift; sourceTree = "<group>"; };
 		5F63296C48489DEFE67600DE /* LiquidGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlass.swift; sourceTree = "<group>"; };
 		65C9D9B90EE07BFC553AC57F /* ImportCSVSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportCSVSheet.swift; sourceTree = "<group>"; };
 		6A9016343CDFC01EAEB5DD55 /* Units.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Units.swift; sourceTree = "<group>"; };
@@ -196,8 +203,11 @@
 		A5C3AD389F5EBF5644F1E5F1 /* SleepCorrelation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCorrelation.swift; sourceTree = "<group>"; };
 		A67B3BC1FCBF8FC7D8FED316 /* TriggerEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriggerEvaluator.swift; sourceTree = "<group>"; };
 		A6A7869DAD317B65225D4C1D /* ClusterDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusterDetector.swift; sourceTree = "<group>"; };
+		A70C63917B079998021C2DB9 /* DisplaySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplaySettingsView.swift; sourceTree = "<group>"; };
 		A74A5961D6294D6263704636 /* SleepNight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepNight.swift; sourceTree = "<group>"; };
 		AEBCAABC049FD2C91791E723 /* ChartRangeButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartRangeButtons.swift; sourceTree = "<group>"; };
+		AFAF0FF41333E3668D2EC219 /* ICloudSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudSettingsView.swift; sourceTree = "<group>"; };
+		B411796641B6CA76D1D8B6F9 /* HealthSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSettingsView.swift; sourceTree = "<group>"; };
 		B58AFD2B5A1E27647DD58BFA /* WipeAllSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WipeAllSheet.swift; sourceTree = "<group>"; };
 		B67C0FF305F635FE93305906 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B8BA321C930D8536E473C82B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -205,6 +215,7 @@
 		BBC72524D70DFFE6A05C1D9B /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		BC29786B5FB91E692CEFBA16 /* CutInlineChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutInlineChart.swift; sourceTree = "<group>"; };
 		BDE678CB61C4C50F510F4FD9 /* ConfirmationCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationCard.swift; sourceTree = "<group>"; };
+		BE956A8881D2EC0C108E31A1 /* RemindersSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersSettingsView.swift; sourceTree = "<group>"; };
 		C2123E9C82B2C7B0FE5ADE0A /* DriftBarChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriftBarChart.swift; sourceTree = "<group>"; };
 		C58D8AAC80C055C280257CBC /* GapAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GapAnalyzer.swift; sourceTree = "<group>"; };
 		C7F173B36708CA358984F10F /* SleepHealthKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepHealthKit.swift; sourceTree = "<group>"; };
@@ -221,6 +232,7 @@
 		DE77AF97769C30641AE800A6 /* CSVUnitDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVUnitDetector.swift; sourceTree = "<group>"; };
 		DF32432F839E099D4B007C11 /* WeightTrackerWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WeightTrackerWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7B6E4F9BA240C6FCE7B3B19 /* EditCutSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCutSheet.swift; sourceTree = "<group>"; };
+		EB98B44B5F210DC2141981C7 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		EC6183B9AD63226DDC54D6E5 /* WeightChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightChart.swift; sourceTree = "<group>"; };
 		F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriftEstimator.swift; sourceTree = "<group>"; };
 		FB1CA5833F194B00D42438EC /* OnboardingCut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCut.swift; sourceTree = "<group>"; };
@@ -266,14 +278,20 @@
 			isa = PBXGroup;
 			children = (
 				20D03D9D69E40FDC7DD6993E /* AboutSection.swift */,
+				EB98B44B5F210DC2141981C7 /* AboutView.swift */,
 				96478037D9871087CA7134DE /* DataSettingsSection.swift */,
+				5E1C3A773A1E53D2B4DDE18C /* DataSettingsView.swift */,
 				2B5DFE75A4F90C056C4A41A0 /* DeleteRangeSheet.swift */,
 				8B20A53684278FADEF750FB2 /* DisplaySettingsSection.swift */,
+				A70C63917B079998021C2DB9 /* DisplaySettingsView.swift */,
 				95E7D426EA7AB76BDF8D761F /* ExportCSVSheet.swift */,
 				D3AEB1439E7547DAC2C7E782 /* HealthSettingsSection.swift */,
+				B411796641B6CA76D1D8B6F9 /* HealthSettingsView.swift */,
 				CAC5302916DBFE5717B94CE9 /* ICloudSettingsSection.swift */,
+				AFAF0FF41333E3668D2EC219 /* ICloudSettingsView.swift */,
 				65C9D9B90EE07BFC553AC57F /* ImportCSVSheet.swift */,
 				961E30BD0A86D4BCDEF5E26C /* RemindersSettingsSection.swift */,
+				BE956A8881D2EC0C108E31A1 /* RemindersSettingsView.swift */,
 				B8BA321C930D8536E473C82B /* SettingsView.swift */,
 				B58AFD2B5A1E27647DD58BFA /* WipeAllSheet.swift */,
 			);
@@ -643,6 +661,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				40B015C6912B734AD622149A /* AboutSection.swift in Sources */,
+				D8264C6227F355FF9317D35F /* AboutView.swift in Sources */,
 				66018E562743FA6CC5DD60DA /* ActiveCutCard.swift in Sources */,
 				F038D6C11ABD9581D00AB7FA /* ActiveCutMinichart.swift in Sources */,
 				7E81D27D9ADA7665A15F9FB1 /* ActiveCutStore.swift in Sources */,
@@ -665,8 +684,10 @@
 				4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */,
 				E455B2D98C0FFED47B47ABB2 /* CutsViewModel.swift in Sources */,
 				4A1D4A0A86447FAA5874E617 /* DataSettingsSection.swift in Sources */,
+				23B6338B3ACDD4D11BCB2F25 /* DataSettingsView.swift in Sources */,
 				20A9AA7D728673EBEB9684D5 /* DeleteRangeSheet.swift in Sources */,
 				C1264A874671AD0DC02670FB /* DisplaySettingsSection.swift in Sources */,
+				4B57A3D8E48FA019AF429BE4 /* DisplaySettingsView.swift in Sources */,
 				944C1B479BC590DEEDFEB7E4 /* DriftBarChart.swift in Sources */,
 				00EEB85EEA7FAD976F937D70 /* DriftEstimator.swift in Sources */,
 				5E9F709592D919747F7DE7CA /* EditCutSheet.swift in Sources */,
@@ -678,9 +699,11 @@
 				3B04EB3EECA963AE465D7C7C /* GapDetailSheet.swift in Sources */,
 				AC789BCEDA226C5B4BDE179E /* HealthKitManager.swift in Sources */,
 				C7BE969BB363B2DC3945A2A3 /* HealthSettingsSection.swift in Sources */,
+				F9840EC41412ADCF76F72B8E /* HealthSettingsView.swift in Sources */,
 				ADE5CE5B83F7F2F2DF8FAEB8 /* HistoricalCutCard.swift in Sources */,
 				12C33D93AE37E78396BAFE14 /* HistoricalCutDetector.swift in Sources */,
 				20231178BB04FED8B18F3270 /* ICloudSettingsSection.swift in Sources */,
+				2BC147896F0DDEE6D0926EA1 /* ICloudSettingsView.swift in Sources */,
 				A46D2DFFD61436D65D03B5A8 /* ImportCSVSheet.swift in Sources */,
 				1CE12B2CEA376FF6E19D7AD5 /* LiquidGlass.swift in Sources */,
 				7EFB776B17C45415280C82CD /* ModelContainerFactory.swift in Sources */,
@@ -698,6 +721,7 @@
 				0F45EF58EEAFE132477BA962 /* ReadingRepository.swift in Sources */,
 				3F19E07477AD273CD4DEB8EE /* ReadingSource.swift in Sources */,
 				EBCEFD8250BE93D59F8E3B09 /* RemindersSettingsSection.swift in Sources */,
+				31C0FFCDE18E3F7192FD1FAD /* RemindersSettingsView.swift in Sources */,
 				C8A8628A544B160B66ADAA0D /* RightNowCard.swift in Sources */,
 				397539FC80C3754DBA66660B /* SettingsView.swift in Sources */,
 				C4865CD4D52B40712AADBD33 /* SleepCorrelation.swift in Sources */,
@@ -826,7 +850,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -898,7 +922,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_NS_ASSERTIONS = NO;

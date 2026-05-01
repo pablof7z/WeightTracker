@@ -16,7 +16,7 @@ struct RemindersSettingsSection: View {
     @State private var pausedUntil: Date? = UserDefaults.standard.object(forKey: AppPrefKey.notifPausedUntil) as? Date
 
     var body: some View {
-        Section("Reminders") {
+        Section("Notifications") {
             Toggle("Enable reminders", isOn: $master)
                 .onChange(of: master) { _, _ in reschedule() }
 

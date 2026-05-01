@@ -5,8 +5,12 @@ extension Notification.Name {
     static let openCutsTab = Notification.Name("openCutsTab")
 }
 
-/// Compact 100pt-tall chart on the Today screen showing the active cut's trajectory
-/// plus required + typical (+ fast band) projections to the target date.
+/// Compact 100pt-tall chart on the Today screen showing the active cut's
+/// trajectory plus best/avg/worst projections to the target end date.
+///
+/// The avg path carries real residual wiggle (deterministic per cut start) so
+/// the user can see what realistic week-to-week variation looks like, instead
+/// of a falsely smooth line.
 struct ActiveCutMinichart: View {
     let active: ActiveCut
     let inCutReadings: [Reading]
@@ -19,28 +23,22 @@ struct ActiveCutMinichart: View {
         return f
     }()
 
+    private static let avgColor: Color = .blue
+    private static let bestColor: Color = .green
+    private static let worstColor: Color = Color(red: 0.78, green: 0.30, blue: 0.30)
+
     private func display(_ kg: Double) -> Double {
         UnitConvert.displayWeight(kg: kg, in: unit)
-    }
-
-    private var typicalRay: CutProjectionRay? {
-        projection.rays.first { $0.label == .typical }
-    }
-    private var fastRay: CutProjectionRay? {
-        projection.rays.first { $0.label == .fast }
-    }
-    private var requiredRay: CutProjectionRay? {
-        projection.rays.first { $0.label == .required }
     }
 
     private var allWeightsKg: [Double] {
         var w = inCutReadings.map(\.weightKg)
         w.append(active.startWeightKg)
         w.append(active.targetWeightKg)
-        for r in projection.rays {
-            w.append(r.anchorWeightKg)
-            w.append(r.endWeightKg)
-        }
+        w.append(projection.anchorKg)
+        if let b = projection.bestEndKg { w.append(b) }
+        if let wr = projection.worstEndKg { w.append(wr) }
+        w.append(contentsOf: projection.avgPath.map(\.1))
         return w
     }
     private var yMin: Double { (allWeightsKg.min().map { display($0) } ?? 0) - 1.5 }
@@ -54,26 +52,12 @@ struct ActiveCutMinichart: View {
                 header
 
                 Chart {
-                    // Target line
+                    // Target line (dashed gray).
                     RuleMark(y: .value("Target", display(active.targetWeightKg)))
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                        .foregroundStyle(.green.opacity(0.6))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                        .foregroundStyle(.gray)
 
-                    // Best/Typical band (only when both rays exist)
-                    if let typical = typicalRay, let fast = fastRay {
-                        AreaMark(
-                            x: .value("AnchorB", typical.anchorDate),
-                            yStart: .value("FastY", display(fast.endWeightKg)),
-                            yEnd: .value("TypicalY", display(typical.endWeightKg))
-                        )
-                        AreaMark(
-                            x: .value("EndB", typical.endDate),
-                            yStart: .value("FastY", display(fast.endWeightKg)),
-                            yEnd: .value("TypicalY", display(typical.endWeightKg))
-                        )
-                    }
-
-                    // Actual readings
+                    // Actuals (solid line + dots in primary).
                     ForEach(inCutReadings, id: \.id) { r in
                         LineMark(
                             x: .value("Date", r.date),
@@ -92,59 +76,97 @@ struct ActiveCutMinichart: View {
                         .foregroundStyle(.primary)
                     }
 
-                    // Typical projection line
-                    if let typical = typicalRay {
-                        LineMark(
-                            x: .value("Date", typical.anchorDate),
-                            y: .value("Weight", display(typical.anchorWeightKg)),
-                            series: .value("series", "typical")
-                        )
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                        .foregroundStyle(.secondary)
-                        LineMark(
-                            x: .value("Date", typical.endDate),
-                            y: .value("Weight", display(typical.endWeightKg)),
-                            series: .value("series", "typical")
-                        )
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                        .foregroundStyle(.secondary)
+                    if !projection.isTargetReached {
+                        // Best line (dashed green): two endpoints.
+                        if let bestEnd = projection.bestEndKg {
+                            LineMark(
+                                x: .value("Date", projection.anchorDate),
+                                y: .value("Weight", display(projection.anchorKg)),
+                                series: .value("series", "best")
+                            )
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                            .foregroundStyle(Self.bestColor)
+                            .interpolationMethod(.linear)
 
-                        PointMark(
-                            x: .value("End", typical.endDate),
-                            y: .value("EndW", display(typical.endWeightKg))
-                        )
-                        .symbolSize(28)
-                        .foregroundStyle(.secondary)
-                        .annotation(position: .topTrailing, alignment: .trailing, spacing: 2) {
-                            Text(formattedEnd(typical))
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(.secondary)
+                            LineMark(
+                                x: .value("Date", projection.targetEndDate),
+                                y: .value("Weight", display(bestEnd)),
+                                series: .value("series", "best")
+                            )
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                            .foregroundStyle(Self.bestColor)
+                            .interpolationMethod(.linear)
+                        }
+
+                        // Worst line (dashed muted red).
+                        if let worstEnd = projection.worstEndKg {
+                            LineMark(
+                                x: .value("Date", projection.anchorDate),
+                                y: .value("Weight", display(projection.anchorKg)),
+                                series: .value("series", "worst")
+                            )
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                            .foregroundStyle(Self.worstColor)
+                            .interpolationMethod(.linear)
+
+                            LineMark(
+                                x: .value("Date", projection.targetEndDate),
+                                y: .value("Weight", display(worstEnd)),
+                                series: .value("series", "worst")
+                            )
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                            .foregroundStyle(Self.worstColor)
+                            .interpolationMethod(.linear)
+                        }
+
+                        // Avg path (solid blue with wiggle preserved — linear, NOT catmullRom).
+                        ForEach(Array(projection.avgPath.enumerated()), id: \.offset) { _, point in
+                            LineMark(
+                                x: .value("Date", point.0),
+                                y: .value("Weight", display(point.1)),
+                                series: .value("series", "avg")
+                            )
+                            .interpolationMethod(.linear)
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                            .foregroundStyle(Self.avgColor)
                         }
                     }
 
-                    // Required-pace line (only when no historical data → plays the lead role)
-                    if let required = requiredRay, typicalRay == nil {
-                        LineMark(
-                            x: .value("Date", required.anchorDate),
-                            y: .value("Weight", display(required.anchorWeightKg)),
-                            series: .value("series", "required")
+                    // Anchor donut: white fill + blue stroke (overlay two PointMarks).
+                    PointMark(
+                        x: .value("Date", projection.anchorDate),
+                        y: .value("Weight", display(projection.anchorKg))
+                    )
+                    .symbolSize(64)
+                    .symbol(.circle)
+                    .foregroundStyle(.white)
+
+                    PointMark(
+                        x: .value("Date", projection.anchorDate),
+                        y: .value("Weight", display(projection.anchorKg))
+                    )
+                    .symbolSize(64)
+                    .symbol(.circle.strokeBorder(lineWidth: 2))
+                    .foregroundStyle(Self.avgColor)
+
+                    // Target reached annotation.
+                    if projection.isTargetReached {
+                        PointMark(
+                            x: .value("Date", projection.anchorDate),
+                            y: .value("Weight", display(projection.anchorKg))
                         )
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                        .foregroundStyle(.green)
-                        LineMark(
-                            x: .value("Date", required.endDate),
-                            y: .value("Weight", display(required.endWeightKg)),
-                            series: .value("series", "required")
-                        )
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                        .foregroundStyle(.green)
+                        .symbolSize(0)
+                        .annotation(position: .top, alignment: .center, spacing: 2) {
+                            Text("Target reached")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.green)
+                        }
                     }
                 }
-                .opacity(projection.isOffTrack ? 0.6 : 1.0)
                 .chartXScale(domain: active.startDate...active.targetEndDate)
                 .chartYScale(domain: yMin...yMax)
                 .chartXAxis {
-                    AxisMarks(values: [active.startDate, projection.anchorDate, active.targetEndDate]) { val in
+                    AxisMarks(values: [active.startDate, projection.anchorDate, active.targetEndDate]) { _ in
                         AxisValueLabel(format: .dateTime.month(.abbreviated).day())
                             .font(.caption2)
                     }
@@ -168,13 +190,6 @@ struct ActiveCutMinichart: View {
                 .foregroundStyle(.green)
             Text("Active cut")
                 .font(.subheadline.weight(.semibold))
-            if projection.isOffTrack {
-                Text("Off-track")
-                    .font(.caption2.weight(.semibold))
-                    .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(.orange.opacity(0.18), in: Capsule())
-                    .foregroundStyle(.orange)
-            }
             Spacer()
             Image(systemName: "chevron.right")
                 .font(.caption2)
@@ -184,38 +199,26 @@ struct ActiveCutMinichart: View {
 
     @ViewBuilder
     private var footer: some View {
-        HStack(spacing: 8) {
-            if let typical = typicalRay {
-                Text("Typical pace ends \(formattedEnd(typical))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("\(projection.qualifyingHistoricalCount) past cut\(projection.qualifyingHistoricalCount == 1 ? "" : "s")")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            } else if let required = requiredRay {
-                Text("Needs ~\(requiredRateLabel(required)) to hit \(formatted(active.targetWeightKg))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("No past cuts to compare")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
+        if projection.isTargetReached {
+            Text("Target reached — maintain")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        } else if projection.qualifyingHistoricalCount == 0 {
+            Text("Based on typical lean-cut research (no past cuts yet)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        } else if let best = projection.bestEndKg,
+                  let worst = projection.worstEndKg,
+                  let avgEnd = projection.avgPath.last?.1 {
+            Text("Best \(formatted(best)) · Avg \(formatted(avgEnd)) · Worst \(formatted(worst)) by \(Self.dateFmt.string(from: projection.targetEndDate))")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
         }
     }
 
-    private func formattedEnd(_ ray: CutProjectionRay) -> String {
-        "\(formatted(ray.endWeightKg)) by \(Self.dateFmt.string(from: ray.endDate))"
-    }
     private func formatted(_ kg: Double) -> String {
         String(format: "%.1f %@", display(kg), unit.symbol)
-    }
-    private func requiredRateLabel(_ ray: CutProjectionRay) -> String {
-        let days = ray.endDate.timeIntervalSince(ray.anchorDate) / 86_400
-        guard days > 0 else { return "—" }
-        let kgPerDay = (ray.endWeightKg - ray.anchorWeightKg) / days
-        let lbPerWeek = abs(UnitConvert.kgToLb(kgPerDay)) * 7.0
-        return String(format: "%.1f lb/wk", lbPerWeek)
     }
 }
