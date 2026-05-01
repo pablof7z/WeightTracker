@@ -339,7 +339,7 @@ private struct AgentDefinitionSettingsView: View {
                     save()
                 }
             } footer: {
-                Text("Tool rules, audited context, memories, and date conventions are appended automatically.")
+                Text("The baked-in coach operating model, tool rules, audited context, memories, and date conventions are appended automatically.")
             }
 
             if let message {

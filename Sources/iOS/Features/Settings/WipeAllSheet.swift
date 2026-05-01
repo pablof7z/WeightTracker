@@ -79,7 +79,6 @@ struct WipeAllSheet: View {
     private func performWipe() {
         appServices.repository.deleteAll()
         ActiveCutStore.save(nil)
-        appServices.cutCoach.clear(trigger: .manual)
         didWipe = true
         Task { await appServices.notifications.scheduleEvaluatedTriggers() }
     }

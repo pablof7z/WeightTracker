@@ -18,7 +18,6 @@ final class AppServices: ObservableObject {
     let macroUntrackedRangeStore: MacroUntrackedRangeStore
     let macroDeviationStore: MacroDeviationStore
     let coachAuditStore: CoachAuditStore
-    let cutCoach: CutCoachService
     let coachAgent: CoachAgentSession
     let coachNostrAgent: CoachNostrAgentService
 
@@ -45,14 +44,6 @@ final class AppServices: ObservableObject {
         self.macroDeviationStore = deviationStore
         let auditStore = CoachAuditStore(container: container)
         self.coachAuditStore = auditStore
-        let cutCoachService = CutCoachService(
-            repository: repository,
-            macroPlanStore: planStore,
-            macroDeviationStore: deviationStore,
-            macroUntrackedRangeStore: untrackedStore,
-            auditStore: auditStore
-        )
-        self.cutCoach = cutCoachService
 
         let nostrAgent = CoachNostrAgentService()
         self.coachNostrAgent = nostrAgent
@@ -66,9 +57,6 @@ final class AppServices: ObservableObject {
             macroUntrackedRangeStore: untrackedStore,
             auditStore: auditStore,
             model: coachModel,
-            onMutation: {
-                cutCoachService.refresh(trigger: .toolMutationFollowup)
-            },
             recordMemory: { text in
                 try nostrAgent.recordMemory(text: text)
             }
@@ -88,16 +76,6 @@ final class AppServices: ObservableObject {
                 // Nostr replies are best-effort; the audit already records the coach run.
             }
         }
-
-        self.healthKit.onReadingsChanged = { [weak self] in
-            self?.cutCoach.refresh(trigger: .healthWeight)
-        }
-        self.sleepHealthKit.onSleepChanged = { [weak self] in
-            self?.cutCoach.refresh(trigger: .healthSleep)
-        }
-        self.activityHealthKit.onActivityChanged = { [weak self] in
-            self?.cutCoach.refresh(trigger: .healthActivity)
-        }
     }
 
     func bootstrap() async {
@@ -106,7 +84,6 @@ final class AppServices: ObservableObject {
         await sleepHealthKit.startObservingIfAuthorized()
         await activityHealthKit.startObservingIfAuthorized()
         await notifications.scheduleEvaluatedTriggers()
-        cutCoach.refresh(trigger: .appBootstrap)
         coachNostrAgent.start()
     }
 }

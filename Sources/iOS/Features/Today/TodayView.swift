@@ -339,12 +339,16 @@ struct TodayView: View {
             let transcript = await stt.stop()
             showVoiceCheckIn = false
 
-            if services.cutCoach.appendVoiceCheckInNote(
-                transcript: transcript,
+            if services.coachAuditStore.appendNote(
+                source: .user,
+                kind: .checkIn,
+                visibility: .userVisible,
+                cutStartDate: ActiveCutStore.load()?.startDate,
+                day: Date(),
+                text: transcript,
                 audioDraftID: recordingID
             ) != nil {
                 await services.coachAgent.run(transcript: transcript, trigger: .voiceCheckIn)
-                services.cutCoach.refresh(trigger: .voiceCheckIn)
                 reloadTodayCoachNote()
             }
         }
@@ -352,7 +356,7 @@ struct TodayView: View {
 
     private func reloadTodayCoachNote() {
         let day = Reading.dayStart(of: viewModel.date)
-        todayCoachNote = services.cutCoach
+        todayCoachNote = services.coachAuditStore
             .recentNotes(limit: 20, userVisibleOnly: true)
             .first { note in
                 guard let noteDay = note.day else { return false }

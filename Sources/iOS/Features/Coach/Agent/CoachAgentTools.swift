@@ -87,7 +87,7 @@ enum CoachTool: String, CaseIterable, Sendable {
         case .getCoachSnapshot:
             return .init(
                 name: rawValue,
-                description: "Read the active cut, current macro plan, recent logs, and deterministic coach recommendation.",
+                description: "Read the active cut, current macro plan, recent logs, and a computed coach recommendation snapshot.",
                 parameters: .object(
                     properties: [
                         "historyDays": .integer(description: "Recent days to include. Defaults to 21; max 90.")

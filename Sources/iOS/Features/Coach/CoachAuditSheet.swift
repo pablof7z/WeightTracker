@@ -66,8 +66,8 @@ struct CoachAuditSheet: View {
     }
 
     private func reload() {
-        runs = services.cutCoach.recentAuditRuns(limit: 100)
-        notes = services.cutCoach.recentNotes(limit: 100, userVisibleOnly: false)
+        runs = services.coachAuditStore.recentRuns(limit: 100)
+        notes = services.coachAuditStore.recentNotes(limit: 100, userVisibleOnly: false)
     }
 }
 
@@ -173,7 +173,7 @@ private struct CoachRunAuditDetailView: View {
 
     private func reload() {
         toolCalls = services.coachAuditStore.toolCalls(runID: run.id)
-        notes = services.cutCoach
+        notes = services.coachAuditStore
             .recentNotes(limit: 200, userVisibleOnly: false)
             .filter { $0.runID == run.id }
     }
@@ -545,7 +545,6 @@ private extension CoachRun {
 
     var kindLabel: String {
         switch kind {
-        case .deterministicRefresh: return "Deterministic coach run"
         case .llmAgent: return "AI coach run"
         }
     }

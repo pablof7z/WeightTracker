@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		00EEB85EEA7FAD976F937D70 /* DriftEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */; };
 		4345E660F18E4FD38B4818F0 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 264F582339264212A03BA7A3 /* ProgressView.swift */; };
-		027C2C99BB360DB670E798CE /* CutCoachCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C60350C7D43F6ED27FCE016 /* CutCoachCopy.swift */; };
 		02854E8A3F9E606F5BDCBC95 /* CoachAuditStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80102F528FE9E41BC3EC3F6E /* CoachAuditStore.swift */; };
 		05F800BC83F5BF4DD7390382 /* CoachAudit.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64425FA13091AA162159347 /* CoachAudit.swift */; };
 		069E3F988C4115CBA0401659 /* CSVUnitDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE77AF97769C30641AE800A6 /* CSVUnitDetector.swift */; };
@@ -26,7 +25,6 @@
 		1C8076B276A7BCE1EEC12101 /* EraSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 919E9FA191CCBC10E0E5C9ED /* EraSummary.swift */; };
 		1CE12B2CEA376FF6E19D7AD5 /* LiquidGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F63296C48489DEFE67600DE /* LiquidGlass.swift */; };
 		1CE2FC752655A6378708A6AF /* NostrCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 741D666F4590AC7B5967082F /* NostrCrypto.swift */; };
-		1F97E472563C5EE6811B37CC /* CutCoachCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE5A44ECFD924BD602A57DDC /* CutCoachCard.swift */; };
 		20231178BB04FED8B18F3270 /* ICloudSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC5302916DBFE5717B94CE9 /* ICloudSettingsSection.swift */; };
 		20A9AA7D728673EBEB9684D5 /* DeleteRangeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B5DFE75A4F90C056C4A41A0 /* DeleteRangeSheet.swift */; };
 		22075804F805319A506DF8CC /* CoachNostrAgentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3049F74BF6724D7C0E030BB /* CoachNostrAgentService.swift */; };
@@ -98,7 +96,6 @@
 		898A0A621E519561A7181705 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08AF12B16285F08AEE258679 /* CSVExporter.swift */; };
 		8C46FC540854B3B2EE2281D1 /* CSVImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DACCDD58E173A5D210ABA434 /* CSVImporter.swift */; };
 		8E0397CB350508B2CE347258 /* Cut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7F1E9AA0F7B1F74B43DBD1 /* Cut.swift */; };
-		8E4CDDDE1C7C56E735814822 /* CutCoachService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 238749946F709C79E5E43FE5 /* CutCoachService.swift */; };
 		8E8D021D92E1AEE074C087E3 /* CoachAgentTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8292401FDE0F69A7301A7055 /* CoachAgentTools.swift */; };
 		9189F91A916D98DA3E330A4A /* P256K in Frameworks */ = {isa = PBXBuildFile; productRef = DF79B42F337EAEA655C5C8B9 /* P256K */; };
 		941A34EBB3F1F2855C347EE5 /* MacroPlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18FE7AFB65F5EB5CB3429D8A /* MacroPlanStore.swift */; };
@@ -234,14 +231,12 @@
 		1925386B5694804424484546 /* RightNowCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RightNowCard.swift; sourceTree = "<group>"; };
 		1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelContainerFactory.swift; sourceTree = "<group>"; };
 		1BF10C121F3EC43B4356014E /* MacroPlanPeriod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroPlanPeriod.swift; sourceTree = "<group>"; };
-		1C60350C7D43F6ED27FCE016 /* CutCoachCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutCoachCopy.swift; sourceTree = "<group>"; };
 		1D23A0835AD55B705F61A44B /* WeightTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightTrackerApp.swift; sourceTree = "<group>"; };
 		1F6CF1F3F7DAEAFD4FB7A406 /* OnboardingImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingImport.swift; sourceTree = "<group>"; };
 		2019E2250330C0F991662E7C /* CoachNostrSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachNostrSettingsView.swift; sourceTree = "<group>"; };
 		2045667B5260509E1378BA58 /* NostrEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrEvent.swift; sourceTree = "<group>"; };
 		204B7A82FA57F7D1AC2E2BBF /* StartCutMacrosDisclosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartCutMacrosDisclosure.swift; sourceTree = "<group>"; };
 		20D03D9D69E40FDC7DD6993E /* AboutSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutSection.swift; sourceTree = "<group>"; };
-		238749946F709C79E5E43FE5 /* CutCoachService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutCoachService.swift; sourceTree = "<group>"; };
 		2887D0AEEDA020AC376DC7BB /* ReadingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSource.swift; sourceTree = "<group>"; };
 		29B8EDC2F540E89E7E50DD0D /* MacroHistorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroHistorySheet.swift; sourceTree = "<group>"; };
 		2A5688E1F47C7C58388DCB68 /* ReadingRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingRepository.swift; sourceTree = "<group>"; };
@@ -347,7 +342,6 @@
 		DE0C63C08173E783F542DC0B /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
 		DE13239FB6FB767EF9E6A2EA /* NotificationPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPreferences.swift; sourceTree = "<group>"; };
 		DE170F2902723E3601CB9AD1 /* AppOrientation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppOrientation.swift; sourceTree = "<group>"; };
-		DE5A44ECFD924BD602A57DDC /* CutCoachCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutCoachCard.swift; sourceTree = "<group>"; };
 		DE77AF97769C30641AE800A6 /* CSVUnitDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVUnitDetector.swift; sourceTree = "<group>"; };
 		DF32432F839E099D4B007C11 /* WeightTrackerWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WeightTrackerWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3049F74BF6724D7C0E030BB /* CoachNostrAgentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachNostrAgentService.swift; sourceTree = "<group>"; };
@@ -622,8 +616,6 @@
 			children = (
 				58779E98813DF5642E6B426B /* Agent */,
 				714F028084AF0A6B75FC0A01 /* CoachAuditSheet.swift */,
-				DE5A44ECFD924BD602A57DDC /* CutCoachCard.swift */,
-				1C60350C7D43F6ED27FCE016 /* CutCoachCopy.swift */,
 				4DECFE5A896818BF7801C59E /* VoiceCheckInSheet.swift */,
 			);
 			path = Coach;
@@ -659,7 +651,6 @@
 			children = (
 				47E0D2CAF003EF475255CDEB /* Nostr */,
 				F16C1161038489D5FBBF859E /* BYOKOpenRouterConnector.swift */,
-				238749946F709C79E5E43FE5 /* CutCoachService.swift */,
 				0F0EC99A17F864666C211F8B /* ElevenLabsCredentialStore.swift */,
 				613ACE55D2DF76E5BE3309AC /* ElevenLabsRealtimeSTT.swift */,
 				6A3E1156CEC5ACF4AA26FD64 /* ElevenLabsSTT.swift */,
@@ -967,10 +958,7 @@
 				B181C74CA78B9B1834B2A49C /* ConfirmationCard.swift in Sources */,
 				3F6ABC41A5F6F1CC3E4E85FF /* Cut.swift in Sources */,
 				9FE7CA28F9636EC6CF4A8B0C /* CutCoach.swift in Sources */,
-				1F97E472563C5EE6811B37CC /* CutCoachCard.swift in Sources */,
-				027C2C99BB360DB670E798CE /* CutCoachCopy.swift in Sources */,
 				62D9B46C8D17852D5C600D16 /* CutCoachEngine.swift in Sources */,
-				8E4CDDDE1C7C56E735814822 /* CutCoachService.swift in Sources */,
 				5178402B720BD8ADEA206581 /* CutInlineChart.swift in Sources */,
 				B21652B0CD195D615A00F798 /* CutProjection.swift in Sources */,
 				E97D783DBD98C650C3BE36BA /* CutProjectionChartContent.swift in Sources */,

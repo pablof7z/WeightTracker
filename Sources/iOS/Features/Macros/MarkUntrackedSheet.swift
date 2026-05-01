@@ -107,7 +107,6 @@ struct MarkUntrackedSheet: View {
                 reason: reason,
                 customReasonLabel: reason == .custom ? customLabel.trimmingCharacters(in: .whitespaces) : nil
             )
-            services.cutCoach.refresh(trigger: .macroUntrackedChanged)
             onSaved?()
             dismiss()
         } catch let err as MacroUntrackedRangeError {

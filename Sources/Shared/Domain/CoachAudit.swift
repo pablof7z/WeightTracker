@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 
 public enum CoachRunKind: String, Codable, CaseIterable, Sendable {
-    case deterministicRefresh
     case llmAgent
 }
 
@@ -33,7 +32,6 @@ public enum CoachRunStatus: String, Codable, CaseIterable, Sendable {
 
 public enum CoachNoteSource: String, Codable, CaseIterable, Sendable {
     case user
-    case deterministic
     case agent
     case tool
 }
@@ -115,7 +113,7 @@ public final class CoachRun {
     }
 
     public var kind: CoachRunKind {
-        get { CoachRunKind(rawValue: kindRaw) ?? .deterministicRefresh }
+        get { CoachRunKind(rawValue: kindRaw) ?? .llmAgent }
         set { kindRaw = newValue.rawValue }
     }
 

@@ -161,7 +161,6 @@ struct StartCutSheet: View {
                             fatG: macroFat,
                             carbsG: macroCarbs
                         )
-                        services.cutCoach.refresh(trigger: .activeCutChanged)
                         dismiss()
                     }
                     .disabled(!isValid)

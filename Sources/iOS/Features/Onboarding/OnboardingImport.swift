@@ -91,7 +91,6 @@ struct OnboardingImport: View {
         isImporting = true
         defer { isImporting = false }
         appServices.repository.bulkInsert(p.validReadings, replacingExisting: true)
-        appServices.cutCoach.refresh(trigger: .weightSaved)
         imported = p.validReadings.count
     }
 }

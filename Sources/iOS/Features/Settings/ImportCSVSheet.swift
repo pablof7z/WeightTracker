@@ -161,7 +161,6 @@ struct ImportCSVSheet: View {
         isImporting = true
         defer { isImporting = false }
         appServices.repository.bulkInsert(p.validReadings, replacingExisting: replaceExisting)
-        appServices.cutCoach.refresh(trigger: .weightSaved)
         imported = p.validReadings.count
         await appServices.notifications.scheduleEvaluatedTriggers()
     }

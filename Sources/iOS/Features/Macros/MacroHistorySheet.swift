@@ -104,7 +104,6 @@ struct MacroHistorySheet: View {
                     .swipeActions {
                         Button(role: .destructive) {
                             try? services.macroDeviationStore.delete(d)
-                            services.cutCoach.refresh(trigger: .macroDeviationChanged)
                             reload()
                         } label: {
                             Label("Delete", systemImage: "trash")
@@ -138,7 +137,6 @@ struct MacroHistorySheet: View {
                 .swipeActions {
                     Button(role: .destructive) {
                         services.macroUntrackedRangeStore.delete(r)
-                        services.cutCoach.refresh(trigger: .macroUntrackedChanged)
                         reload()
                     } label: {
                         Label("Delete", systemImage: "trash")

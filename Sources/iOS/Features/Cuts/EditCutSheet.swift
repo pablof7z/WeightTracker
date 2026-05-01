@@ -187,7 +187,6 @@ struct EditCutSheet: View {
                         fatG: f,
                         carbsG: c
                     )
-                    services.cutCoach.refresh(trigger: .macroPlanChanged)
                 }
                 .environmentObject(services)
             }

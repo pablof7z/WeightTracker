@@ -125,7 +125,6 @@ final class TodayViewModel: ObservableObject {
         services.repository.insert(new)
         hasEntry = true
 
-        services.cutCoach.refresh(trigger: .weightSaved)
         await services.healthKit.writeReading(new)
         await services.notifications.scheduleEvaluatedTriggers()
 

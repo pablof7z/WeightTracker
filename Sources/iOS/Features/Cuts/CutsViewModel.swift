@@ -8,7 +8,6 @@ final class CutsViewModel: ObservableObject {
     @Published var mostRecentReading: Reading?
     @Published var allReadings: [Reading] = []
     @Published var projection: CutProjectionResult?
-    @Published var cutCoachPlan: CutCoachPlan?
 
     private let services: AppServices
 
@@ -25,13 +24,11 @@ final class CutsViewModel: ObservableObject {
         let detected = HistoricalCutDetector.detect(in: clusters, readings: readings)
         historicalCuts = detected.sorted { $0.startDate > $1.startDate }
         projection = CutProjection.project(active: activeCut, readings: readings, historicalCuts: detected)
-        applyCutCoachRecommendation(services.cutCoach.refresh(trigger: .manual))
     }
 
     func startCut(_ cut: ActiveCut) async {
         ActiveCutStore.save(cut)
         activeCut = cut
-        applyCutCoachRecommendation(services.cutCoach.refresh(trigger: .activeCutChanged))
         await services.notifications.scheduleEvaluatedTriggers()
         reload()
     }
@@ -39,7 +36,6 @@ final class CutsViewModel: ObservableObject {
     func updateCut(_ cut: ActiveCut) async {
         ActiveCutStore.save(cut)
         activeCut = cut
-        applyCutCoachRecommendation(services.cutCoach.refresh(trigger: .activeCutChanged))
         await services.notifications.scheduleEvaluatedTriggers()
         reload()
     }
@@ -47,8 +43,6 @@ final class CutsViewModel: ObservableObject {
     func markDone() async {
         ActiveCutStore.save(nil)
         activeCut = nil
-        services.cutCoach.clear(trigger: .activeCutChanged)
-        applyCutCoachRecommendation(nil)
         await services.notifications.scheduleEvaluatedTriggers()
         reload()
     }
@@ -106,75 +100,5 @@ final class CutsViewModel: ObservableObject {
     func yearsAgo(of date: Date, now: Date = Date()) -> Int {
         let comps = Calendar.current.dateComponents([.year], from: date, to: now)
         return max(0, comps.year ?? 0)
-    }
-
-    // MARK: - Cut coach
-
-    func applyCutCoachRecommendation(_ recommendation: CutCoachRecommendation?) {
-        cutCoachPlan = makeCutCoachPlan(recommendation)
-    }
-
-    private func makeCutCoachPlan(_ recommendation: CutCoachRecommendation?) -> CutCoachPlan? {
-        guard let recommendation, let targets = recommendation.dailyTargets else { return nil }
-        return CutCoachPlan(
-            calories: targets.kcal,
-            proteinG: targets.proteinG,
-            fatG: targets.fatG,
-            carbsG: targets.carbsG,
-            steps: targets.training.steps,
-            trainingTarget: trainingText(targets.training),
-            weekStatus: statusText(recommendation.decision),
-            weekDecision: decisionText(recommendation),
-            reasons: CutCoachCopy.reasonBullets(recommendation.reasons.map(\.text)),
-            missingDetailPrompt: prompt(for: recommendation.prompt)
-        )
-    }
-
-    private func statusText(_ decision: CutCoachDecision) -> String {
-        switch decision {
-        case .holdTargets: return "Hold"
-        case .lowerCalories: return "Adjust"
-        case .raiseCalories: return "Adjust"
-        case .requestData: return "Gather data"
-        case .noActiveCut: return "No active cut"
-        }
-    }
-
-    private func decisionText(_ recommendation: CutCoachRecommendation) -> String? {
-        switch recommendation.decision {
-        case .holdTargets:
-            return "No change"
-        case .lowerCalories:
-            guard let kcal = recommendation.dailyTargets?.kcal else { return "Lower calories" }
-            return "\(kcal) kcal/day"
-        case .raiseCalories:
-            guard let kcal = recommendation.dailyTargets?.kcal else { return "Raise calories" }
-            return "\(kcal) kcal/day"
-        case .requestData:
-            return recommendation.prompt?.title
-        case .noActiveCut:
-            return nil
-        }
-    }
-
-    private func trainingText(_ target: TrainingTarget) -> String? {
-        guard let minutes = target.exerciseMinutes, minutes > 0 else { return nil }
-        return "\(minutes) min"
-    }
-
-    private func prompt(for prompt: CutCoachPrompt?) -> CutCoachMissingDetailPrompt? {
-        guard let prompt else { return nil }
-        switch prompt {
-        case .macroDeviation:
-            return CutCoachMissingDetailPrompt(question: "What explains the missing food signal?")
-        case .bodyWeight:
-            return CutCoachMissingDetailPrompt(question: "What explains the missing weight signal?")
-        case .sleep:
-            return CutCoachMissingDetailPrompt(question: "What explains the missing sleep signal?")
-        case .steps:
-            return CutCoachMissingDetailPrompt(question: "What explains the missing activity signal?")
-        case .macroPlan:
-            return nil
-        }
     }
 }

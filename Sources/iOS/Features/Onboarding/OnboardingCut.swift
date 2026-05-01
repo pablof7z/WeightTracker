@@ -50,7 +50,6 @@ struct OnboardingCut: View {
                     )
                     ActiveCutStore.save(cut)
                     goalWeightKg = cut.targetWeightKg
-                    services.cutCoach.refresh(trigger: .activeCutChanged)
                     Task { await services.notifications.scheduleEvaluatedTriggers() }
                 } label: {
                     Label("Start a cut", systemImage: "play.fill")

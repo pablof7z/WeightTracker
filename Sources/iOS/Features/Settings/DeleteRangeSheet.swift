@@ -77,7 +77,6 @@ struct DeleteRangeSheet: View {
     private func performDelete() {
         let count = matchingCount
         appServices.repository.deleteRange(range)
-        appServices.cutCoach.refresh(trigger: .weightSaved)
         deletedCount = count
         didDelete = true
         Task { await appServices.notifications.scheduleEvaluatedTriggers() }

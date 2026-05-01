@@ -86,7 +86,6 @@ struct MacroCard: View {
                     fatG: f,
                     carbsG: c
                 )
-                services.cutCoach.refresh(trigger: .macroPlanChanged)
                 reload()
             }
         }

@@ -112,7 +112,6 @@ struct HealthSettingsSection: View {
         defer { isBackfillingSleep = false }
         _ = await appServices.sleepHealthKit.requestAuthorization()
         let n = await appServices.sleepHealthKit.backfillHistory()
-        appServices.cutCoach.refresh(trigger: .healthSleep)
         sleepBackfillCount = n
     }
 
@@ -121,7 +120,6 @@ struct HealthSettingsSection: View {
         defer { isBackfillingActivity = false }
         _ = await appServices.activityHealthKit.requestAuthorization()
         let n = await appServices.activityHealthKit.backfillHistory()
-        appServices.cutCoach.refresh(trigger: .healthActivity)
         activityBackfillCount = n
     }
 
@@ -129,7 +127,6 @@ struct HealthSettingsSection: View {
         isReplaying = true
         defer { isReplaying = false }
         let count = await appServices.healthKit.replayHistory()
-        appServices.cutCoach.refresh(trigger: .healthWeight)
         replayResult = "Imported \(count) reading\(count == 1 ? "" : "s")."
         Task {
             try? await Task.sleep(for: .seconds(5))
