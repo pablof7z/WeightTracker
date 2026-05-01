@@ -35,10 +35,6 @@ struct TodayView: View {
                     .opacity(viewModel.hasEntry ? 1.0 : 0.45)
                     .padding(.top, 16)
 
-                    if !viewModel.hasEntry {
-                        placeholderHint
-                    }
-
                     OptionalDetailsRow(
                         hipsValue: $viewModel.hipsValue,
                         waistValue: $viewModel.waistValue,
@@ -49,6 +45,17 @@ struct TodayView: View {
 
                     saveButton
                         .padding(.horizontal)
+
+                    if let active = viewModel.activeCut, let projection = viewModel.projection {
+                        ActiveCutMinichart(
+                            active: active,
+                            inCutReadings: viewModel.inCutReadings,
+                            projection: projection,
+                            unit: weightUnit
+                        )
+                        .padding(.horizontal)
+                        .transition(.opacity)
+                    }
 
                     if let saved = viewModel.lastSaved {
                         ConfirmationCard(confirmation: saved) {
@@ -130,7 +137,22 @@ struct TodayView: View {
 
     // MARK: - Title
 
+    private var cutDayNumber: Int? {
+        guard let cut = viewModel.activeCut else { return nil }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: cut.startDate)
+        let day = cal.startOfDay(for: viewModel.date)
+        guard day >= start else { return nil }
+        let last = cal.startOfDay(for: cut.targetEndDate)
+        guard day <= max(last, cal.startOfDay(for: Date())) else { return nil }
+        let n = cal.dateComponents([.day], from: start, to: day).day ?? 0
+        return n + 1
+    }
+
     private var titleText: String {
+        if let dayNum = cutDayNumber {
+            return "Day \(dayNum)"
+        }
         let cal = Calendar.current
         if cal.isDateInToday(viewModel.date) { return "Today" }
         if cal.isDateInYesterday(viewModel.date) { return "Yesterday" }
@@ -146,8 +168,12 @@ struct TodayView: View {
     }
 
     private var subtitleText: String {
-        if viewModel.hasEntry { return "Logged" }
-        return "No entry"
+        if cutDayNumber != nil {
+            let fmt = DateFormatter()
+            fmt.dateStyle = .medium
+            return fmt.string(from: viewModel.date)
+        }
+        return viewModel.hasEntry ? "Logged" : "No entry"
     }
 
     // MARK: - Date navigation
@@ -180,22 +206,6 @@ struct TodayView: View {
         withAnimation(.easeInOut(duration: 0.2)) {
             viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
         }
-    }
-
-    // MARK: - UI helpers
-
-    private var placeholderHint: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "plus.circle")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text("No entry on this date — tap Save to add")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .glass(in: Capsule())
     }
 
     private func toggleUnit() {

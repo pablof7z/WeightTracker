@@ -15,6 +15,10 @@ final class TodayViewModel: ObservableObject {
     /// True when the displayed value reflects a saved reading on the selected date.
     /// False when the value is a placeholder carried over from a prior day.
     @Published var hasEntry: Bool = false
+    /// Loaded snapshot of active cut (if any) — used by Today screen for header + minichart.
+    @Published var activeCut: ActiveCut?
+    @Published var inCutReadings: [Reading] = []
+    @Published var projection: CutProjectionResult?
 
     struct SavedConfirmation: Identifiable, Equatable {
         let id = UUID()
@@ -31,8 +35,26 @@ final class TodayViewModel: ObservableObject {
         let day = Reading.dayStart(of: date)
         self.date = day
 
-        if let earliest = repository.allReadings().first {
+        let allReadings = repository.allReadings()
+        if let earliest = allReadings.first {
             self.minDate = min(self.minDate, Reading.dayStart(of: earliest.date))
+        }
+
+        // Load active cut + projection
+        let cut = ActiveCutStore.load()
+        self.activeCut = cut
+        if let cut {
+            self.inCutReadings = allReadings.filter { $0.date >= cut.startDate }
+            let clusters = ClusterDetector.clusters(from: allReadings)
+            let historicals = HistoricalCutDetector.detect(in: clusters, readings: allReadings)
+            self.projection = CutProjection.project(
+                active: cut,
+                readings: allReadings,
+                historicalCuts: historicals
+            )
+        } else {
+            self.inCutReadings = []
+            self.projection = nil
         }
 
         if let existing = repository.reading(on: day) {

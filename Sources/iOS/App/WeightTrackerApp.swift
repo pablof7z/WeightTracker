@@ -47,18 +47,28 @@ struct RootView: View {
 }
 
 struct MainTabView: View {
+    @State private var selection: Int = 0
+
     var body: some View {
-        TabView {
+        TabView(selection: $selection) {
             TodayView()
+                .tag(0)
                 .tabItem { Label("Today", systemImage: "scalemass") }
             ChartView()
+                .tag(1)
                 .tabItem { Label("Chart", systemImage: "chart.xyaxis.line") }
             TrendsView()
+                .tag(2)
                 .tabItem { Label("Trends", systemImage: "chart.bar.xaxis") }
             CutsView()
+                .tag(3)
                 .tabItem { Label("Cuts", systemImage: "scissors") }
             SettingsView()
+                .tag(4)
                 .tabItem { Label("Settings", systemImage: "gearshape") }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openCutsTab)) { _ in
+            selection = 3
         }
     }
 }
