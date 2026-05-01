@@ -58,21 +58,18 @@ struct MainTabView: View {
             TodayView()
                 .tag(0)
                 .tabItem { Label("Today", systemImage: "scalemass") }
-            ChartView()
+            ProgressTabView()
                 .tag(1)
-                .tabItem { Label("Chart", systemImage: "chart.xyaxis.line") }
-            TrendsView()
-                .tag(2)
-                .tabItem { Label("Trends", systemImage: "chart.bar.xaxis") }
+                .tabItem { Label("Progress", systemImage: "chart.xyaxis.line") }
             CutsView()
-                .tag(3)
+                .tag(2)
                 .tabItem { Label("Cuts", systemImage: "scissors") }
             SettingsView()
-                .tag(4)
+                .tag(3)
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openCutsTab)) { _ in
-            selection = 3
+            selection = 2
         }
     }
 }

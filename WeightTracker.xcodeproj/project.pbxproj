@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		00EEB85EEA7FAD976F937D70 /* DriftEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */; };
+		4345E660F18E4FD38B4818F0 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 264F582339264212A03BA7A3 /* ProgressView.swift */; };
 		027C2C99BB360DB670E798CE /* CutCoachCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C60350C7D43F6ED27FCE016 /* CutCoachCopy.swift */; };
 		02854E8A3F9E606F5BDCBC95 /* CoachAuditStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80102F528FE9E41BC3EC3F6E /* CoachAuditStore.swift */; };
 		05F800BC83F5BF4DD7390382 /* CoachAudit.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64425FA13091AA162159347 /* CoachAudit.swift */; };
@@ -308,6 +309,7 @@
 		999240E5CDC69205C4116F0B /* ChartViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartViewModel.swift; sourceTree = "<group>"; };
 		9A8D24E1EC41DDF0D475F66D /* ProviderError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderError.swift; sourceTree = "<group>"; };
 		9BC7670795F31CD010F7AFAD /* OnboardingReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingReminders.swift; sourceTree = "<group>"; };
+		264F582339264212A03BA7A3 /* ProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView.swift; sourceTree = "<group>"; };
 		A097238E63F35469E137EA10 /* SleepOverlayLegend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepOverlayLegend.swift; sourceTree = "<group>"; };
 		A3FF7D09556CD601F143D999 /* TrendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsViewModel.swift; sourceTree = "<group>"; };
 		A5C3AD389F5EBF5644F1E5F1 /* SleepCorrelation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCorrelation.swift; sourceTree = "<group>"; };
@@ -704,11 +706,20 @@
 				0BB65CCFB91C7F865D98EF97 /* Cuts */,
 				DA5BB3D697EFAC9B8CF84674 /* Macros */,
 				EE8FC8608E32B466D63AB3E0 /* Onboarding */,
+				85179757133C43F3A22DD06A /* Progress */,
 				1733B0EC8BD146BAB63BFBF2 /* Settings */,
 				659CEC23FF7EEA3315C3E7CC /* Today */,
 				E7D4C39B6C2BB004A0CF305B /* Trends */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		85179757133C43F3A22DD06A /* Progress */ = {
+			isa = PBXGroup;
+			children = (
+				264F582339264212A03BA7A3 /* ProgressView.swift */,
+			);
+			path = Progress;
 			sourceTree = "<group>";
 		};
 		E7D4C39B6C2BB004A0CF305B /* Trends */ = {
@@ -938,6 +949,7 @@
 				4D7380185FB3BF303834D70C /* ChartOverlayToggles.swift in Sources */,
 				961622A38F26B9FE661C9E45 /* ChartRangeButtons.swift in Sources */,
 				C9319B907F388B7AB9CDBF6E /* ChartView.swift in Sources */,
+				4345E660F18E4FD38B4818F0 /* ProgressView.swift in Sources */,
 				9D25B43BB60BAE12BCA76872 /* ChartViewModel.swift in Sources */,
 				98D7A494F3D05AF7681CFF43 /* Cluster.swift in Sources */,
 				D5CEB2E240321E6559C221AB /* ClusterDetector.swift in Sources */,
