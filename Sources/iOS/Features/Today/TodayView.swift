@@ -12,6 +12,7 @@ struct TodayView: View {
     @State private var isSaving = false
     @State private var showDatePicker = false
     @State private var swipeAccum: CGFloat = 0
+    @State private var dismissTask: Task<Void, Never>?
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var bodyUnit: BodyUnit { BodyUnit(rawValue: bodyUnitRaw) ?? .inches }
@@ -132,6 +133,17 @@ struct TodayView: View {
             .onChange(of: weightUnitRaw) { _, _ in
                 viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
             }
+            .onChange(of: viewModel.lastSaved) { _, newValue in
+                dismissTask?.cancel()
+                guard newValue != nil else { return }
+                dismissTask = Task {
+                    try? await Task.sleep(for: .seconds(6))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        viewModel.lastSaved = nil
+                    }
+                }
+            }
         }
     }
 
@@ -203,7 +215,10 @@ struct TodayView: View {
     private func selectDate(_ d: Date) {
         let day = Reading.dayStart(of: d)
         guard day != viewModel.date else { return }
+        dismissTask?.cancel()
+        dismissTask = nil
         withAnimation(.easeInOut(duration: 0.2)) {
+            viewModel.lastSaved = nil
             viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
         }
     }
@@ -234,6 +249,7 @@ struct TodayView: View {
             .foregroundStyle(.primary)
         }
         .disabled(isSaving)
+        .sensoryFeedback(.success, trigger: viewModel.lastSaved)
     }
 }
 

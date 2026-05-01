@@ -56,6 +56,7 @@ struct NumericPad: View {
             }
             .padding(.top, 8)
         }
+        .sensoryFeedback(.impact(weight: .light), trigger: value)
     }
 
     private var formatted: String {

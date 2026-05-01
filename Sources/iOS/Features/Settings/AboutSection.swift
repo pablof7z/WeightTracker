@@ -20,13 +20,29 @@ struct AboutSection: View {
                 Spacer()
                 Text("\(stats.count)").foregroundStyle(.secondary)
             }
-            if let first = stats.first, let last = stats.last {
+            if let first = stats.earliest, let last = stats.latest {
                 HStack {
                     Text("Date range")
                     Spacer()
                     Text("\(first.formatted(date: .abbreviated, time: .omitted)) – \(last.formatted(date: .abbreviated, time: .omitted))")
                         .foregroundStyle(.secondary)
                 }
+            }
+        }
+
+        Section {
+            // TODO: replace with real URL
+            Link(destination: URL(string: "https://example.com/privacy")!) {
+                Label("Privacy Policy", systemImage: "lock.shield.fill")
+            }
+
+            Link(destination: URL(string: "mailto:pfer@me.com?subject=WeightTracker%20Support")!) {
+                Label("Contact Support", systemImage: "envelope.fill")
+            }
+
+            // TODO: replace with real URL
+            Link(destination: URL(string: "https://apps.apple.com/app/idXXXXXXXX")!) {
+                Label("Rate WeightTracker", systemImage: "star.fill")
             }
         }
     }
@@ -39,7 +55,7 @@ struct AboutSection: View {
         (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "—"
     }
 
-    private var stats: (count: Int, first: Date?, last: Date?) {
+    private var stats: (count: Int, earliest: Date?, latest: Date?) {
         let readings = appServices.repository.allReadings()
         let dates = readings.map { $0.date }.sorted()
         return (readings.count, dates.first, dates.last)

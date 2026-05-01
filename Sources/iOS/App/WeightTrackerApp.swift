@@ -3,6 +3,7 @@ import SwiftData
 
 @main
 struct WeightTrackerApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @AppStorage(AppPrefKey.onboardingComplete) private var onboardingComplete: Bool = false
     @AppStorage(AppPrefKey.theme) private var theme: String = ThemePreference.system.rawValue
     @StateObject private var appServices = AppServices.shared

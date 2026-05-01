@@ -216,6 +216,10 @@ public struct FullscreenChartView: View {
                 visibleSpanDays = fullSpanDays
                 initialDomainSet = true
             }
+            AppOrientation.shared.set(.landscape)
+        }
+        .onDisappear {
+            AppOrientation.shared.set(.portrait)
         }
     }
 

@@ -34,12 +34,10 @@ struct RemindersSettingsSection: View {
                 Toggle("Cut stall", isOn: $cutStall)
                     .onChange(of: cutStall) { _, _ in reschedule() }
 
-                Stepper("Quiet from \(formatHour(quietStartHour))",
-                        value: $quietStartHour, in: 0...23)
-                    .onChange(of: quietStartHour) { _, _ in reschedule() }
-                Stepper("Quiet until \(formatHour(quietEndHour))",
-                        value: $quietEndHour, in: 0...23)
-                    .onChange(of: quietEndHour) { _, _ in reschedule() }
+                DatePicker("Quiet from", selection: quietStartBinding, displayedComponents: .hourAndMinute)
+                DatePicker("Quiet until", selection: quietEndBinding, displayedComponents: .hourAndMinute)
+
+                Section(footer: Text("Quiet hours wrap past midnight when the end time is earlier than the start (e.g. 10 PM → 7 AM).")) { }
 
                 if let until = pausedUntil, until > Date() {
                     HStack {

@@ -110,6 +110,7 @@
 		DA9A262BAABC5F03F5B1990C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6EEEAF3E15B83A91F5A6AD9C /* Assets.xcassets */; };
 		DC635217767E7DC1B0035169 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */; };
 		E455B2D98C0FFED47B47ABB2 /* CutsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82656A20FFD2B09430FD206 /* CutsViewModel.swift */; };
+		E8446BEA35BB803C9F9158EF /* AppOrientation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE170F2902723E3601CB9AD1 /* AppOrientation.swift */; };
 		E88B0B4292E155914476E1DF /* TodayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB81FF4D99BC5DECAAFF13D /* TodayViewModel.swift */; };
 		E8ACA6A45CC5938D41A24FC0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B67C0FF305F635FE93305906 /* PrivacyInfo.xcprivacy */; };
 		E97D783DBD98C650C3BE36BA /* CutProjectionChartContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FBDAE013B33AE9B7726F5C5 /* CutProjectionChartContent.swift */; };
@@ -232,6 +233,7 @@
 		DAF92C62D65AA29A85E6C4B2 /* OnboardingWhatItIs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWhatItIs.swift; sourceTree = "<group>"; };
 		DE0C63C08173E783F542DC0B /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
 		DE13239FB6FB767EF9E6A2EA /* NotificationPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPreferences.swift; sourceTree = "<group>"; };
+		DE170F2902723E3601CB9AD1 /* AppOrientation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppOrientation.swift; sourceTree = "<group>"; };
 		DE77AF97769C30641AE800A6 /* CSVUnitDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVUnitDetector.swift; sourceTree = "<group>"; };
 		DF32432F839E099D4B007C11 /* WeightTrackerWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WeightTrackerWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7B6E4F9BA240C6FCE7B3B19 /* EditCutSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCutSheet.swift; sourceTree = "<group>"; };
@@ -454,6 +456,7 @@
 		CCE9F63F7BD851C77D3F3EEB /* App */ = {
 			isa = PBXGroup;
 			children = (
+				DE170F2902723E3601CB9AD1 /* AppOrientation.swift */,
 				7ED41C7492E4BBB583CBC765 /* AppServices.swift */,
 				1D23A0835AD55B705F61A44B /* WeightTrackerApp.swift */,
 			);
@@ -671,6 +674,7 @@
 				66018E562743FA6CC5DD60DA /* ActiveCutCard.swift in Sources */,
 				F038D6C11ABD9581D00AB7FA /* ActiveCutMinichart.swift in Sources */,
 				7E81D27D9ADA7665A15F9FB1 /* ActiveCutStore.swift in Sources */,
+				E8446BEA35BB803C9F9158EF /* AppOrientation.swift in Sources */,
 				2DD48423630D2DDF12B47ED0 /* AppPreferences.swift in Sources */,
 				51B9232D2384F50FD78F453F /* AppServices.swift in Sources */,
 				84B7850DD4FD9C092044B160 /* BackgroundTaskRegistration.swift in Sources */,
