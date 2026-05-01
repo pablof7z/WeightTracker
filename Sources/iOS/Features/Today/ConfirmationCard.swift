@@ -42,7 +42,7 @@ struct ConfirmationCard: View {
                         Image(systemName: delta < 0 ? "arrow.down" : (delta > 0 ? "arrow.up" : "minus"))
                     }
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(delta < 0 ? .green : (delta > 0 ? .red : .secondary))
+                    .foregroundStyle(deltaColor(delta, clusterType: confirmation.clusterType))
                 }
             }
 
@@ -69,5 +69,10 @@ struct ConfirmationCard: View {
                 .strokeBorder(.green.opacity(0.4), lineWidth: 1)
         )
         .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    private func deltaColor(_ delta: Double, clusterType: ClusterType?) -> Color {
+        guard clusterType == .cut else { return .secondary }
+        return delta < 0 ? .green : (delta > 0 ? .red : .secondary)
     }
 }

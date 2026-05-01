@@ -81,7 +81,7 @@ struct RightNowCard: View {
                 let prefix = displayDelta >= 0 ? "+" : ""
                 Text("\(prefix)\(formatNumber(displayDelta)) \(weightUnit.symbol)")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(displayDelta >= 0 ? .red : .green)
+                    .foregroundStyle(deltaColor(displayDelta))
             } else {
                 Text("—")
                     .font(.subheadline)
@@ -112,6 +112,11 @@ struct RightNowCard: View {
                 .font(.subheadline)
                 .foregroundStyle(.primary)
         }
+    }
+
+    private func deltaColor(_ delta: Double) -> Color {
+        guard viewModel.activeCluster?.classification == .cut else { return .secondary }
+        return delta >= 0 ? .red : .green
     }
 
     private func formatNumber(_ value: Double) -> String {
