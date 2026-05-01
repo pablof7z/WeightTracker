@@ -30,7 +30,7 @@ struct HistoricalCutCard: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+        .glass(in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var yearsAgoLabel: String {

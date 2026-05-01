@@ -54,7 +54,7 @@ struct OptionalDetailsRow: View {
             }
         }
         .padding(.horizontal, 12)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .glass(in: RoundedRectangle(cornerRadius: 14))
         .onAppear { expanded = stickyExpand }
     }
 

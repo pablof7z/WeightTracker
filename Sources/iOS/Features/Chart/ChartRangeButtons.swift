@@ -28,23 +28,26 @@ struct ChartRangeButtons: View {
     @Binding var selection: ChartRange
 
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(ChartRange.allCases) { r in
-                Button {
-                    selection = r
-                } label: {
-                    Text(r.title)
-                        .font(.subheadline.weight(.medium))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            r == selection ? AnyShapeStyle(.tint) : AnyShapeStyle(.thinMaterial),
-                            in: Capsule()
-                        )
-                        .foregroundStyle(r == selection ? Color.white : Color.primary)
+        LiquidGlassContainer(spacing: 6) {
+            HStack(spacing: 6) {
+                ForEach(ChartRange.allCases) { r in
+                    Button {
+                        selection = r
+                    } label: {
+                        Text(r.title)
+                            .font(.subheadline.weight(.medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .foregroundStyle(r == selection ? Color.white : Color.primary)
+                            .glass(
+                                in: Capsule(),
+                                tint: r == selection ? .accentColor : nil
+                            )
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Range \(r.title)")
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Range \(r.title)")
             }
         }
         .padding(.horizontal)

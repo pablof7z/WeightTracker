@@ -28,10 +28,7 @@ struct EraSummaryTable: View {
             }
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
+        .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var header: some View {

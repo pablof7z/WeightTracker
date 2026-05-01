@@ -6,10 +6,12 @@ struct ChartOverlayToggles: View {
     @Binding var showGaps: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
-            toggle("Avg", isOn: $showAverage, color: WTColor.avgLine)
-            toggle("Clusters", isOn: $showClusters, color: .blue)
-            toggle("Gaps", isOn: $showGaps, color: .orange)
+        LiquidGlassContainer(spacing: 10) {
+            HStack(spacing: 10) {
+                toggle("Avg", isOn: $showAverage, color: WTColor.avgLine)
+                toggle("Clusters", isOn: $showClusters, color: .blue)
+                toggle("Gaps", isOn: $showGaps, color: .orange)
+            }
         }
         .padding(.horizontal)
     }
@@ -28,14 +30,12 @@ struct ChartOverlayToggles: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(
-                isOn.wrappedValue ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(Color.clear),
-                in: Capsule()
-            )
+            .foregroundStyle(isOn.wrappedValue ? Color.primary : Color.secondary)
+            .glass(in: Capsule(), tint: isOn.wrappedValue ? color.opacity(0.2) : nil)
             .overlay(
                 Capsule().strokeBorder(.secondary.opacity(0.3), lineWidth: 1)
             )
-            .foregroundStyle(isOn.wrappedValue ? Color.primary : Color.secondary)
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
     }

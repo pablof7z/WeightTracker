@@ -22,17 +22,19 @@ struct NumericPad: View {
                 .font(.title3.weight(.medium))
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 28) {
-                PadButton(symbol: "minus") {
-                    value = round1(value - tapStep)
-                } onLongPressTick: {
-                    value = round1(value - longPressStep)
-                }
+            LiquidGlassContainer(spacing: 28) {
+                HStack(spacing: 28) {
+                    PadButton(symbol: "minus") {
+                        value = round1(value - tapStep)
+                    } onLongPressTick: {
+                        value = round1(value - longPressStep)
+                    }
 
-                PadButton(symbol: "plus") {
-                    value = round1(value + tapStep)
-                } onLongPressTick: {
-                    value = round1(value + longPressStep)
+                    PadButton(symbol: "plus") {
+                        value = round1(value + tapStep)
+                    } onLongPressTick: {
+                        value = round1(value + longPressStep)
+                    }
                 }
             }
             .padding(.top, 8)
@@ -55,11 +57,12 @@ private struct PadButton: View {
     @State private var timer: Timer?
 
     var body: some View {
-        Image(systemName: "\(symbol).circle.fill")
-            .resizable()
-            .frame(width: 64, height: 64)
+        Image(systemName: symbol)
+            .font(.system(size: 28, weight: .semibold))
             .foregroundStyle(.tint)
-            .contentShape(Circle())
+            .frame(width: 72, height: 56)
+            .glass(in: Capsule(), tint: .accentColor.opacity(0.25))
+            .contentShape(Capsule())
             .onTapGesture { onTap() }
             .simultaneousGesture(
                 LongPressGesture(minimumDuration: 0.4)

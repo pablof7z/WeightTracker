@@ -71,7 +71,7 @@ struct TodayView: View {
         .datePickerStyle(.compact)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.thinMaterial, in: Capsule())
+        .glass(in: Capsule())
     }
 
     private var saveButton: some View {
@@ -89,7 +89,7 @@ struct TodayView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(.tint, in: RoundedRectangle(cornerRadius: 14))
+            .glass(in: RoundedRectangle(cornerRadius: 14), tint: .accentColor)
             .foregroundStyle(.white)
         }
         .disabled(isSaving)

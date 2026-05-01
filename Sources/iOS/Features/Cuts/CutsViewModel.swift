@@ -28,6 +28,12 @@ final class CutsViewModel: ObservableObject {
         await services.notifications.scheduleEvaluatedTriggers()
     }
 
+    func updateCut(_ cut: ActiveCut) async {
+        ActiveCutStore.save(cut)
+        activeCut = cut
+        await services.notifications.scheduleEvaluatedTriggers()
+    }
+
     func markDone() async {
         ActiveCutStore.save(nil)
         activeCut = nil

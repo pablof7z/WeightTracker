@@ -4,6 +4,7 @@ struct CutsView: View {
     @StateObject private var viewModel = CutsViewModel()
     @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
     @State private var showStartSheet = false
+    @State private var showEditSheet = false
 
     private var unit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
 
@@ -27,6 +28,14 @@ struct CutsView: View {
                         }
                         .disabled(viewModel.mostRecentReading == nil)
                     }
+                } else {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showEditSheet = true
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                    }
                 }
             }
             .sheet(isPresented: $showStartSheet) {
@@ -34,6 +43,19 @@ struct CutsView: View {
                     StartCutSheet(startWeightKg: recent.weightKg) { cut in
                         Task { await viewModel.startCut(cut) }
                     }
+                }
+            }
+            .sheet(isPresented: $showEditSheet) {
+                if let active = viewModel.activeCut {
+                    EditCutSheet(
+                        cut: active,
+                        onSave: { updated in
+                            Task { await viewModel.updateCut(updated) }
+                        },
+                        onCancelCut: {
+                            Task { await viewModel.markDone() }
+                        }
+                    )
                 }
             }
             .onAppear { viewModel.reload() }
@@ -72,7 +94,7 @@ struct CutsView: View {
                 .padding(.top, 4)
             }
             .padding()
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+            .glass(in: RoundedRectangle(cornerRadius: 12))
         }
     }
 

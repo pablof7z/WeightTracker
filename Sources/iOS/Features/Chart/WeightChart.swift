@@ -11,10 +11,14 @@ struct WeightChart: View {
     let showAverage: Bool
     let showClusters: Bool
     let showGaps: Bool
+    var activeCut: ActiveCut? = nil
+    var scrollEndDate: Date? = nil
 
     var body: some View {
-        let endDate = readings.last?.date ?? Date()
-        let earliest = readings.first?.date ?? endDate.addingTimeInterval(-Double(max(visibleDays, 1)) * 86_400)
+        let endDate = scrollEndDate ?? readings.last?.date ?? Date()
+        let earliest = activeCut?.startDate
+            ?? readings.first?.date
+            ?? endDate.addingTimeInterval(-Double(max(visibleDays, 1)) * 86_400)
 
         Chart {
             if showClusters {
@@ -75,6 +79,31 @@ struct WeightChart: View {
                     .foregroundStyle(WTColor.avgLine)
                 }
             }
+
+            if let cut = activeCut {
+                RuleMark(y: .value("Start", display(cut.startWeightKg)))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    .foregroundStyle(.gray.opacity(0.7))
+                    .annotation(position: .top, alignment: .leading) {
+                        Text("Start \(formattedWeight(cut.startWeightKg))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                RuleMark(y: .value("Target", display(cut.targetWeightKg)))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .foregroundStyle(.green)
+                    .annotation(position: .top, alignment: .leading) {
+                        Text("Target \(formattedWeight(cut.targetWeightKg))")
+                            .font(.caption2.bold())
+                            .foregroundStyle(.green)
+                    }
+                RuleMark(x: .value("CutStart", cut.startDate))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                    .foregroundStyle(.gray.opacity(0.5))
+                RuleMark(x: .value("CutTarget", cut.targetEndDate))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                    .foregroundStyle(.green.opacity(0.6))
+            }
         }
         .chartXScale(domain: earliest...endDate)
         .chartYScale(domain: yMin...yMax)
@@ -106,15 +135,23 @@ struct WeightChart: View {
     }
 
     private var yMin: Double {
-        guard !readings.isEmpty else { return 0 }
-        let minKg = readings.map(\.weightKg).min() ?? 0
+        let cutAnchors: [Double] = activeCut.map { [$0.startWeightKg, $0.targetWeightKg] } ?? []
+        let kgs = readings.map(\.weightKg) + cutAnchors
+        guard !kgs.isEmpty else { return 0 }
+        let minKg = kgs.min() ?? 0
         return floor(display(minKg) - 4)
     }
 
     private var yMax: Double {
-        guard !readings.isEmpty else { return 100 }
-        let maxKg = readings.map(\.weightKg).max() ?? 100
+        let cutAnchors: [Double] = activeCut.map { [$0.startWeightKg, $0.targetWeightKg] } ?? []
+        let kgs = readings.map(\.weightKg) + cutAnchors
+        guard !kgs.isEmpty else { return 100 }
+        let maxKg = kgs.max() ?? 100
         return ceil(display(maxKg) + 4)
+    }
+
+    private func formattedWeight(_ kg: Double) -> String {
+        String(format: "%.1f %@", display(kg), weightUnit.symbol)
     }
 
     private var visibleDomainSeconds: TimeInterval {

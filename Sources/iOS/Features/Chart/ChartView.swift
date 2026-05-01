@@ -12,6 +12,7 @@ struct ChartView: View {
     @State private var showAverage: Bool = true
     @State private var showClusters: Bool = true
     @State private var showGaps: Bool = true
+    @State private var pinnedToCut: Bool = true
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var range: ChartRange {
@@ -22,11 +23,18 @@ struct ChartView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
+                    if viewModel.activeCut != nil && pinnedToCut {
+                        cutPinChip
+                    }
+
                     ChartRangeButtons(selection: Binding(
                         get: { ChartRange.from(days: rangeDays) },
-                        set: { rangeDays = $0.rawValue }
+                        set: {
+                            rangeDays = $0.rawValue
+                            pinnedToCut = false
+                        }
                     ))
-                    .padding(.top, 8)
+                    .padding(.top, 4)
 
                     if viewModel.readings.isEmpty {
                         emptyState
@@ -37,10 +45,12 @@ struct ChartView: View {
                             clusters: viewModel.clusters,
                             gaps: viewModel.gaps,
                             weightUnit: weightUnit,
-                            visibleDays: visibleDaysForRange,
+                            visibleDays: effectiveVisibleDays,
                             showAverage: showAverage,
                             showClusters: showClusters,
-                            showGaps: showGaps
+                            showGaps: showGaps,
+                            activeCut: pinnedToCut ? viewModel.activeCut : nil,
+                            scrollEndDate: pinnedToCut ? viewModel.cutScrollEnd : nil
                         )
                         .padding(.horizontal)
                     }
@@ -70,6 +80,33 @@ struct ChartView: View {
         return r.rawValue
     }
 
+    private var effectiveVisibleDays: Int {
+        if pinnedToCut, let cutDays = viewModel.cutVisibleDays {
+            return cutDays
+        }
+        return visibleDaysForRange
+    }
+
+    private var cutPinChip: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "scissors")
+                .foregroundStyle(.green)
+            Text("Showing current cut")
+                .font(.subheadline.weight(.medium))
+            Spacer()
+            Button("Show all") {
+                pinnedToCut = false
+            }
+            .font(.subheadline)
+            .buttonStyle(.borderless)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .glass(in: Capsule(), tint: .green.opacity(0.15))
+        .padding(.horizontal)
+        .padding(.top, 8)
+    }
+
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "chart.xyaxis.line")
@@ -84,6 +121,8 @@ struct ChartView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(40)
+        .glass(in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal)
     }
 }
 

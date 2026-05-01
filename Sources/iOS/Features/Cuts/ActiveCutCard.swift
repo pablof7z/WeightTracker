@@ -67,7 +67,7 @@ struct ActiveCutCard: View {
             .padding(.top, 4)
         }
         .padding()
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+        .glass(in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func metric(title: String, value: String) -> some View {
