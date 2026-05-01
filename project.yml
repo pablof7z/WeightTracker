@@ -40,6 +40,10 @@ targets:
         CFBundleDisplayName: WeightTracker
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: app.pfer.weighttracker.byok
+            CFBundleURLSchemes:
+              - weighttracker
         UILaunchScreen:
           UIColorName: ""
         UIApplicationSceneManifest:

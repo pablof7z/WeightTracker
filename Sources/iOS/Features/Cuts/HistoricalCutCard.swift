@@ -14,6 +14,12 @@ struct HistoricalCutCard: View {
         return f
     }()
 
+    private static let relativeFmt: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .full
+        return f
+    }()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -60,9 +66,7 @@ struct HistoricalCutCard: View {
     }
 
     private var yearsAgoLabel: String {
-        if yearsAgo == 0 { return "this year" }
-        if yearsAgo == 1 { return "1y ago" }
-        return "\(yearsAgo)y ago"
+        Self.relativeFmt.localizedString(for: cut.startDate, relativeTo: Date())
     }
 
     private func metric(title: String, value: String) -> some View {

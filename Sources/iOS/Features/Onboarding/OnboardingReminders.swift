@@ -35,6 +35,17 @@ struct OnboardingReminders: View {
 
             if let status {
                 Text(status).font(.footnote).foregroundStyle(.secondary)
+                if status.contains("denied") {
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    .font(.footnote)
+                    Text("You can enable this anytime in Settings.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer()

@@ -51,5 +51,9 @@ struct ChartOverlayToggles: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(title) overlay")
+        .accessibilityValue(isOn.wrappedValue ? "On" : "Off")
+        .accessibilityAddTraits(isOn.wrappedValue ? .isSelected : [])
+        .sensoryFeedback(.selection, trigger: isOn.wrappedValue)
     }
 }

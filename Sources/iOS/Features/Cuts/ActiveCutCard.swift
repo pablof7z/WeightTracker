@@ -12,6 +12,7 @@ struct ActiveCutCard: View {
     var onMarkDone: () -> Void
 
     @State private var showFullscreen = false
+    @State private var confirmEnd = false
 
     private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
@@ -90,12 +91,21 @@ struct ActiveCutCard: View {
                 fullscreenChart
             }
 
-            Button(role: .destructive, action: onMarkDone) {
+            Button {
+                confirmEnd = true
+            } label: {
                 Label("Mark done", systemImage: "checkmark.circle.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .tint(.green)
             .padding(.top, 4)
+            .confirmationDialog("Finish this cut?", isPresented: $confirmEnd, titleVisibility: .visible) {
+                Button("End cut", role: .destructive) { onMarkDone() }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Your progress will be saved as a historical cut if it qualifies. You can start a new cut anytime.")
+            }
         }
         .padding()
         .glass(in: RoundedRectangle(cornerRadius: 12))
@@ -125,23 +135,21 @@ struct ActiveCutCard: View {
 
     @ViewBuilder
     private var statusBadge: some View {
-        if let status {
-            let (label, color): (String, Color) = {
-                switch status {
-                case .onTrack: return ("On track", .green)
-                case .behind: return ("Behind", .orange)
-                case .reversed: return ("Reversed", .red)
-                }
-            }()
-            Text(label)
-                .font(.caption).bold()
-                .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(color.opacity(0.18), in: Capsule())
-                .foregroundStyle(color)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
-            Color.clear.frame(maxWidth: .infinity, maxHeight: 1)
-        }
+        let resolved: (label: String, color: Color)? = {
+            guard let status else { return nil }
+            switch status {
+            case .onTrack:  return ("On track", .green)
+            case .behind:   return ("Behind", .orange)
+            case .reversed: return ("Reversed", .red)
+            }
+        }()
+        Text(resolved?.label ?? " ")
+            .font(.caption).bold()
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background((resolved?.color ?? Color.clear).opacity(0.18), in: Capsule())
+            .foregroundStyle(resolved?.color ?? Color.clear)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityHidden(resolved == nil)
     }
 
     private func formatWeight(_ kg: Double) -> String {

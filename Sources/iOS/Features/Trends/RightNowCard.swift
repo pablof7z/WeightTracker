@@ -17,7 +17,7 @@ struct RightNowCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Right now")
+            Text("Where you are")
                 .font(.headline)
 
             if let recent = viewModel.mostRecent {

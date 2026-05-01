@@ -58,26 +58,29 @@ struct ChartRangeButtons: View {
                         .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .opacity(cutPinned ? 1.0 : 0.5)
                     .accessibilityLabel("Show active cut window")
                 }
 
                 ForEach(ChartRange.allCases) { r in
+                    let isActive = !cutPinned && r == selection
                     Button {
                         selection = r
                         cutPinned = false
                     } label: {
                         Text(r.title)
-                            .font(.subheadline.weight(.medium))
+                            .font(.subheadline.weight(isActive ? .semibold : .medium))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .foregroundStyle((!cutPinned && r == selection) ? Color.white : Color.primary)
+                            .foregroundStyle(isActive ? Color.white : Color.primary)
                             .glass(
                                 in: Capsule(),
-                                tint: (!cutPinned && r == selection) ? .accentColor : nil
+                                tint: isActive ? .accentColor : nil
                             )
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .opacity(isActive ? 1.0 : 0.5)
                     .accessibilityLabel("Range \(r.title)")
                 }
             }

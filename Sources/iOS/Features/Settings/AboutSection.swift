@@ -31,18 +31,8 @@ struct AboutSection: View {
         }
 
         Section {
-            // TODO: replace with real URL
-            Link(destination: URL(string: "https://example.com/privacy")!) {
-                Label("Privacy Policy", systemImage: "lock.shield.fill")
-            }
-
             Link(destination: URL(string: "mailto:pfer@me.com?subject=WeightTracker%20Support")!) {
                 Label("Contact Support", systemImage: "envelope.fill")
-            }
-
-            // TODO: replace with real URL
-            Link(destination: URL(string: "https://apps.apple.com/app/idXXXXXXXX")!) {
-                Label("Rate WeightTracker", systemImage: "star.fill")
             }
         }
     }

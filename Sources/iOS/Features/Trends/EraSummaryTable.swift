@@ -10,11 +10,11 @@ struct EraSummaryTable: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Eras")
+            Text("Periods")
                 .font(.headline)
 
             if eras.isEmpty || eras.allSatisfy({ $0.gapCount == 0 && $0.readingCount == 0 }) {
-                Text("Not enough history yet to compare eras.")
+                Text("Log a few weeks of weights to compare periods.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 12)
@@ -33,11 +33,11 @@ struct EraSummaryTable: View {
 
     private var header: some View {
         HStack {
-            cell("Era", weight: .semibold, align: .leading, width: .infinity)
-            cell("Drift", weight: .semibold, align: .trailing, width: 64)
-            cell("Rate/mo", weight: .semibold, align: .trailing, width: 70)
+            cell("Period", weight: .semibold, align: .leading, width: .infinity)
+            cell("Drift \(weightUnit.symbol)", weight: .semibold, align: .trailing, width: 72)
+            cell("\(weightUnit.symbol)/mo", weight: .semibold, align: .trailing, width: 62)
             cell("Gaps", weight: .semibold, align: .trailing, width: 44)
-            cell("Gain%", weight: .semibold, align: .trailing, width: 54)
+            cell("Gain days", weight: .semibold, align: .trailing, width: 70)
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -49,15 +49,15 @@ struct EraSummaryTable: View {
             cell(signedDelta(lb: era.meanDriftLb),
                  weight: .regular,
                  align: .trailing,
-                 width: 64,
+                 width: 72,
                  color: tint(era.meanDriftLb))
             cell(signedDelta(lb: era.meanRateLbPerMonth),
                  weight: .regular,
                  align: .trailing,
-                 width: 70,
+                 width: 62,
                  color: tint(era.meanRateLbPerMonth))
             cell("\(era.gapCount)", weight: .regular, align: .trailing, width: 44)
-            cell(percent(era.gainRatio), weight: .regular, align: .trailing, width: 54)
+            cell(percent(era.gainRatio), weight: .regular, align: .trailing, width: 70)
         }
         .font(.subheadline)
     }

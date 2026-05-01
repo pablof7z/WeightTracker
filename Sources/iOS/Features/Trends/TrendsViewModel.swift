@@ -49,9 +49,9 @@ final class TrendsViewModel: ObservableObject {
         }
 
         return [
-            deltaFor(daysAgo: 7, label: "7-day"),
-            deltaFor(daysAgo: 30, label: "30-day"),
-            deltaFor(daysAgo: 365, label: "Year-over-year")
+            deltaFor(daysAgo: 7, label: "Past week"),
+            deltaFor(daysAgo: 30, label: "Past month"),
+            deltaFor(daysAgo: 365, label: "Past year")
         ]
     }
 

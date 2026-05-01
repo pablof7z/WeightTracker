@@ -7,6 +7,10 @@ struct DriftBarChart: View {
     var onSelect: (Gap) -> Void
 
     @State private var selectedID: UUID?
+    @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
+
+    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
+    private func driftDisplay(_ lb: Double) -> Double { weightUnit == .lbs ? lb : UnitConvert.lbToKg(lb) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -34,23 +38,23 @@ struct DriftBarChart: View {
             ForEach(gaps) { gap in
                 BarMark(
                     x: .value("Start", gap.startDate, unit: .day),
-                    y: .value("Drift (lb)", gap.driftLb)
+                    y: .value("Drift (\(weightUnit.symbol))", driftDisplay(gap.driftLb))
                 )
                 .foregroundStyle(gap.didGain ? Color.red : Color.green)
                 .annotation(position: .top, alignment: .center) {
                     if selectedID == gap.id {
-                        Text(String(format: "%+.1f lb", gap.driftLb))
+                        Text(String(format: "%+.1f \(weightUnit.symbol)", driftDisplay(gap.driftLb)))
                             .font(.caption2)
                             .padding(4)
                             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
                     }
                 }
             }
-            RuleMark(y: .value("Average", trendLineLb))
+            RuleMark(y: .value("Average", driftDisplay(trendLineLb)))
                 .foregroundStyle(WTColor.avgLine)
                 .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
                 .annotation(position: .top, alignment: .leading) {
-                    Text(String(format: "Avg %+.1f lb", trendLineLb))
+                    Text(String(format: "Avg %+.1f \(weightUnit.symbol)", driftDisplay(trendLineLb)))
                         .font(.caption2)
                         .foregroundStyle(WTColor.avgLine)
                 }

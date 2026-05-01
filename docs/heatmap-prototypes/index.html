@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<title>Cut Heatmap Prototypes — honest encodings only</title>
+<style>
+  /* ---------- Reset & base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #000;
+    color: #f2f2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+    padding: 0 0 64px;
+  }
+  h1, h2, h3, p { margin: 0; }
+  button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+
+  /* ---------- Sticky header ---------- */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(0,0,0,0.78);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    backdrop-filter: saturate(180%) blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 14px 16px 12px;
+  }
+  .header h1 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+  .header .sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+    margin-top: 2px;
+  }
+  .toggle {
+    margin-top: 10px;
+    display: inline-flex;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 2px;
+    font-size: 12px;
+  }
+  .toggle button {
+    padding: 5px 10px;
+    border-radius: 6px;
+    color: rgba(255,255,255,0.62);
+    transition: background 0.18s, color 0.18s;
+  }
+  .toggle button.active {
+    background: rgba(255,255,255,0.14);
+    color: #fff;
+  }
+
+  /* ---------- Page width modes ---------- */
+  .page {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px 16px 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    transition: max-width 0.2s;
+  }
+  body.wide .page {
+    max-width: 1200px;
+    grid-template-columns: 1fr 1fr;
+  }
+  body.wide .stack-indicator { grid-column: 1 / -1; }
+
+  /* ---------- Today-tab card-stack indicator ---------- */
+  .stack-indicator {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+  }
+  .stack-indicator .chip {
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.55);
+    border: 1px solid transparent;
+  }
+  .stack-indicator .chip.here {
+    background: rgba(64, 156, 255, 0.18);
+    color: #66b2ff;
+    border-color: rgba(102, 178, 255, 0.32);
+    font-weight: 600;
+  }
+  .stack-indicator .sep { color: rgba(255,255,255,0.25); }
+
+  /* ---------- Prototype glass card ---------- */
+  .prototype {
+    background: rgba(28, 28, 30, 0.62);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 18px 16px 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .prototype h2 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .prototype .desc {
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.58);
+    margin-bottom: 16px;
+    line-height: 1.45;
+  }
+  .prototype .visual { margin: 4px 0 14px; }
+
+  /* ---------- Capsule (segmented thermometer) ---------- */
+  .capsule-wrap {
+    position: relative;
+    margin-top: 28px;
+    padding: 0 4px;
+  }
+  .caret {
+    position: absolute;
+    top: -22px;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .caret::after {
+    content: "";
+    display: block;
+    margin: 3px auto 0;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid rgba(255,255,255,0.85);
+  }
+  .capsule {
+    display: flex;
+    width: 100%;
+    height: 28px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    gap: 1px;
+  }
+  .capsule .seg {
+    flex: 1 1 0;
+    min-width: 2px;
+    height: 100%;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+  }
+  .capsule .seg:hover { transform: scaleY(1.1); }
+  .capsule .seg.today {
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.92);
+    z-index: 2;
+  }
+  .capsule .seg .glyph {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    line-height: 1;
+    color: rgba(255,255,255,0.85);
+    pointer-events: none;
+  }
+  .capsule.binary .seg.filled { background: #2c3e7a; }
+  .capsule.binary .seg.missed {
+    background: rgba(255,255,255,0.04);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+  }
+  .capsule.binary .seg.future {
+    background: rgba(255,255,255,0.02);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .ticks {
+    position: relative;
+    height: 18px;
+    margin-top: 6px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.45);
+  }
+  .ticks .tick {
+    position: absolute;
+    transform: translateX(-50%);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .ticks .tick::before {
+    content: "";
+    display: block;
+    width: 1px;
+    height: 5px;
+    background: rgba(255,255,255,0.22);
+    margin: 0 auto 3px;
+  }
+
+  /* ---------- 7×N grid ---------- */
+  .grid-wrap {
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    gap: 6px;
+    align-items: start;
+  }
+  .grid-rowlabels {
+    display: grid;
+    grid-template-rows: repeat(7, 1fr);
+    gap: 2px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.4);
+    padding-top: 1px;
+  }
+  .grid-rowlabels span {
+    height: 14px;
+    display: flex;
+    align-items: center;
+  }
+  .grid-area { position: relative; }
+  .grid {
+    display: grid;
+    grid-template-rows: repeat(7, 14px);
+    grid-auto-flow: column;
+    grid-auto-columns: 14px;
+    gap: 2px;
+    position: relative;
+  }
+  .grid .cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+  }
+  .grid .cell.empty {
+    background: transparent;
+    pointer-events: none;
+  }
+  .grid .cell.missed {
+    background: rgba(255,255,255,0.03);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16);
+  }
+  .grid .cell.future {
+    background: rgba(255,255,255,0.02);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+  }
+  .grid .cell.today {
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.92);
+    z-index: 2;
+  }
+  .grid .cell.binary-filled { background: #2c3e7a; }
+  .grid .cell.binary-filled.dir-up { background: #4a6cb8; }
+  .grid .cell.binary-filled.dir-down { background: #1f2c56; }
+  .grid .cell.binary-filled.dir-flat { background: #2c3e7a; }
+  .grid .cell:hover { transform: scale(1.18); }
+  .now-line {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 1px;
+    background: rgba(255,255,255,0.4);
+    pointer-events: none;
+  }
+  .week-ticks {
+    display: flex;
+    margin-top: 6px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.4);
+    padding-left: 20px;
+  }
+  .week-ticks span {
+    flex: 1;
+    text-align: left;
+  }
+
+  /* ---------- Sparkline ---------- */
+  .spark-wrap {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .spark-wrap .label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .spark-wrap svg {
+    display: block;
+    width: 100%;
+    height: 56px;
+    overflow: visible;
+  }
+
+  /* ---------- Legend ---------- */
+  .legend {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.5;
+  }
+  .legend .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .legend .row:last-child { margin-bottom: 0; }
+  .legend .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .legend .swatch.outlined {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+  }
+  .legend .swatch.future {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+  }
+  .legend .ramp {
+    display: flex;
+    height: 14px;
+    width: 140px;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .legend .ramp span {
+    flex: 1;
+  }
+
+  /* ---------- Popover ---------- */
+  .popover {
+    position: fixed;
+    z-index: 200;
+    min-width: 180px;
+    max-width: 240px;
+    background: rgba(28,28,30,0.92);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.92);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    pointer-events: auto;
+    display: none;
+  }
+  .popover.show { display: block; }
+  .popover .pop-date {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #fff;
+    font-size: 12.5px;
+  }
+  .popover .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 0;
+    color: rgba(255,255,255,0.62);
+  }
+  .popover .row b {
+    color: #fff;
+    font-weight: 500;
+  }
+  .popover .verdict {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.78);
+  }
+  .popover .verdict.ahead { color: #7fcfff; }
+  .popover .verdict.on { color: #c4c8d0; }
+  .popover .verdict.behind { color: #f5d96a; }
+</style>
+</head>
+<body>
+  <header class="header">
+    <h1>Cut Heatmap Prototypes — honest encodings only</h1>
+    <div class="sub">Day 56 / 84 · 92.5 → 85.0 kg cut · 4 variants for evaluation</div>
+    <div class="toggle" role="tablist" aria-label="Layout width">
+      <button id="t-iphone" class="active" role="tab" aria-selected="true">iPhone (480)</button>
+      <button id="t-wide" role="tab" aria-selected="false">Wide (1200, 2-up)</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="stack-indicator" aria-label="Today tab card stack">
+      <span class="chip">NumericPad</span>
+      <span class="sep">·</span>
+      <span class="chip">Save</span>
+      <span class="sep">·</span>
+      <span class="chip">Minichart</span>
+      <span class="sep">·</span>
+      <span class="chip here">Heatmap</span>
+      <span class="sep">·</span>
+      <span class="chip">ConfirmationCard</span>
+    </div>
+
+    <!-- Prototype 1 -->
+    <section class="prototype" id="p1">
+      <h2>1 · Segmented Thermometer + Trajectory</h2>
+      <p class="desc">Color = position of your 7-day moving-average weight relative to the linear target trajectory for that day. Cividis ramp from dark (ahead) to pale (behind).</p>
+      <div class="visual" id="p1-visual"></div>
+      <div class="legend" id="p1-legend"></div>
+    </section>
+
+    <!-- Prototype 2 -->
+    <section class="prototype" id="p2">
+      <h2>2 · Segmented Thermometer + Binary + Glyph + Sparkline</h2>
+      <p class="desc">Cell = weighed-in (filled) / missed (outlined) / future (faded). A small ▼▬▲ glyph encodes direction vs. yesterday. Magnitude lives in the sparkline of the smoothed 7-day MA.</p>
+      <div class="visual" id="p2-visual"></div>
+      <div class="legend" id="p2-legend"></div>
+    </section>
+
+    <!-- Prototype 3 -->
+    <section class="prototype" id="p3">
+      <h2>3 · 7×N Grid + Trajectory</h2>
+      <p class="desc">GitHub-style 7-row contribution grid, one column per week. Same cividis trajectory rule as Prototype 1. Hairline now-line splits past from future.</p>
+      <div class="visual" id="p3-visual"></div>
+      <div class="legend" id="p3-legend"></div>
+    </section>
+
+    <!-- Prototype 4 -->
+    <section class="prototype" id="p4">
+      <h2>4 · 7×N Grid + Binary + Direction-Saturation + Sparkline</h2>
+      <p class="desc">Same grid as Prototype 3. Cells are binary (filled / missed / future); direction vs. yesterday encoded as fill saturation (lighter = up, darker = down) since glyphs don't fit at 14px. Magnitude lives in the sparkline.</p>
+      <div class="visual" id="p4-visual"></div>
+      <div class="legend" id="p4-legend"></div>
+    </section>
+  </main>
+
+  <div class="popover" id="popover" role="dialog" aria-hidden="true"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Constants ----------
+  const START_WEIGHT = 92.5;          // kg
+  const TARGET_WEIGHT = 85.0;         // kg
+  const TOTAL_DAYS = 84;              // 12 weeks
+  const TODAY_INDEX = 55;             // day 56, 0-indexed; HARDCODED for determinism
+  const REAL_FAT_LOSS_PER_DAY = 0.07; // kg
+  const NOISE_AMPLITUDE = 0.6;        // kg
+  const START_DATE = new Date(2026, 1, 15); // Feb 15 2026, local — used only for date formatting
+
+  // Cividis 5-bucket ramp
+  const CIVIDIS = ["#00224e", "#3b496c", "#707173", "#a59c74", "#fde737"];
+  // Bucket thresholds: trajectory delta in kg (actualMA - expectedLinear)
+  // Negative = ahead (lower than expected), positive = behind (higher than expected)
+  const BUCKET_THRESHOLDS = [-1.0, -0.4, 0.4, 1.0]; // index < threshold[i] → bucket i
+
+  // ---------- Seeded LCG (Numerical Recipes constants) ----------
+  function makeRng(seed) {
+    let s = seed >>> 0;
+    return () => {
+      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+      return s / 0x100000000;
+    };
+  }
+
+  // Box-Muller using the seeded uniform; deterministic gaussian
+  function makeGauss(rng) {
+    let cached = null;
+    return () => {
+      if (cached !== null) { const v = cached; cached = null; return v; }
+      let u = 0, v = 0;
+      while (u === 0) u = rng();
+      while (v === 0) v = rng();
+      const mag = Math.sqrt(-2.0 * Math.log(u));
+      const z0 = mag * Math.cos(2.0 * Math.PI * v);
+      const z1 = mag * Math.sin(2.0 * Math.PI * v);
+      cached = z1;
+      return z0;
+    };
+  }
+
+  // ---------- Build deterministic data ----------
+  function buildData() {
+    const rngWeight = makeRng(0xC0FFEE);
+    const rngSkip = makeRng(0xBEEF42);
+    const gauss = makeGauss(rngWeight);
+
+    // Determine which past weekdays to skip (4 of them, deterministic)
+    const skipWeekdays = new Set();
+    while (skipWeekdays.size < 4) {
+      const d = Math.floor(rngSkip() * TOTAL_DAYS);
+      // Avoid Saturdays (already skipped) and today
+      const dayOfWeek = (START_DATE.getDay() + d) % 7;
+      if (dayOfWeek === 6) continue; // Saturday already handled
+      if (d === TODAY_INDEX) continue;
+      if (d > TODAY_INDEX) continue; // only past
+      skipWeekdays.add(d);
+    }
+
+    const days = [];
+    for (let i = 0; i < TOTAL_DAYS; i++) {
+      const date = new Date(START_DATE.getTime());
+      date.setDate(START_DATE.getDate() + i);
+      const dayOfWeek = date.getDay(); // 0=Sun..6=Sat
+
+      // True underlying weight: linear fat-loss + gaussian water noise
+      const trueWeight = START_WEIGHT - REAL_FAT_LOSS_PER_DAY * i + gauss() * NOISE_AMPLITUDE;
+      const weight = Math.round(trueWeight * 10) / 10;
+
+      // Linear trajectory expected weight on this day
+      const expected = START_WEIGHT - ((START_WEIGHT - TARGET_WEIGHT) / (TOTAL_DAYS - 1)) * i;
+
+      // Status. Today is always "weighed" — you're looking at this card because you just logged.
+      let status;
+      if (i > TODAY_INDEX) status = "future";
+      else if (i === TODAY_INDEX) status = "weighed";
+      else if (dayOfWeek === 6) status = "missed";        // Skip Saturdays
+      else if (skipWeekdays.has(i)) status = "missed";    // 4 random weekdays
+      else status = "weighed";
+
+      days.push({
+        i, date, dayOfWeek, weight, expected, status,
+      });
+    }
+
+    // 7-day MA — uses only weighed days within the window, falls back to true weight if the window is empty
+    for (let i = 0; i < TOTAL_DAYS; i++) {
+      const start = Math.max(0, i - 6);
+      let sum = 0, n = 0;
+      for (let k = start; k <= i; k++) {
+        if (days[k].status === "weighed") { sum += days[k].weight; n++; }
+      }
+      days[i].ma = n > 0 ? sum / n : days[i].weight;
+    }
+
+    // Trajectory delta + cividis bucket
+    for (let i = 0; i < TOTAL_DAYS; i++) {
+      const d = days[i];
+      d.trajDelta = d.ma - d.expected;
+      let bucket = BUCKET_THRESHOLDS.length;
+      for (let b = 0; b < BUCKET_THRESHOLDS.length; b++) {
+        if (d.trajDelta < BUCKET_THRESHOLDS[b]) { bucket = b; break; }
+      }
+      d.bucket = bucket;
+    }
+
+    // Yesterday delta + direction
+    for (let i = 0; i < TOTAL_DAYS; i++) {
+      const d = days[i];
+      if (i === 0) { d.yDelta = 0; d.dir = "flat"; continue; }
+      const prev = days[i - 1];
+      if (d.status !== "weighed" || prev.status !== "weighed") {
+        d.yDelta = null; d.dir = "none";
+      } else {
+        d.yDelta = d.weight - prev.weight;
+        if (d.yDelta < -0.15) d.dir = "down";
+        else if (d.yDelta > 0.15) d.dir = "up";
+        else d.dir = "flat";
+      }
+    }
+
+    return days;
+  }
+
+  const DATA = buildData();
+
+  // ---------- Helpers ----------
+  function fmtDate(d) {
+    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  }
+  function fmtKg(v) {
+    if (v == null || isNaN(v)) return "—";
+    return v.toFixed(1) + " kg";
+  }
+  function fmtDelta(v) {
+    if (v == null || isNaN(v)) return "—";
+    const sign = v > 0 ? "+" : "";
+    return sign + v.toFixed(1) + " kg";
+  }
+  function trajectoryVerdict(delta) {
+    if (delta == null || isNaN(delta)) return { text: "—", cls: "" };
+    const abs = Math.abs(delta);
+    if (abs < 0.4) return { text: `On trajectory (${fmtDelta(delta)})`, cls: "on" };
+    if (delta < 0) return { text: `Ahead by ${abs.toFixed(1)} kg`, cls: "ahead" };
+    return { text: `Behind by ${abs.toFixed(1)} kg`, cls: "behind" };
+  }
+
+  // ---------- Popover ----------
+  const popover = document.getElementById("popover");
+  let popoverOpen = false;
+
+  function showPopover(day, anchorEl) {
+    const verdict = trajectoryVerdict(day.trajDelta);
+    popover.innerHTML = `
+      <div class="pop-date">${fmtDate(day.date)} · Day ${day.i + 1}</div>
+      <div class="row"><span>Status</span><b>${day.status === "weighed" ? "Weighed" : day.status === "missed" ? "Missed" : "Future"}</b></div>
+      <div class="row"><span>Weight</span><b>${day.status === "weighed" ? fmtKg(day.weight) : "—"}</b></div>
+      <div class="row"><span>7-day MA</span><b>${fmtKg(day.ma)}</b></div>
+      <div class="row"><span>Δ vs. yesterday</span><b>${day.yDelta == null ? "—" : fmtDelta(day.yDelta)}</b></div>
+      <div class="row"><span>Expected</span><b>${fmtKg(day.expected)}</b></div>
+      <div class="verdict ${verdict.cls}">${verdict.text}</div>
+    `;
+    popover.classList.add("show");
+    popover.setAttribute("aria-hidden", "false");
+
+    // Position
+    const rect = anchorEl.getBoundingClientRect();
+    const popRect = popover.getBoundingClientRect();
+    let top = rect.bottom + 8;
+    let left = rect.left + rect.width / 2 - popRect.width / 2;
+    // Clamp to viewport
+    const margin = 8;
+    if (left < margin) left = margin;
+    if (left + popRect.width > window.innerWidth - margin) {
+      left = window.innerWidth - popRect.width - margin;
+    }
+    if (top + popRect.height > window.innerHeight - margin) {
+      top = rect.top - popRect.height - 8;
+    }
+    popover.style.top = `${top}px`;
+    popover.style.left = `${left}px`;
+    popoverOpen = true;
+  }
+  function hidePopover() {
+    popover.classList.remove("show");
+    popover.setAttribute("aria-hidden", "true");
+    popoverOpen = false;
+  }
+  document.addEventListener("click", (e) => {
+    if (popoverOpen && !popover.contains(e.target) && !e.target.closest("[data-day]")) {
+      hidePopover();
+    }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") hidePopover();
+  });
+
+  function bindCellClicks(root) {
+    root.querySelectorAll("[data-day]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = Number(el.dataset.day);
+        showPopover(DATA[idx], el);
+      });
+    });
+  }
+
+  // ---------- Cividis cell color ----------
+  function bucketStyle(day) {
+    const color = CIVIDIS[day.bucket];
+    return `background:${color}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);`;
+  }
+
+  // ---------- Capsule render ----------
+  function renderCapsule(rootId, mode) {
+    const root = document.getElementById(rootId);
+    const todayPct = (TODAY_INDEX + 0.5) / TOTAL_DAYS * 100;
+
+    let segHtml = "";
+    for (let i = 0; i < TOTAL_DAYS; i++) {
+      const d = DATA[i];
+      let cls = "seg", style = "";
+      let inner = "";
+
+      if (mode === "trajectory") {
+        if (d.status === "future") {
+          cls += " future";
+          style = "background: rgba(255,255,255,0.025); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);";
+        } else if (d.status === "missed") {
+          cls += " missed";
+          style = "background: rgba(255,255,255,0.04); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);";
+        } else {
+          cls += " filled";
+          style = bucketStyle(d);
+        }
+      } else { // binary
+        if (d.status === "future") cls += " future";
+        else if (d.status === "missed") cls += " missed";
+        else {
+          cls += " filled";
+          // Glyph
+          const g = d.dir === "up" ? "▲" : d.dir === "down" ? "▼" : "▬";
+          inner = `<span class="glyph">${g}</span>`;
+        }
+      }
+
+      if (i === TODAY_INDEX) cls += " today";
+
+      segHtml += `<div class="${cls}" data-day="${i}" style="${style}">${inner}</div>`;
+    }
+
+    const milestones = [
+      { pct: 25, label: "25%" },
+      { pct: 50, label: "50%" },
+      { pct: 75, label: "75%" },
+      { pct: 100, label: `${TARGET_WEIGHT.toFixed(1)} kg` },
+    ];
+    const ticksHtml = milestones.map(m => `<div class="tick" style="left:${m.pct}%">${m.label}</div>`).join("");
+
+    root.innerHTML = `
+      <div class="capsule-wrap">
+        <div class="caret" style="left:${todayPct}%">Day ${TODAY_INDEX + 1}</div>
+        <div class="capsule ${mode === "binary" ? "binary" : ""}">${segHtml}</div>
+        <div class="ticks">${ticksHtml}</div>
+      </div>
+    `;
+    bindCellClicks(root);
+  }
+
+  // ---------- Grid render ----------
+  function renderGrid(rootId, mode) {
+    const root = document.getElementById(rootId);
+
+    // Pad leading cells so weekdays align: render Mon-first column ordering
+    // Our row index 0 = Mon ... 6 = Sun
+    function rowFromDate(date) {
+      // JS getDay: 0=Sun .. 6=Sat -> we want 0=Mon .. 6=Sun
+      const js = date.getDay();
+      return (js + 6) % 7;
+    }
+
+    const firstRow = rowFromDate(START_DATE);
+    const totalCells = firstRow + TOTAL_DAYS;
+    const totalCols = Math.ceil(totalCells / 7);
+
+    let cellsHtml = "";
+    for (let c = 0; c < totalCols; c++) {
+      for (let r = 0; r < 7; r++) {
+        const flatIdx = c * 7 + r;
+        const dayIdx = flatIdx - firstRow;
+        if (dayIdx < 0 || dayIdx >= TOTAL_DAYS) {
+          cellsHtml += `<div class="cell empty" style="grid-row:${r + 1}; grid-column:${c + 1};"></div>`;
+          continue;
+        }
+        const d = DATA[dayIdx];
+        let cls = "cell", style = "";
+
+        if (mode === "trajectory") {
+          if (d.status === "future") cls += " future";
+          else if (d.status === "missed") cls += " missed";
+          else { style = bucketStyle(d); }
+        } else { // binary with direction-saturation
+          if (d.status === "future") cls += " future";
+          else if (d.status === "missed") cls += " missed";
+          else {
+            cls += " binary-filled";
+            if (d.dir === "up") cls += " dir-up";
+            else if (d.dir === "down") cls += " dir-down";
+            else cls += " dir-flat";
+          }
+        }
+
+        if (dayIdx === TODAY_INDEX) cls += " today";
+
+        cellsHtml += `<div class="${cls}" data-day="${dayIdx}" style="grid-row:${r + 1}; grid-column:${c + 1}; ${style}"></div>`;
+      }
+    }
+
+    // Now-line position: between today's column and the next
+    const todayFlat = firstRow + TODAY_INDEX;
+    const todayCol = Math.floor(todayFlat / 7); // 0-indexed col
+    const cellW = 14, gap = 2;
+    const nowLineX = (todayCol + 1) * cellW + todayCol * gap + 1;
+
+    // Week ticks (every 4 weeks, label months)
+    const monthLabels = [];
+    for (let c = 0; c < totalCols; c += 4) {
+      const flatIdx = c * 7;
+      const dayIdx = Math.max(0, flatIdx - firstRow);
+      const date = DATA[dayIdx]?.date;
+      if (date) monthLabels.push({ col: c, label: date.toLocaleDateString("en-US", { month: "short" }) });
+    }
+
+    const gridWidth = totalCols * cellW + (totalCols - 1) * gap;
+
+    root.innerHTML = `
+      <div class="grid-wrap">
+        <div class="grid-rowlabels">
+          <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+        </div>
+        <div class="grid-area" style="width:${gridWidth}px; max-width:100%;">
+          <div class="grid" style="width:${gridWidth}px;">${cellsHtml}</div>
+          <div class="now-line" style="left:${nowLineX}px;"></div>
+          <div class="week-ticks" style="padding-left:0; width:${gridWidth}px;">
+            ${monthLabels.map(m => `<span style="position:absolute; left:${m.col * (cellW + gap)}px;">${m.label}</span>`).join("")}
+          </div>
+        </div>
+      </div>
+    `;
+    bindCellClicks(root);
+  }
+
+  // ---------- Sparkline render (smoothed 7-day MA + trajectory hairline) ----------
+  function renderSparkline(rootEl) {
+    const w = 320, h = 56;
+    const padL = 28, padR = 6, padT = 4, padB = 14;
+    const innerW = w - padL - padR;
+    const innerH = h - padT - padB;
+
+    // y range: target − 0.5 to start + 0.5
+    const yMin = TARGET_WEIGHT - 0.5;
+    const yMax = START_WEIGHT + 0.5;
+    const x = i => padL + (i / (TOTAL_DAYS - 1)) * innerW;
+    const y = v => padT + (1 - (v - yMin) / (yMax - yMin)) * innerH;
+
+    // Trajectory line
+    const trajLine = `M ${x(0)} ${y(START_WEIGHT)} L ${x(TOTAL_DAYS - 1)} ${y(TARGET_WEIGHT)}`;
+
+    // MA polyline (only past + today, only where we had any weighed-in data)
+    let maPath = "";
+    for (let i = 0; i <= TODAY_INDEX; i++) {
+      const cmd = i === 0 ? "M" : "L";
+      maPath += `${cmd} ${x(i).toFixed(1)} ${y(DATA[i].ma).toFixed(1)} `;
+    }
+
+    // Today dot
+    const today = DATA[TODAY_INDEX];
+
+    return `
+      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="7-day moving average sparkline">
+        <text x="2" y="${y(yMax) + 4}" fill="rgba(255,255,255,0.4)" font-size="9">${yMax.toFixed(1)}</text>
+        <text x="2" y="${y(yMin) + 4}" fill="rgba(255,255,255,0.4)" font-size="9">${yMin.toFixed(1)}</text>
+        <line x1="${padL}" y1="${y(yMax)}" x2="${w - padR}" y2="${y(yMax)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+        <line x1="${padL}" y1="${y(yMin)}" x2="${w - padR}" y2="${y(yMin)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+        <path d="${trajLine}" stroke="rgba(255,255,255,0.28)" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+        <path d="${maPath}" stroke="#66b2ff" stroke-width="1.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${x(TODAY_INDEX)}" cy="${y(today.ma)}" r="2.5" fill="#fff" stroke="#66b2ff" stroke-width="1.2"/>
+      </svg>
+    `;
+  }
+
+  function appendSparkline(visualEl) {
+    const wrap = document.createElement("div");
+    wrap.className = "spark-wrap";
+    wrap.innerHTML = `
+      <div class="label"><span>7-day MA · dashed = linear target</span><span>kg</span></div>
+      ${renderSparkline()}
+    `;
+    visualEl.appendChild(wrap);
+  }
+
+  // ---------- Legends ----------
+  function renderTrajectoryLegend(rootId) {
+    const ramp = CIVIDIS.map(c => `<span style="background:${c}"></span>`).join("");
+    document.getElementById(rootId).innerHTML = `
+      <div class="row">
+        <div class="ramp">${ramp}</div>
+        <span style="font-size:10px;">ahead → behind (kg vs trajectory)</span>
+      </div>
+      <div class="row">
+        <div class="swatch outlined"></div><span>Missed weigh-in</span>
+        <div class="swatch future"></div><span>Future</span>
+        <div class="swatch" style="background:transparent; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.92);"></div><span>Today</span>
+      </div>
+      <div class="row" style="color:rgba(255,255,255,0.42); font-size:10.5px;">
+        Color compares your 7-day MA to the linear target line. Daily noise is hidden by smoothing — color won't react to a single bad weigh-in.
+      </div>
+    `;
+  }
+  function renderBinaryLegend(rootId, gridMode) {
+    const dirRow = gridMode
+      ? `<div class="swatch" style="background:#1f2c56"></div><span>weighed (down vs. yest.)</span>
+         <div class="swatch" style="background:#2c3e7a"></div><span>flat</span>
+         <div class="swatch" style="background:#4a6cb8"></div><span>up</span>`
+      : `<div class="swatch" style="background:#2c3e7a"></div><span>weighed</span>
+         <span style="font-family:ui-monospace,monospace;">▼ ▬ ▲</span><span>direction vs. yesterday</span>`;
+    document.getElementById(rootId).innerHTML = `
+      <div class="row">${dirRow}</div>
+      <div class="row">
+        <div class="swatch outlined"></div><span>Missed weigh-in</span>
+        <div class="swatch future"></div><span>Future</span>
+        <div class="swatch" style="background:transparent; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.92);"></div><span>Today</span>
+      </div>
+      <div class="row" style="color:rgba(255,255,255,0.42); font-size:10.5px;">
+        Cells don't paint magnitude — they only confirm you showed up. The sparkline below carries the smoothed weight trend.
+      </div>
+    `;
+  }
+
+  // ---------- Render all ----------
+  renderCapsule("p1-visual", "trajectory");
+  renderTrajectoryLegend("p1-legend");
+
+  renderCapsule("p2-visual", "binary");
+  appendSparkline(document.getElementById("p2-visual"));
+  renderBinaryLegend("p2-legend", false);
+
+  renderGrid("p3-visual", "trajectory");
+  renderTrajectoryLegend("p3-legend");
+
+  renderGrid("p4-visual", "binary");
+  appendSparkline(document.getElementById("p4-visual"));
+  renderBinaryLegend("p4-legend", true);
+
+  // ---------- Width toggle ----------
+  const tIphone = document.getElementById("t-iphone");
+  const tWide = document.getElementById("t-wide");
+  function setWide(wide) {
+    document.body.classList.toggle("wide", wide);
+    tIphone.classList.toggle("active", !wide);
+    tWide.classList.toggle("active", wide);
+    tIphone.setAttribute("aria-selected", String(!wide));
+    tWide.setAttribute("aria-selected", String(wide));
+    hidePopover();
+  }
+  tIphone.addEventListener("click", () => setWide(false));
+  tWide.addEventListener("click", () => setWide(true));
+
+  // Re-position popover on resize
+  window.addEventListener("resize", hidePopover);
+})();
+</script>
+</body>
+</html>

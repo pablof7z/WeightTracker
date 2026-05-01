@@ -100,6 +100,11 @@ struct TodayView: View {
                     } label: { Image(systemName: "chevron.right") }
                     .disabled(!canGoForward)
                 }
+                if !Calendar.current.isDateInToday(viewModel.date) {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Today") { selectDate(Date()) }
+                    }
+                }
             }
             .sheet(isPresented: $showDatePicker) {
                 NavigationStack {

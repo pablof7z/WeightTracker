@@ -29,10 +29,9 @@ struct GapDetailSheet: View {
                     row("End", value: weightString(kg: gap.weightEndKg))
                 }
                 Section("Drift") {
-                    row("Total", value: signedDelta(lb: gap.driftLb))
-                        .foregroundStyle(gap.didGain ? .red : .green)
+                    row("Total", value: signedDelta(lb: gap.driftLb),
+                        valueColor: gap.didGain ? Color.red : Color.green)
                     row("Per month", value: signedDelta(lb: gap.driftLbPerMonth))
-                    row("Direction", value: gap.didGain ? "Gain" : "Loss")
                 }
             }
             .navigationTitle("Gap details")
@@ -45,11 +44,11 @@ struct GapDetailSheet: View {
         }
     }
 
-    private func row(_ label: String, value: String) -> some View {
+    private func row(_ label: String, value: String, valueColor: Color? = nil) -> some View {
         HStack {
             Text(label)
             Spacer()
-            Text(value).foregroundStyle(.secondary)
+            Text(value).foregroundStyle(valueColor ?? Color.secondary)
         }
     }
 

@@ -42,21 +42,22 @@ struct NumericPad: View {
             LiquidGlassContainer(spacing: 28) {
                 HStack(spacing: 28) {
                     PadButton(symbol: "minus") {
-                        value = round1(value - tapStep)
+                        value = clamped(round1(value - tapStep))
                     } onLongPressTick: {
-                        value = round1(value - longPressStep)
+                        value = clamped(round1(value - longPressStep))
                     }
 
                     PadButton(symbol: "plus") {
-                        value = round1(value + tapStep)
+                        value = clamped(round1(value + tapStep))
                     } onLongPressTick: {
-                        value = round1(value + longPressStep)
+                        value = clamped(round1(value + longPressStep))
                     }
                 }
             }
             .padding(.top, 8)
         }
         .sensoryFeedback(.impact(weight: .light), trigger: value)
+        .sensoryFeedback(.selection, trigger: unitSymbol)
     }
 
     private var formatted: String {
@@ -64,6 +65,7 @@ struct NumericPad: View {
     }
 
     private func round1(_ x: Double) -> Double { (x * 10.0).rounded() / 10.0 }
+    private func clamped(_ x: Double) -> Double { min(max(x, 10.0), 999.0) }
 }
 
 private struct PadButton: View {

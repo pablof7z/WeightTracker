@@ -11,6 +11,13 @@ struct OnboardingCut: View {
 
     private var unit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
 
+    private var targetBinding: Binding<Double> {
+        Binding(
+            get: { unit == .lbs ? targetLb : UnitConvert.lbToKg(targetLb) },
+            set: { targetLb = unit == .lbs ? $0 : UnitConvert.kgToLb($0) }
+        )
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -19,17 +26,17 @@ struct OnboardingCut: View {
                     .foregroundStyle(.green)
                 Text("Pick a cut target (optional)")
                     .font(.title.bold())
-                Text("Your historical cuts have averaged ~0.95 lb/wk for ~10 weeks. We've set 158 lbs in 16 weeks as a starting suggestion — adjust freely.")
+                Text("Set a target weight and a duration. We'll track your daily pace and project where you'll land — you can adjust either anytime.")
                     .foregroundStyle(.secondary)
 
                 HStack {
                     Text("Target weight")
                     Spacer()
-                    TextField("Target", value: $targetLb, format: .number.precision(.fractionLength(1)))
+                    TextField("Target", value: targetBinding, format: .number.precision(.fractionLength(1)))
                         .multilineTextAlignment(.trailing)
                         .keyboardType(.decimalPad)
                         .frame(width: 90)
-                    Text("lb").foregroundStyle(.secondary)
+                    Text(unit.symbol).foregroundStyle(.secondary)
                 }
                 Stepper("Duration: \(weeks) weeks", value: $weeks, in: 4...52)
 
@@ -59,7 +66,9 @@ struct OnboardingCut: View {
         }
         .onAppear {
             if let recent = services.repository.mostRecent() {
-                startWeightLb = UnitConvert.kgToLb(recent.weightKg)
+                let recentLb = UnitConvert.kgToLb(recent.weightKg)
+                startWeightLb = recentLb
+                targetLb = max(recentLb - 10, 100)
             }
         }
     }

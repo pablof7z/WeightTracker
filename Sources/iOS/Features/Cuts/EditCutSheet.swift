@@ -16,6 +16,23 @@ struct EditCutSheet: View {
 
     private var unit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
 
+    private var isValid: Bool {
+        targetEndDate > startDate
+            && targetDisplayWeight > 0
+            && startDisplayWeight > 0
+            && targetDisplayWeight < startDisplayWeight
+    }
+
+    private var validationMessage: String? {
+        if targetDisplayWeight >= startDisplayWeight {
+            return "Target must be lower than starting weight."
+        }
+        if targetEndDate <= startDate {
+            return "Target date must be after the start."
+        }
+        return nil
+    }
+
     init(cut: ActiveCut, onSave: @escaping (ActiveCut) -> Void, onCancelCut: @escaping () -> Void) {
         self.original = cut
         self.onSave = onSave
@@ -56,7 +73,7 @@ struct EditCutSheet: View {
                     }
                 }
 
-                Section("Target") {
+                Section {
                     HStack {
                         Text("Target weight")
                         Spacer()
@@ -67,6 +84,12 @@ struct EditCutSheet: View {
                         Text(unit.symbol).foregroundStyle(.secondary)
                     }
                     DatePicker("Target end date", selection: $targetEndDate, in: startDate..., displayedComponents: .date)
+                } header: {
+                    Text("Target")
+                } footer: {
+                    if let msg = validationMessage {
+                        Text(msg).foregroundStyle(Color.red)
+                    }
                 }
 
                 Section("Daily reminder") {
@@ -102,7 +125,7 @@ struct EditCutSheet: View {
                         onSave(updated)
                         dismiss()
                     }
-                    .disabled(targetEndDate <= startDate)
+                    .disabled(!isValid)
                 }
             }
         }

@@ -29,11 +29,20 @@ struct ExportCSVSheet: View {
                             .foregroundStyle(.secondary)
                     }
                 } else if let error {
-                    Section { Text(error).foregroundStyle(.red) }
+                    Section {
+                        Text(error).foregroundStyle(.red)
+                        Button("Try again") { generate() }
+                    }
+                } else if readings.isEmpty {
+                    Section {
+                        Text("No data to export yet. Log a weight in the Today tab first.")
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
                     Section {
                         Button("Generate CSV") { generate() }
-                            .disabled(readings.isEmpty)
+                    } footer: {
+                        Text("Creates a plain-text file with all \(readings.count) entries. Includes date, weight, body measurements, source, and notes.")
                     }
                 }
             }
@@ -44,7 +53,6 @@ struct ExportCSVSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .onAppear { generate() }
         }
     }
 

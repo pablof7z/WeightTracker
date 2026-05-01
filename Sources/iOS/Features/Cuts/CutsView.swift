@@ -94,6 +94,13 @@ struct CutsView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(viewModel.mostRecentReading == nil)
                 .padding(.top, 4)
+                if viewModel.mostRecentReading == nil {
+                    Text("Log a weight in the Today tab first — your latest reading becomes the starting point.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
             }
             .padding()
             .glass(in: RoundedRectangle(cornerRadius: 12))
@@ -106,7 +113,7 @@ struct CutsView: View {
             Text("Historical Cuts")
                 .font(.headline)
             if viewModel.historicalCuts.isEmpty {
-                Text("None detected yet. Cuts of at least 10 days at 0.5 lb/wk or more will appear here.")
+                Text("Past weight-loss runs will appear here automatically as you log more history. Keep tracking and they'll show up.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)

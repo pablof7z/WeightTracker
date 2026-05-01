@@ -89,6 +89,10 @@ struct ImportCSVSheet: View {
             }
             Section {
                 Toggle("Replace existing on collision", isOn: $replaceExisting)
+            } footer: {
+                Text(replaceExisting
+                     ? "Existing readings on the same day will be overwritten with the imported value."
+                     : "Existing readings on the same day will be kept; imported rows for those days are skipped.")
             }
             if !p.skippedRows.isEmpty {
                 Section("Skipped (\(p.skippedRows.count))") {

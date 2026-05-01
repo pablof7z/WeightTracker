@@ -10,9 +10,9 @@ struct OnboardingWhatItIs: View {
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
             VStack(alignment: .leading, spacing: 12) {
-                bullet("A weight tracker that knows about gaps.")
-                bullet("Trends, clusters, and cut tracking.")
-                bullet("Your data stays on your device, optionally synced via iCloud.")
+                bullet("See real progress, even when you skip days.")
+                bullet("Plan a cut and stay honest about your rate.")
+                bullet("Your data stays on your device — synced privately via iCloud.")
             }
             .padding(.horizontal)
             Spacer()

@@ -36,7 +36,7 @@ struct ConfirmationCard: View {
                 if let delta = confirmation.deltaDisplay {
                     Spacer()
                     Label {
-                        Text(String(format: "%+.1f", delta))
+                        Text(String(format: "%+.1f \(confirmation.weightUnitSymbol)", delta))
                             .monospacedDigit()
                     } icon: {
                         Image(systemName: delta < 0 ? "arrow.down" : (delta > 0 ? "arrow.up" : "minus"))
@@ -49,7 +49,7 @@ struct ConfirmationCard: View {
             HStack {
                 Image(systemName: "calendar")
                     .foregroundStyle(.secondary)
-                Text(confirmation.date, style: .date)
+                Text(confirmation.date, format: .dateTime.month(.abbreviated).day())
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -64,10 +64,6 @@ struct ConfirmationCard: View {
         }
         .padding(14)
         .glass(in: RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(.green.opacity(0.4), lineWidth: 1)
-        )
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 

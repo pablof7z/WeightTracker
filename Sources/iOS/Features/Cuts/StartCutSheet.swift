@@ -36,11 +36,23 @@ struct StartCutSheet: View {
     }
 
     private var unit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
+    private var startDisplayWeight: Double { UnitConvert.displayWeight(kg: startWeightKg, in: unit) }
+    private var isValid: Bool { targetDisplayWeight > 0 && targetDisplayWeight < startDisplayWeight }
+
+    private var ratePreview: String {
+        guard isValid else { return "Target must be below your current weight" }
+        let delta = startDisplayWeight - targetDisplayWeight
+        let days = max(Calendar.current.dateComponents([.day], from: Date(), to: targetEndDate).day ?? 1, 1)
+        let weeks = Double(days) / 7.0
+        let perWeek = delta / max(weeks, 0.5)
+        let durationStr = days < 14 ? "\(days) day\(days == 1 ? "" : "s")" : "\(Int(weeks.rounded())) weeks"
+        return String(format: "%.1f %@/week over %@", perWeek, unit.symbol, durationStr)
+    }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Target") {
+                Section {
                     HStack {
                         Text("Target weight")
                         Spacer()
@@ -51,6 +63,11 @@ struct StartCutSheet: View {
                         Text(unit.symbol).foregroundStyle(.secondary)
                     }
                     DatePicker("Target end date", selection: $targetEndDate, in: Date()..., displayedComponents: .date)
+                } header: {
+                    Text("Target")
+                } footer: {
+                    Text(ratePreview)
+                        .foregroundStyle(isValid ? Color.secondary : Color.red)
                 }
 
                 Section("Daily reminder") {
@@ -87,6 +104,7 @@ struct StartCutSheet: View {
                         onStart(cut)
                         dismiss()
                     }
+                    .disabled(!isValid)
                 }
             }
         }

@@ -136,11 +136,12 @@ final class TodayViewModel: ObservableObject {
         let clusters = ClusterDetector.clusters(from: services.repository.allReadings())
         let active = ClusterDetector.activeCluster(in: clusters)
         let clusterNote: String? = active.map { c in
+            let day = max(c.durationDays, 1)
             switch c.classification {
-            case .cut: return "Active cut: \(c.durationDays)d"
-            case .bulk: return "Active bulk: \(c.durationDays)d"
-            case .maintenance: return "Maintenance: \(c.durationDays)d"
-            case .flat: return "Flat: \(c.durationDays)d"
+            case .cut: return "Cutting · day \(day)"
+            case .bulk: return "Bulking · day \(day)"
+            case .maintenance: return "Maintaining · day \(day)"
+            case .flat: return "Steady · day \(day)"
             }
         }
 
