@@ -9,34 +9,16 @@ public enum ModelContainerFactory {
             .containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier)
         let storeURL = groupURL?.appendingPathComponent("WeightTracker.store")
 
-        let icloudEnabled = UserDefaults.standard.object(forKey: AppPrefKey.icloudSyncEnabled) as? Bool ?? true
-
-        var configuration: ModelConfiguration
+        // CloudKit sync deferred to v1.1 — requires the iCloud.app.pfer.weighttracker
+        // container to be provisioned in the developer portal first.
+        let configuration: ModelConfiguration
         if let storeURL {
-            #if os(iOS)
-            if icloudEnabled {
-                configuration = ModelConfiguration(
-                    "WeightTracker",
-                    schema: schema,
-                    url: storeURL,
-                    cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
-                )
-            } else {
-                configuration = ModelConfiguration(
-                    "WeightTracker",
-                    schema: schema,
-                    url: storeURL,
-                    cloudKitDatabase: .none
-                )
-            }
-            #else
             configuration = ModelConfiguration(
                 "WeightTracker",
                 schema: schema,
                 url: storeURL,
                 cloudKitDatabase: .none
             )
-            #endif
         } else {
             configuration = ModelConfiguration(
                 "WeightTracker",
@@ -49,7 +31,7 @@ public enum ModelContainerFactory {
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            // Fallback to in-memory if persistent fails (e.g., entitlement missing in simulator)
+            print("[ModelContainerFactory] persistent container failed: \(error). Falling back to in-memory.")
             let mem = ModelConfiguration("WeightTrackerMemory", schema: schema, isStoredInMemoryOnly: true)
             return (try? ModelContainer(for: schema, configurations: [mem]))
                 ?? (try! ModelContainer(for: schema))
