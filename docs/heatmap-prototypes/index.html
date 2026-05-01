@@ -140,6 +140,10 @@
     margin-top: 28px;
     padding: 0 4px;
   }
+  .capsule-wrap.compact {
+    margin-top: 16px;
+    padding: 0 2px;
+  }
   .caret {
     position: absolute;
     top: -22px;
@@ -160,6 +164,18 @@
     border-right: 4px solid transparent;
     border-top: 5px solid rgba(255,255,255,0.85);
   }
+  .caret.compact {
+    top: -14px;
+    font-size: 9.5px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.78);
+  }
+  .caret.compact::after {
+    margin: 2px auto 0;
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    border-top: 4px solid rgba(255,255,255,0.78);
+  }
   .capsule {
     display: flex;
     width: 100%;
@@ -170,6 +186,12 @@
     border: 1px solid rgba(255,255,255,0.06);
     gap: 1px;
   }
+  /* Compact mode: sleek progress strip (~10-12px) with invisible tap pad */
+  .capsule.compact {
+    height: 11px;
+    border-radius: 6px;
+    gap: 1px;
+  }
   .capsule .seg {
     flex: 1 1 0;
     min-width: 2px;
@@ -178,10 +200,24 @@
     cursor: pointer;
     transition: transform 0.12s ease;
   }
+  /* Invisible vertical tap pad — extends hit area ±10px above/below
+     so 11px-tall cells remain comfortable to tap on touch devices. */
+  .capsule.compact .seg::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    top: -10px;
+    bottom: -10px;
+  }
   .capsule .seg:hover { transform: scaleY(1.1); }
+  .capsule.compact .seg:hover { transform: scaleY(1.25); }
   .capsule .seg.today {
     box-shadow: inset 0 0 0 2px rgba(255,255,255,0.92);
     z-index: 2;
+  }
+  .capsule.compact .seg.today {
+    box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.95);
   }
   .capsule .seg .glyph {
     position: absolute;
@@ -209,6 +245,12 @@
     font-size: 10px;
     color: rgba(255,255,255,0.45);
   }
+  .ticks.compact {
+    height: 12px;
+    margin-top: 3px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.4);
+  }
   .ticks .tick {
     position: absolute;
     transform: translateX(-50%);
@@ -222,6 +264,10 @@
     height: 5px;
     background: rgba(255,255,255,0.22);
     margin: 0 auto 3px;
+  }
+  .ticks.compact .tick::before {
+    height: 3px;
+    margin: 0 auto 2px;
   }
 
   /* ---------- 7×N grid ---------- */
@@ -438,7 +484,7 @@
     <!-- Prototype 1 -->
     <section class="prototype" id="p1">
       <h2>1 · Segmented Thermometer + Trajectory</h2>
-      <p class="desc">Color = position of your 7-day moving-average weight relative to the linear target trajectory for that day. Cividis ramp from dark (ahead) to pale (behind).</p>
+      <p class="desc">Color = position of your 7-day moving-average weight relative to the linear target trajectory for that day. Green ramp from dark emerald (ahead) to pale gray-green (struggling).</p>
       <div class="visual" id="p1-visual"></div>
       <div class="legend" id="p1-legend"></div>
     </section>
@@ -454,7 +500,7 @@
     <!-- Prototype 3 -->
     <section class="prototype" id="p3">
       <h2>3 · 7×N Grid + Trajectory</h2>
-      <p class="desc">GitHub-style 7-row contribution grid, one column per week. Same cividis trajectory rule as Prototype 1. Hairline now-line splits past from future.</p>
+      <p class="desc">GitHub-style 7-row contribution grid, one column per week. Cividis trajectory rule (same encoding logic as Prototype 1, different ramp). Hairline now-line splits past from future.</p>
       <div class="visual" id="p3-visual"></div>
       <div class="legend" id="p3-legend"></div>
     </section>
@@ -483,8 +529,11 @@
   const NOISE_AMPLITUDE = 0.6;        // kg
   const START_DATE = new Date(2026, 1, 15); // Feb 15 2026, local — used only for date formatting
 
-  // Cividis 5-bucket ramp
+  // Cividis 5-bucket ramp (used by P3)
   const CIVIDIS = ["#00224e", "#3b496c", "#707173", "#a59c74", "#fde737"];
+  // Green 5-bucket ramp (used by P1) — dark emerald = ahead, pale gray-green = behind.
+  // No yellow, no red. Bucket 0 = most ahead, bucket 4 = most behind.
+  const GREEN_RAMP = ["#0a3d1f", "#1f6b3a", "#3a9a5a", "#7ec48a", "#c4dbc6"];
   // Bucket thresholds: trajectory delta in kg (actualMA - expectedLinear)
   // Negative = ahead (lower than expected), positive = behind (higher than expected)
   const BUCKET_THRESHOLDS = [-1.0, -0.4, 0.4, 1.0]; // index < threshold[i] → bucket i
@@ -680,14 +729,18 @@
     });
   }
 
-  // ---------- Cividis cell color ----------
-  function bucketStyle(day) {
-    const color = CIVIDIS[day.bucket];
+  // ---------- Bucketed cell color ----------
+  function bucketStyle(day, ramp) {
+    const color = (ramp || CIVIDIS)[day.bucket];
     return `background:${color}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);`;
   }
 
   // ---------- Capsule render ----------
-  function renderCapsule(rootId, mode) {
+  // opts: { ramp?: string[], compact?: boolean }
+  function renderCapsule(rootId, mode, opts) {
+    opts = opts || {};
+    const ramp = opts.ramp || CIVIDIS;
+    const compact = !!opts.compact;
     const root = document.getElementById(rootId);
     const todayPct = (TODAY_INDEX + 0.5) / TOTAL_DAYS * 100;
 
@@ -706,7 +759,7 @@
           style = "background: rgba(255,255,255,0.04); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);";
         } else {
           cls += " filled";
-          style = bucketStyle(d);
+          style = bucketStyle(d, ramp);
         }
       } else { // binary
         if (d.status === "future") cls += " future";
@@ -732,11 +785,16 @@
     ];
     const ticksHtml = milestones.map(m => `<div class="tick" style="left:${m.pct}%">${m.label}</div>`).join("");
 
+    const wrapCls = "capsule-wrap" + (compact ? " compact" : "");
+    const caretCls = "caret" + (compact ? " compact" : "");
+    const capsuleCls = "capsule" + (mode === "binary" ? " binary" : "") + (compact ? " compact" : "");
+    const ticksCls = "ticks" + (compact ? " compact" : "");
+
     root.innerHTML = `
-      <div class="capsule-wrap">
-        <div class="caret" style="left:${todayPct}%">Day ${TODAY_INDEX + 1}</div>
-        <div class="capsule ${mode === "binary" ? "binary" : ""}">${segHtml}</div>
-        <div class="ticks">${ticksHtml}</div>
+      <div class="${wrapCls}">
+        <div class="${caretCls}" style="left:${todayPct}%">Day ${TODAY_INDEX + 1}</div>
+        <div class="${capsuleCls}">${segHtml}</div>
+        <div class="${ticksCls}">${ticksHtml}</div>
       </div>
     `;
     bindCellClicks(root);
@@ -875,12 +933,15 @@
   }
 
   // ---------- Legends ----------
-  function renderTrajectoryLegend(rootId) {
-    const ramp = CIVIDIS.map(c => `<span style="background:${c}"></span>`).join("");
+  function renderTrajectoryLegend(rootId, opts) {
+    opts = opts || {};
+    const ramp = opts.ramp || CIVIDIS;
+    const rampLabel = opts.rampLabel || "ahead → behind (kg vs trajectory)";
+    const rampHtml = ramp.map(c => `<span style="background:${c}"></span>`).join("");
     document.getElementById(rootId).innerHTML = `
       <div class="row">
-        <div class="ramp">${ramp}</div>
-        <span style="font-size:10px;">ahead → behind (kg vs trajectory)</span>
+        <div class="ramp">${rampHtml}</div>
+        <span style="font-size:10px;">${rampLabel}</span>
       </div>
       <div class="row">
         <div class="swatch outlined"></div><span>Missed weigh-in</span>
@@ -913,8 +974,11 @@
   }
 
   // ---------- Render all ----------
-  renderCapsule("p1-visual", "trajectory");
-  renderTrajectoryLegend("p1-legend");
+  renderCapsule("p1-visual", "trajectory", { ramp: GREEN_RAMP, compact: true });
+  renderTrajectoryLegend("p1-legend", {
+    ramp: GREEN_RAMP,
+    rampLabel: "ahead of trajectory → struggling (kg)",
+  });
 
   renderCapsule("p2-visual", "binary");
   appendSparkline(document.getElementById("p2-visual"));
