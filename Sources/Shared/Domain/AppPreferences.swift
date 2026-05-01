@@ -30,12 +30,12 @@ public enum AppPrefKey {
 }
 
 public enum AppGroup {
-    public static let identifier = "group.com.pfer.weighttracker"
+    public static let identifier = "group.app.pfer.weighttracker"
 }
 
 public enum AppConstants {
-    public static let cloudKitContainerID = "iCloud.com.pfer.weighttracker"
-    public static let bgRefreshIdentifier = "com.pfer.weighttracker.refresh"
+    public static let cloudKitContainerID = "iCloud.app.pfer.weighttracker"
+    public static let bgRefreshIdentifier = "app.pfer.weighttracker.refresh"
     public static let defaultGoalLb: Double = 158.0
     public static let defaultCutDurationWeeks: Int = 16
 }

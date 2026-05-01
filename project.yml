@@ -13,7 +13,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: 456SHKPP26
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: NO
     GENERATE_INFOPLIST_FILE: NO
@@ -50,7 +50,7 @@ targets:
         NSHealthUpdateUsageDescription: "WeightTracker writes weights you log here back to Apple Health so all your apps stay in sync."
         NSUserNotificationsUsageDescription: "WeightTracker sends quiet reminders only when a tracking gap forms or your active cut needs attention."
         BGTaskSchedulerPermittedIdentifiers:
-          - com.pfer.weighttracker.refresh
+          - app.pfer.weighttracker.refresh
         UIBackgroundModes:
           - fetch
           - processing
@@ -59,7 +59,7 @@ targets:
           - arm64
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.pfer.weighttracker
+        PRODUCT_BUNDLE_IDENTIFIER: app.pfer.weighttracker
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: ""
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -71,11 +71,11 @@ targets:
       path: Resources/iOS/WeightTracker.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.pfer.weighttracker
+          - group.app.pfer.weighttracker
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
         com.apple.developer.icloud-container-identifiers:
-          - iCloud.com.pfer.weighttracker
+          - iCloud.app.pfer.weighttracker
         com.apple.developer.icloud-services:
           - CloudKit
         com.apple.developer.ubiquity-container-identifiers: []
@@ -100,12 +100,12 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
         WKWatchOnly: false
-        WKCompanionAppBundleIdentifier: com.pfer.weighttracker
+        WKCompanionAppBundleIdentifier: app.pfer.weighttracker
         NSHealthShareUsageDescription: "WeightTracker reads your weight from Apple Health to show your most recent reading."
         NSHealthUpdateUsageDescription: "WeightTracker writes weights you log on your watch to Apple Health."
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.pfer.weighttracker.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: app.pfer.weighttracker.watchkitapp
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         SDKROOT: watchos
@@ -117,7 +117,7 @@ targets:
       path: Resources/Watch/WeightTrackerWatch.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.pfer.weighttracker
+          - group.app.pfer.weighttracker
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
 

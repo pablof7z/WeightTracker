@@ -27,7 +27,7 @@
 	<key>WKApplication</key>
 	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.pfer.weighttracker</string>
+	<string>app.pfer.weighttracker</string>
 	<key>WKWatchOnly</key>
 	<false/>
 </dict>

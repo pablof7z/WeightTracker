@@ -8,7 +8,7 @@
 	<array/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.pfer.weighttracker</string>
+		<string>group.app.pfer.weighttracker</string>
 	</array>
 </dict>
 </plist>

@@ -7,12 +7,20 @@ struct WeightTrackerApp: App {
     @AppStorage(AppPrefKey.theme) private var theme: String = ThemePreference.system.rawValue
     @StateObject private var appServices = AppServices.shared
 
+    init() {
+        BackgroundTaskRegistration.register(
+            repository: AppServices.shared.repository,
+            notifications: AppServices.shared.notifications
+        )
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(appServices)
                 .preferredColorScheme(colorScheme)
                 .modelContainer(appServices.modelContainer)
+                .task { await appServices.bootstrap() }
         }
     }
 
