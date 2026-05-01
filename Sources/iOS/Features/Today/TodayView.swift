@@ -83,14 +83,14 @@ struct TodayView: View {
             }
         } label: {
             HStack {
-                if isSaving { ProgressView().tint(.white) }
-                Text(isSaving ? "Saving..." : "Save")
+                if isSaving { ProgressView() }
+                Text(isSaving ? "Saving…" : "Save")
                     .font(.headline)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .glass(in: RoundedRectangle(cornerRadius: 14), tint: .accentColor)
-            .foregroundStyle(.white)
+            .glass(in: RoundedRectangle(cornerRadius: 14))
+            .foregroundStyle(.primary)
         }
         .disabled(isSaving)
     }
