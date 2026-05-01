@@ -24,18 +24,15 @@ struct ChartView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    if viewModel.activeCut != nil && pinnedToCut {
-                        cutPinChip
-                    }
-
-                    ChartRangeButtons(selection: Binding(
-                        get: { ChartRange.from(days: rangeDays) },
-                        set: {
-                            rangeDays = $0.rawValue
-                            pinnedToCut = false
-                        }
-                    ))
-                    .padding(.top, 4)
+                    ChartRangeButtons(
+                        selection: Binding(
+                            get: { ChartRange.from(days: rangeDays) },
+                            set: { rangeDays = $0.rawValue }
+                        ),
+                        showCutPill: viewModel.activeCut != nil,
+                        cutPinned: $pinnedToCut
+                    )
+                    .padding(.top, 8)
 
                     if viewModel.readings.isEmpty {
                         emptyState
@@ -95,26 +92,6 @@ struct ChartView: View {
             return cutDays
         }
         return visibleDaysForRange
-    }
-
-    private var cutPinChip: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "scissors")
-                .foregroundStyle(.green)
-            Text("Showing current cut")
-                .font(.subheadline.weight(.medium))
-            Spacer()
-            Button("Show all") {
-                pinnedToCut = false
-            }
-            .font(.subheadline)
-            .buttonStyle(.borderless)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .glass(in: Capsule(), tint: .green.opacity(0.15))
-        .padding(.horizontal)
-        .padding(.top, 8)
     }
 
     private var emptyState: some View {

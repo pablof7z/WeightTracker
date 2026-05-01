@@ -26,22 +26,54 @@ enum ChartRange: Int, CaseIterable, Identifiable {
 
 struct ChartRangeButtons: View {
     @Binding var selection: ChartRange
+    var showCutPill: Bool = false
+    @Binding var cutPinned: Bool
+
+    init(selection: Binding<ChartRange>, showCutPill: Bool = false, cutPinned: Binding<Bool> = .constant(false)) {
+        self._selection = selection
+        self.showCutPill = showCutPill
+        self._cutPinned = cutPinned
+    }
 
     var body: some View {
         LiquidGlassContainer(spacing: 6) {
             HStack(spacing: 6) {
+                if showCutPill {
+                    Button {
+                        cutPinned.toggle()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "scissors")
+                                .font(.caption.weight(.semibold))
+                            Text("Cut")
+                                .font(.subheadline.weight(.medium))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .foregroundStyle(cutPinned ? Color.white : Color.primary)
+                        .glass(
+                            in: Capsule(),
+                            tint: cutPinned ? .green : nil
+                        )
+                        .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Show active cut window")
+                }
+
                 ForEach(ChartRange.allCases) { r in
                     Button {
                         selection = r
+                        cutPinned = false
                     } label: {
                         Text(r.title)
                             .font(.subheadline.weight(.medium))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .foregroundStyle(r == selection ? Color.white : Color.primary)
+                            .foregroundStyle((!cutPinned && r == selection) ? Color.white : Color.primary)
                             .glass(
                                 in: Capsule(),
-                                tint: r == selection ? .accentColor : nil
+                                tint: (!cutPinned && r == selection) ? .accentColor : nil
                             )
                             .contentShape(Capsule())
                     }

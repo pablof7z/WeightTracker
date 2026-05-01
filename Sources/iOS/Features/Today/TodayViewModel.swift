@@ -22,12 +22,12 @@ final class TodayViewModel: ObservableObject {
         let clusterNote: String?
     }
 
-    /// Round the kg value into the user's display unit, rounded to nearest 0.5.
+    /// Pre-fill from the user's most recent reading at exact precision (1 decimal).
     func prefill(from repository: ReadingRepository, unit: WeightUnit) {
         let last = repository.mostRecent()
         if let last {
             let display = UnitConvert.displayWeight(kg: last.weightKg, in: unit)
-            self.displayValue = (display * 2.0).rounded() / 2.0
+            self.displayValue = (display * 10.0).rounded() / 10.0
         } else {
             self.displayValue = unit == .lbs ? 150.0 : 70.0
         }
