@@ -18,7 +18,9 @@ struct WeightTrackerApp: App {
                     BackgroundTaskRegistration.register(
                         repository: appServices.repository,
                         notifications: appServices.notifications
-                    )
+                    ) {
+                        appServices.cutCoach.refresh(trigger: .backgroundRefresh)
+                    }
                     await appServices.bootstrap()
                 }
         }

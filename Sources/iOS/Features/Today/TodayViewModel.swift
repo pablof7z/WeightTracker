@@ -4,7 +4,6 @@ import SwiftData
 
 @MainActor
 final class TodayViewModel: ObservableObject {
-    // Display value in current weight unit (lb or kg)
     @Published var displayValue: Double = 150.0
     @Published var date: Date = Date()
     @Published var hipsValue: String = ""
@@ -19,6 +18,11 @@ final class TodayViewModel: ObservableObject {
     @Published var activeCut: ActiveCut?
     @Published var inCutReadings: [Reading] = []
     @Published var projection: CutProjectionResult?
+    /// Bumped only when the user explicitly edits the weight via the +/- pad.
+    /// Programmatic changes (loadForDate, unit toggle) do NOT bump this.
+    @Published var editTick: Int = 0
+
+    func bumpEditTick() { editTick &+= 1 }
 
     struct SavedConfirmation: Identifiable, Equatable {
         let id = UUID()
@@ -41,7 +45,6 @@ final class TodayViewModel: ObservableObject {
             self.minDate = min(self.minDate, Reading.dayStart(of: earliest.date))
         }
 
-        // Load active cut + projection
         let cut = ActiveCutStore.load()
         self.activeCut = cut
         if let cut {
@@ -81,7 +84,6 @@ final class TodayViewModel: ObservableObject {
         }
     }
 
-    /// Convenience that loads for today.
     func prefill(from repository: ReadingRepository, unit: WeightUnit, bodyUnit: BodyUnit = .inches) {
         loadForDate(Date(), repository: repository, unit: unit, bodyUnit: bodyUnit)
     }
@@ -123,10 +125,10 @@ final class TodayViewModel: ObservableObject {
         services.repository.insert(new)
         hasEntry = true
 
+        services.cutCoach.refresh(trigger: .weightSaved)
         await services.healthKit.writeReading(new)
         await services.notifications.scheduleEvaluatedTriggers()
 
-        // Build confirmation card
         let deltaDisplay: Double? = {
             guard let priorKg else { return nil }
             let priorDisp = UnitConvert.displayWeight(kg: priorKg, in: weightUnit)

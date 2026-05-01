@@ -8,7 +8,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
+                Section("Appearance") {
                     NavigationLink(value: SettingsDestination.display) {
                         Label("Display", systemImage: "paintbrush.fill")
                     }
@@ -16,7 +16,7 @@ struct SettingsView: View {
                         Label("Notifications", systemImage: "bell.fill")
                     }
                 }
-                Section {
+                Section("Data") {
                     NavigationLink(value: SettingsDestination.health) {
                         Label("Apple Health", systemImage: "heart.fill")
                     }
@@ -27,12 +27,12 @@ struct SettingsView: View {
                         Label("Data", systemImage: "cylinder.fill")
                     }
                 }
-                Section {
+                Section("Intelligence") {
                     NavigationLink(value: SettingsDestination.ai) {
                         Label("AI", systemImage: "sparkles")
                     }
                 }
-                Section {
+                Section("About") {
                     NavigationLink(value: SettingsDestination.about) {
                         Label("About", systemImage: "info.circle.fill")
                     }

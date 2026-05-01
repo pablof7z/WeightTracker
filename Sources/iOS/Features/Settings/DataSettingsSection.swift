@@ -11,12 +11,16 @@ struct DataSettingsSection: View {
     @State private var showWipe = false
 
     var body: some View {
-        Section("Data") {
+        Section {
             Button("Import CSV") { showImport = true }
             Button("Export CSV") { showExport = true }
-            Toggle("Daily auto-export", isOn: $autoExportEnabled)
-            Button("Delete date range...", role: .destructive) { showDeleteRange = true }
-            Button("Wipe all data...", role: .destructive) { showWipe = true }
+            Toggle("Auto-export daily", isOn: $autoExportEnabled)
+            Button("Delete date range…", role: .destructive) { showDeleteRange = true }
+            Button("Wipe all data…", role: .destructive) { showWipe = true }
+        } header: {
+            Text("Data")
+        } footer: {
+            Text("Deletes readings, sleep, and macro history. iCloud copies on other devices will sync the deletion.")
         }
         .sheet(isPresented: $showImport) {
             ImportCSVSheet()

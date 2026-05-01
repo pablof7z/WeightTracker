@@ -51,11 +51,11 @@ struct WeightChart: View {
                         .symbol(.circle)
                         .symbolSize(0)
                         .annotation(position: .overlay) {
-                            Text(String(format: "+%.1f %@ drift", display(UnitConvert.lbToKg(g.driftLb)), weightUnit.symbol))
+                            Text(String(format: "%+.1f %@ drift", display(UnitConvert.lbToKg(g.driftLb)), weightUnit.symbol))
                                 .font(.caption2.weight(.semibold))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(.thinMaterial, in: Capsule())
+                                .glass(in: Capsule())
                         }
                     }
                 }

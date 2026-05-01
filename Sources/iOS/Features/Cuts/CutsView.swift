@@ -1,10 +1,12 @@
 import SwiftUI
 
 struct CutsView: View {
+    @EnvironmentObject private var services: AppServices
     @StateObject private var viewModel = CutsViewModel()
     @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
     @State private var showStartSheet = false
     @State private var showEditSheet = false
+    @State private var showCoachAudit = false
 
     private var unit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
 
@@ -24,7 +26,7 @@ struct CutsView: View {
                         Button {
                             showStartSheet = true
                         } label: {
-                            Label("Start Cut", systemImage: "plus")
+                            Label("Start a Cut", systemImage: "plus")
                         }
                         .disabled(viewModel.mostRecentReading == nil)
                     }
@@ -58,7 +60,13 @@ struct CutsView: View {
                     )
                 }
             }
+            .sheet(isPresented: $showCoachAudit) {
+                auditSheet
+            }
             .onAppear { viewModel.reload() }
+            .onReceive(services.cutCoach.$recommendation) { recommendation in
+                viewModel.applyCutCoachRecommendation(recommendation)
+            }
             .refreshable { viewModel.reload() }
         }
     }
@@ -66,17 +74,28 @@ struct CutsView: View {
     @ViewBuilder
     private var activeSection: some View {
         if let cut = viewModel.activeCut {
-            ActiveCutCard(
-                cut: cut,
-                actualRateLbPerWeek: viewModel.actualRateLbPerWeek(),
-                neededRateLbPerWeek: viewModel.neededRateLbPerWeek(),
-                status: viewModel.status(),
-                projectedEndWeightKg: viewModel.projectedEndWeightKg(),
-                unit: unit,
-                readings: viewModel.allReadings,
-                projection: viewModel.projection
-            ) {
-                Task { await viewModel.markDone() }
+            VStack(spacing: 16) {
+                ActiveCutCard(
+                    cut: cut,
+                    actualRateLbPerWeek: viewModel.actualRateLbPerWeek(),
+                    neededRateLbPerWeek: viewModel.neededRateLbPerWeek(),
+                    status: viewModel.status(),
+                    projectedEndWeightKg: viewModel.projectedEndWeightKg(),
+                    unit: unit,
+                    readings: viewModel.allReadings,
+                    projection: viewModel.projection
+                ) {
+                    Task { await viewModel.markDone() }
+                }
+
+                if let plan = viewModel.cutCoachPlan {
+                    CutCoachCard(
+                        plan: plan,
+                        onShowAudit: { showCoachAudit = true }
+                    )
+                }
+
+                MacroCard(cutStartDate: cut.startDate)
             }
         } else {
             VStack(alignment: .leading, spacing: 8) {
@@ -107,22 +126,28 @@ struct CutsView: View {
         }
     }
 
+    private var auditSheet: some View {
+        CoachAuditSheet()
+            .environmentObject(services)
+    }
+
     @ViewBuilder
     private var historicalSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Historical Cuts")
                 .font(.headline)
             if viewModel.historicalCuts.isEmpty {
-                Text("Past weight-loss runs will appear here automatically as you log more history. Keep tracking and they'll show up.")
+                Text("Past weight-loss runs appear here automatically once enough history is logged.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .glass(in: RoundedRectangle(cornerRadius: 12))
             } else {
                 ForEach(viewModel.historicalCuts) { cut in
                     HistoricalCutCard(
                         cut: cut,
                         unit: unit,
-                        yearsAgo: viewModel.yearsAgo(of: cut.startDate),
                         readings: viewModel.allReadings
                     )
                 }

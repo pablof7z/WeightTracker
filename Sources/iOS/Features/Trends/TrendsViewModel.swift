@@ -32,8 +32,6 @@ final class TrendsViewModel: ObservableObject {
 
     // MARK: - Right Now deltas
 
-    /// Returns 7-day, 30-day, and year-over-year delta in lbs (signed)
-    /// computed against the closest reading at-or-before the target date.
     func deltas(now: Date = Date()) -> [DeltaPoint] {
         let cal = Calendar.current
         let recent = mostRecent

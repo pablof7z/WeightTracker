@@ -21,18 +21,54 @@ struct RemindersSettingsSection: View {
                 .onChange(of: master) { _, _ in reschedule() }
 
             if master {
-                Toggle("Gap forming", isOn: $gapForming)
-                    .onChange(of: gapForming) { _, _ in reschedule() }
-                Toggle("Gap deepening", isOn: $gapDeepening)
-                    .onChange(of: gapDeepening) { _, _ in reschedule() }
-                Toggle("Cluster broken", isOn: $clusterBroken)
-                    .onChange(of: clusterBroken) { _, _ in reschedule() }
-                Toggle("Cut day reminder", isOn: $cutDay)
-                    .onChange(of: cutDay) { _, _ in reschedule() }
-                Toggle("Cut milestones", isOn: $cutMilestone)
-                    .onChange(of: cutMilestone) { _, _ in reschedule() }
-                Toggle("Cut stall", isOn: $cutStall)
-                    .onChange(of: cutStall) { _, _ in reschedule() }
+                Toggle(isOn: $gapForming) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("You haven't logged in a few days")
+                        Text("Nudge after 2–3 days without a reading.")
+                            .font(.footnote).foregroundStyle(Color.secondary)
+                    }
+                }
+                .onChange(of: gapForming) { _, _ in reschedule() }
+                Toggle(isOn: $gapDeepening) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("You're in a tracking gap")
+                        Text("Alert when a gap has been going a week or longer.")
+                            .font(.footnote).foregroundStyle(Color.secondary)
+                    }
+                }
+                .onChange(of: gapDeepening) { _, _ in reschedule() }
+                Toggle(isOn: $clusterBroken) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Your streak ended")
+                        Text("Notify when your logging streak is broken by a gap.")
+                            .font(.footnote).foregroundStyle(Color.secondary)
+                    }
+                }
+                .onChange(of: clusterBroken) { _, _ in reschedule() }
+                Toggle(isOn: $cutDay) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Daily cut check-in")
+                        Text("Morning reminder while you're in an active cut.")
+                            .font(.footnote).foregroundStyle(Color.secondary)
+                    }
+                }
+                .onChange(of: cutDay) { _, _ in reschedule() }
+                Toggle(isOn: $cutMilestone) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Milestone reached")
+                        Text("Celebrate hitting 25%, 50%, 75%, and 100% of your cut target.")
+                            .font(.footnote).foregroundStyle(Color.secondary)
+                    }
+                }
+                .onChange(of: cutMilestone) { _, _ in reschedule() }
+                Toggle(isOn: $cutStall) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Cut appears to have stalled")
+                        Text("Alert when progress has slowed significantly.")
+                            .font(.footnote).foregroundStyle(Color.secondary)
+                    }
+                }
+                .onChange(of: cutStall) { _, _ in reschedule() }
 
                 DatePicker("Quiet from", selection: quietStartBinding, displayedComponents: .hourAndMinute)
                 DatePicker("Quiet until", selection: quietEndBinding, displayedComponents: .hourAndMinute)

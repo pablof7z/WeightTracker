@@ -141,7 +141,7 @@ struct ActiveCutMinichart: View {
                     )
                     .symbolSize(64)
                     .symbol(.circle)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color(.systemBackground))
 
                     PointMark(
                         x: .value("Date", projection.anchorDate),

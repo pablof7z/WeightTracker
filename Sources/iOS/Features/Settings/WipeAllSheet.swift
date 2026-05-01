@@ -38,7 +38,7 @@ struct WipeAllSheet: View {
                     }
                 }
                 if didWipe {
-                    Section { Text("All readings deleted.").foregroundStyle(.secondary) }
+                    Section { Label("All readings deleted.", systemImage: "checkmark.circle.fill").foregroundStyle(.green) }
                 }
             }
             .navigationTitle("Wipe all data")
@@ -79,6 +79,7 @@ struct WipeAllSheet: View {
     private func performWipe() {
         appServices.repository.deleteAll()
         ActiveCutStore.save(nil)
+        appServices.cutCoach.clear(trigger: .manual)
         didWipe = true
         Task { await appServices.notifications.scheduleEvaluatedTriggers() }
     }

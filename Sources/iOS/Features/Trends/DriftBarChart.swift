@@ -18,11 +18,17 @@ struct DriftBarChart: View {
                 .font(.headline)
 
             if gaps.isEmpty {
-                Text("Not enough clusters yet to chart drift between gaps.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 24)
+                VStack(spacing: 8) {
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.system(size: 32))
+                        .foregroundStyle(.secondary)
+                    Text("Not enough clusters yet to chart drift between gaps.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 24)
             } else {
                 chart
                     .frame(height: 220)
@@ -45,6 +51,8 @@ struct DriftBarChart: View {
                     if selectedID == gap.id {
                         Text(String(format: "%+.1f \(weightUnit.symbol)", driftDisplay(gap.driftLb)))
                             .font(.caption2)
+                            .foregroundStyle(.primary)
+                            .monospacedDigit()
                             .padding(4)
                             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
                     }

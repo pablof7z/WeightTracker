@@ -1,8 +1,6 @@
 import SwiftUI
 import Charts
 
-/// Reusable Chart{} content for the cut projection (actuals + best/avg/worst lines + target).
-/// Used by both ActiveCutMinichart (Today) and ActiveCutCard (Cuts tab).
 struct CutProjectionChartContent: View {
     let active: ActiveCut
     let inCutReadings: [Reading]
@@ -34,12 +32,10 @@ struct CutProjectionChartContent: View {
 
     var body: some View {
         Chart {
-            // Target line
             RuleMark(y: .value("Target", display(active.targetWeightKg)))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
                 .foregroundStyle(.gray)
 
-            // Actuals
             ForEach(inCutReadings, id: \.id) { r in
                 LineMark(
                     x: .value("Date", r.date),
@@ -112,14 +108,13 @@ struct CutProjectionChartContent: View {
                 }
             }
 
-            // Anchor donut
             PointMark(
                 x: .value("Date", projection.anchorDate),
                 y: .value("Weight", display(projection.anchorKg))
             )
             .symbolSize(64)
             .symbol(.circle)
-            .foregroundStyle(.white)
+            .foregroundStyle(Color(.systemBackground))
 
             PointMark(
                 x: .value("Date", projection.anchorDate),

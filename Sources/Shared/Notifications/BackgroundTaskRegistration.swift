@@ -5,13 +5,19 @@ import BackgroundTasks
 
 @MainActor
 public enum BackgroundTaskRegistration {
-    public static func register(repository: ReadingRepository, notifications: NotificationService) {
+    public static func register(
+        repository: ReadingRepository,
+        notifications: NotificationService,
+        onRefresh: (() -> Void)? = nil
+    ) {
         #if canImport(BackgroundTasks) && os(iOS)
+        _ = repository
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: AppConstants.bgRefreshIdentifier,
             using: nil
         ) { task in
             Task { @MainActor in
+                onRefresh?()
                 await notifications.scheduleEvaluatedTriggers()
                 schedule()
                 task.setTaskCompleted(success: true)

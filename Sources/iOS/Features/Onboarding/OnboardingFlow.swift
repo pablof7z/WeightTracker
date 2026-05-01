@@ -17,6 +17,7 @@ struct OnboardingFlow: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
+            .accessibilityLabel("Onboarding, page \(page + 1) of \(pageCount)")
 
             footer
                 .padding(.horizontal)

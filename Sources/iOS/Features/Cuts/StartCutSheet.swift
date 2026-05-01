@@ -2,7 +2,13 @@ import SwiftUI
 
 struct StartCutSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var services: AppServices
     @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
+
+    @AppStorage(AppPrefKey.userSex) private var userSex: String = MacroDefaultsPrefs.sex
+    @AppStorage(AppPrefKey.userAgeYears) private var userAgeYears: Int = MacroDefaultsPrefs.ageYears
+    @AppStorage(AppPrefKey.userHeightCm) private var userHeightCm: Double = MacroDefaultsPrefs.heightCm
+    @AppStorage(AppPrefKey.userActivityFactor) private var userActivityFactor: Double = MacroDefaultsPrefs.activityFactor
 
     let startWeightKg: Double
     var onStart: (ActiveCut) -> Void
@@ -10,6 +16,14 @@ struct StartCutSheet: View {
     @State private var targetDisplayWeight: Double
     @State private var targetEndDate: Date
     @State private var reminderTime: Date
+
+    // Macro state — bound into the disclosure. Recomputed from defaults
+    // whenever target weight or end date change, unless the user has touched
+    // the values themselves.
+    @State private var macroProtein: Int = 150
+    @State private var macroFat: Int = 60
+    @State private var macroCarbs: Int = 200
+    @State private var lastDefaultsApplied: (Int, Int, Int) = (0, 0, 0)
 
     init(startWeightKg: Double, onStart: @escaping (ActiveCut) -> Void) {
         self.startWeightKg = startWeightKg
@@ -40,13 +54,28 @@ struct StartCutSheet: View {
     private var isValid: Bool { targetDisplayWeight > 0 && targetDisplayWeight < startDisplayWeight }
 
     private var ratePreview: String {
-        guard isValid else { return "Target must be below your current weight" }
+        guard isValid else { return "Target must be lower than your starting weight." }
         let delta = startDisplayWeight - targetDisplayWeight
         let days = max(Calendar.current.dateComponents([.day], from: Date(), to: targetEndDate).day ?? 1, 1)
         let weeks = Double(days) / 7.0
         let perWeek = delta / max(weeks, 0.5)
         let durationStr = days < 14 ? "\(days) day\(days == 1 ? "" : "s")" : "\(Int(weeks.rounded())) weeks"
         return String(format: "%.1f %@/week over %@", perWeek, unit.symbol, durationStr)
+    }
+
+    private var defaultsTuple: (kcal: Int, proteinG: Int, fatG: Int, carbsG: Int) {
+        let targetKg = UnitConvert.storeWeight(targetDisplayWeight, from: unit)
+        let sex = Sex(rawValue: userSex) ?? .male
+        return MacroDefaults.compute(
+            startWeightKg: startWeightKg,
+            targetWeightKg: targetKg,
+            startDate: Date(),
+            targetEndDate: targetEndDate,
+            sex: sex,
+            ageYears: userAgeYears,
+            heightCm: userHeightCm,
+            activityFactor: userActivityFactor
+        )
     }
 
     var body: some View {
@@ -70,8 +99,21 @@ struct StartCutSheet: View {
                         .foregroundStyle(isValid ? Color.secondary : Color.red)
                 }
 
-                Section("Daily reminder") {
+                Section {
+                    StartCutMacrosDisclosure(
+                        proteinG: $macroProtein,
+                        fatG: $macroFat,
+                        carbsG: $macroCarbs,
+                        defaults: defaultsTuple
+                    )
+                }
+
+                Section {
                     DatePicker("Reminder time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                } header: {
+                    Text("Daily reminder")
+                } footer: {
+                    Text("We'll send a gentle nudge to weigh in at this time each day.")
                 }
 
                 Section {
@@ -101,17 +143,53 @@ struct StartCutSheet: View {
                             targetEndDate: targetEndDate,
                             dailyReminderSecondsAfterMidnight: seconds
                         )
+                        // Store the cut before the macro plan so coach evaluation
+                        // sees a complete active-cut context.
+                        ActiveCutStore.save(cut)
                         onStart(cut)
+
+                        let cutStart = Reading.dayStart(of: cut.startDate)
+                        services.macroPlanStore.insertInitialPeriod(
+                            cutStartDate: cutStart,
+                            startDate: cutStart,
+                            kcal: MacroDefaults.totalKcal(
+                                proteinG: macroProtein,
+                                fatG: macroFat,
+                                carbsG: macroCarbs
+                            ),
+                            proteinG: macroProtein,
+                            fatG: macroFat,
+                            carbsG: macroCarbs
+                        )
+                        services.cutCoach.refresh(trigger: .activeCutChanged)
                         dismiss()
                     }
                     .disabled(!isValid)
                 }
             }
+            .onAppear { applyDefaultsIfUntouched(force: true) }
+            .onChange(of: targetDisplayWeight) { _, _ in applyDefaultsIfUntouched() }
+            .onChange(of: targetEndDate) { _, _ in applyDefaultsIfUntouched() }
         }
     }
 
     private func formatStart() -> String {
         let v = UnitConvert.displayWeight(kg: startWeightKg, in: unit)
         return String(format: "%.1f %@", v, unit.symbol)
+    }
+
+    /// Re-apply computed defaults whenever the inputs change, but only if the
+    /// macro values haven't been touched by the user (i.e. they still match
+    /// the previously-applied default tuple).
+    private func applyDefaultsIfUntouched(force: Bool = false) {
+        let d = defaultsTuple
+        let current = (macroProtein, macroFat, macroCarbs)
+        let untouched = current == lastDefaultsApplied
+        if force || untouched {
+            macroProtein = d.proteinG
+            macroFat = d.fatG
+            macroCarbs = d.carbsG
+            lastDefaultsApplied = (d.proteinG, d.fatG, d.carbsG)
+        }
     }
 }

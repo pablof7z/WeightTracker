@@ -3,7 +3,6 @@ import SwiftUI
 struct HistoricalCutCard: View {
     let cut: HistoricalCut
     let unit: WeightUnit
-    let yearsAgo: Int
     var readings: [Reading] = []
 
     @State private var showFullscreen = false
@@ -30,6 +29,7 @@ struct HistoricalCutCard: View {
                     .font(.caption)
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(Color.secondary.opacity(0.15), in: Capsule())
+                    .accessibilityLabel("Duration \(cut.durationDays) days")
             }
 
             HStack(spacing: 16) {

@@ -8,6 +8,7 @@ public final class HealthKitManager: ObservableObject {
     public enum AuthState { case notRequested, authorized, denied, unavailable }
 
     @Published public private(set) var authState: AuthState = .notRequested
+    public var onReadingsChanged: (() -> Void)?
 
     private let repository: ReadingRepository
     #if canImport(HealthKit)
@@ -130,6 +131,7 @@ public final class HealthKitManager: ObservableObject {
     private func ingest(_ samples: [Any]) async -> Int {
         #if canImport(HealthKit)
         var inserted = 0
+        var changed = false
         for raw in samples {
             guard let sample = raw as? HKQuantitySample else { continue }
             let kg = sample.quantity.doubleValue(for: .gramUnit(with: .kilo))
@@ -144,10 +146,12 @@ public final class HealthKitManager: ObservableObject {
                         existing.source = .healthKit
                         existing.deviceName = sample.sourceRevision.source.name
                         repository.update(existing)
+                        changed = true
                     }
                     continue
                 } else {
                     repository.delete(existing)
+                    changed = true
                 }
             }
             let reading = Reading(
@@ -158,6 +162,10 @@ public final class HealthKitManager: ObservableObject {
             )
             repository.insert(reading)
             inserted += 1
+            changed = true
+        }
+        if changed {
+            onReadingsChanged?()
         }
         return inserted
         #else

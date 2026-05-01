@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EditCutSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var services: AppServices
     @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
 
     let original: ActiveCut
@@ -13,6 +14,9 @@ struct EditCutSheet: View {
     @State private var targetDisplayWeight: Double
     @State private var targetEndDate: Date
     @State private var reminderTime: Date
+
+    @State private var showReviewMacrosSheet = false
+    @State private var showConfirmEnd = false
 
     private var unit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
 
@@ -31,6 +35,13 @@ struct EditCutSheet: View {
             return "Target date must be after the start."
         }
         return nil
+    }
+
+    /// Has the user nudged the target weight away from the original cut's
+    /// target? If so, we show a non-blocking banner offering to review macros.
+    private var targetChanged: Bool {
+        let originalDisplay = UnitConvert.displayWeight(kg: original.targetWeightKg, in: unit)
+        return abs(targetDisplayWeight - originalDisplay) >= 0.05
     }
 
     init(cut: ActiveCut, onSave: @escaping (ActiveCut) -> Void, onCancelCut: @escaping () -> Void) {
@@ -92,16 +103,47 @@ struct EditCutSheet: View {
                     }
                 }
 
-                Section("Daily reminder") {
+                if targetChanged {
+                    Section {
+                        HStack {
+                            Image(systemName: "info.circle")
+                                .foregroundStyle(.secondary)
+                            Text(MacroCopy.editCutTargetChangedBanner)
+                                .font(.subheadline)
+                            Spacer()
+                            Button(MacroCopy.editCutOpen) {
+                                showReviewMacrosSheet = true
+                            }
+                            .font(.subheadline.weight(.medium))
+                        }
+                    }
+                }
+
+                Section {
                     DatePicker("Reminder time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                } header: {
+                    Text("Daily reminder")
+                } footer: {
+                    Text("We'll send a gentle nudge to weigh in at this time each day.")
                 }
 
                 Section {
                     Button(role: .destructive) {
-                        onCancelCut()
-                        dismiss()
+                        showConfirmEnd = true
                     } label: {
-                        Label("End cut without saving as historical", systemImage: "xmark.circle")
+                        Label("End Cut", systemImage: "xmark.circle")
+                    }
+                    .confirmationDialog(
+                        "End this cut?",
+                        isPresented: $showConfirmEnd,
+                        titleVisibility: .visible
+                    ) {
+                        Button("End Cut", role: .destructive) {
+                            onCancelCut()
+                            dismiss()
+                        }
+                    } message: {
+                        Text("The cut won't be saved to history.")
                     }
                 }
             }
@@ -128,6 +170,49 @@ struct EditCutSheet: View {
                     .disabled(!isValid)
                 }
             }
+            .sheet(isPresented: $showReviewMacrosSheet) {
+                let cutStart = Reading.dayStart(of: original.startDate)
+                let current = services.macroPlanStore.currentPeriod(forCutStartDate: cutStart)
+                let initial: (Int, Int, Int, Int) = current.map {
+                    ($0.kcal, $0.proteinG ?? 0, $0.fatG ?? 0, $0.carbsG ?? 0)
+                } ?? (2000, 150, 60, 200)
+                let defaults = currentDefaultsTuple()
+                EditMacrosSheet(
+                    cutStartDate: cutStart,
+                    initial: initial,
+                    defaults: defaults
+                ) { kcal, p, f, c in
+                    services.macroPlanStore.replaceCurrentPeriod(
+                        cutStartDate: cutStart,
+                        kcal: kcal,
+                        proteinG: p,
+                        fatG: f,
+                        carbsG: c
+                    )
+                    services.cutCoach.refresh(trigger: .macroPlanChanged)
+                }
+                .environmentObject(services)
+            }
         }
+    }
+
+    private func currentDefaultsTuple() -> (kcal: Int, proteinG: Int, fatG: Int, carbsG: Int) {
+        let sex = Sex(rawValue: UserDefaults.standard.string(forKey: AppPrefKey.userSex) ?? MacroDefaultsPrefs.sex)
+            ?? .male
+        let age = (UserDefaults.standard.object(forKey: AppPrefKey.userAgeYears) as? Int) ?? MacroDefaultsPrefs.ageYears
+        let height = (UserDefaults.standard.object(forKey: AppPrefKey.userHeightCm) as? Double) ?? MacroDefaultsPrefs.heightCm
+        let activity = (UserDefaults.standard.object(forKey: AppPrefKey.userActivityFactor) as? Double)
+            ?? MacroDefaultsPrefs.activityFactor
+
+        return MacroDefaults.compute(
+            startWeightKg: original.startWeightKg,
+            targetWeightKg: UnitConvert.storeWeight(targetDisplayWeight, from: unit),
+            startDate: original.startDate,
+            targetEndDate: targetEndDate,
+            sex: sex,
+            ageYears: age,
+            heightCm: height,
+            activityFactor: activity
+        )
     }
 }

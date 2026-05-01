@@ -97,7 +97,7 @@ struct CutInlineChart: View {
                     AxisGridLine()
                     AxisValueLabel {
                         if let v = value.as(Double.self) {
-                            Text("\(Int(v.rounded()))")
+                            Text("\(Int(v.rounded())) \(unit.symbol)")
                                 .font(.caption2)
                         }
                     }

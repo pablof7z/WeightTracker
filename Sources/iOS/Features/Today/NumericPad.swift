@@ -37,7 +37,7 @@ struct NumericPad: View {
             }
             .buttonStyle(.plain)
             .disabled(onUnitTap == nil)
-            .accessibilityLabel("Current weight \(formatted) \(unitSymbol). Tap to switch unit.")
+            .accessibilityLabel(onUnitTap != nil ? "Current weight \(formatted) \(unitSymbol). Tap to switch unit." : "Current weight \(formatted) \(unitSymbol).")
 
             LiquidGlassContainer(spacing: 28) {
                 HStack(spacing: 28) {
@@ -95,6 +95,7 @@ private struct PadButton: View {
             .accessibilityLabel(symbol == "plus" ? "Increase" : "Decrease")
             .scaleEffect(isPressing ? 0.92 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: isPressing)
+            .onDisappear { stopRepeating() }
     }
 
     private func startRepeating() {

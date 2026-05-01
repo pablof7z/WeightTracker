@@ -17,27 +17,24 @@ struct ChartView: View {
     @State private var showFullscreen: Bool = false
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
-    private var range: ChartRange {
-        get { ChartRange.from(days: rangeDays) }
-    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    ChartRangeButtons(
-                        selection: Binding(
-                            get: { ChartRange.from(days: rangeDays) },
-                            set: { rangeDays = $0.rawValue }
-                        ),
-                        showCutPill: viewModel.activeCut != nil,
-                        cutPinned: $pinnedToCut
-                    )
-                    .padding(.top, 8)
-
                     if viewModel.readings.isEmpty {
                         emptyState
                     } else {
+                        ChartRangeButtons(
+                            selection: Binding(
+                                get: { ChartRange.from(days: rangeDays) },
+                                set: { rangeDays = $0.rawValue }
+                            ),
+                            showCutPill: viewModel.activeCut != nil,
+                            cutPinned: $pinnedToCut
+                        )
+                        .padding(.top, 8)
+
                         WeightChart(
                             readings: viewModel.readings,
                             movingAverage: viewModel.movingAverage,
@@ -62,14 +59,14 @@ struct ChartView: View {
                         if colorBySleep {
                             SleepOverlayLegend()
                         }
-                    }
 
-                    ChartOverlayToggles(
-                        showAverage: $showAverage,
-                        showClusters: $showClusters,
-                        showGaps: $showGaps,
-                        showSleepColor: $colorBySleep
-                    )
+                        ChartOverlayToggles(
+                            showAverage: $showAverage,
+                            showClusters: $showClusters,
+                            showGaps: $showGaps,
+                            showSleepColor: $colorBySleep
+                        )
+                    }
 
                     Spacer(minLength: 24)
                 }

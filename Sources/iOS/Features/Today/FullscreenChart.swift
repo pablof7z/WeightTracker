@@ -1,8 +1,6 @@
 import SwiftUI
 import Charts
 
-/// Generic fullscreen chart presenter — landscape, pinch-to-zoom, drag-to-pan, tap-to-show-value.
-/// Caller passes a typed dataset; we render via Swift Charts with built-in scroll + selection.
 public struct FullscreenChartView: View {
     public struct Series: Identifiable {
         public let id = UUID()
@@ -55,7 +53,6 @@ public struct FullscreenChartView: View {
     let subtitle: String?
     let series: [Series]
     let unit: WeightUnit
-    /// Optional horizontal target line (kg).
     var targetWeightKg: Double? = nil
 
     @Environment(\.dismiss) private var dismiss
@@ -95,7 +92,6 @@ public struct FullscreenChartView: View {
     private var yMin: Double { (yValues.min() ?? 0) - 1.5 }
     private var yMax: Double { (yValues.max() ?? 100) + 1.5 }
 
-    /// Find the closest data point across all series for a given date.
     private func selection(for date: Date) -> (series: Series, point: (Date, Double))? {
         var best: (series: Series, point: (Date, Double), dt: TimeInterval)? = nil
         for s in series {
@@ -260,7 +256,7 @@ public struct FullscreenChartView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.regularMaterial)
+        .glass(in: Rectangle())
     }
 
     private var placeholderBanner: some View {
@@ -272,14 +268,14 @@ public struct FullscreenChartView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.regularMaterial)
+        .glass(in: Rectangle())
     }
 
     private var seriesLegend: some View {
         HStack(spacing: 12) {
             ForEach(series) { s in
                 HStack(spacing: 4) {
-                    Circle().fill(s.style.color).frame(width: 8, height: 8)
+                    Circle().fill(s.style.color).frame(width: 8, height: 8).accessibilityHidden(true)
                     Text(s.name)
                         .font(.caption2)
                         .foregroundStyle(.secondary)

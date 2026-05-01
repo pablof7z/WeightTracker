@@ -19,6 +19,12 @@ public protocol ReadingRepository: AnyObject {
     func allSleepNights() -> [SleepNight]
     func sleepNight(on date: Date) -> SleepNight?
     func bulkInsertSleep(_ nights: [SleepNight], replacingExisting: Bool)
+
+    // Daily activity
+    func allDailyActivities() -> [DailyActivity]
+    func dailyActivities(in range: ClosedRange<Date>) -> [DailyActivity]
+    func dailyActivity(on date: Date) -> DailyActivity?
+    func bulkInsertActivity(_ activities: [DailyActivity], replacingExisting: Bool)
 }
 
 @MainActor
@@ -109,6 +115,45 @@ public final class SwiftDataReadingRepository: ReadingRepository {
     public func bulkInsertSleep(_ nights: [SleepNight], replacingExisting: Bool) {
         for incoming in nights {
             if let existing = sleepNight(on: incoming.nightDate) {
+                if replacingExisting {
+                    context.delete(existing)
+                } else {
+                    continue
+                }
+            }
+            context.insert(incoming)
+        }
+        save()
+    }
+
+    // MARK: - Daily activity
+
+    public func allDailyActivities() -> [DailyActivity] {
+        let descriptor = FetchDescriptor<DailyActivity>(sortBy: [SortDescriptor(\.day, order: .forward)])
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    public func dailyActivities(in range: ClosedRange<Date>) -> [DailyActivity] {
+        let lo = Reading.dayStart(of: range.lowerBound)
+        let hi = Reading.dayStart(of: range.upperBound)
+        let predicate = #Predicate<DailyActivity> { $0.day >= lo && $0.day <= hi }
+        let descriptor = FetchDescriptor<DailyActivity>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.day, order: .forward)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    public func dailyActivity(on date: Date) -> DailyActivity? {
+        let key = Reading.dayStart(of: date)
+        let predicate = #Predicate<DailyActivity> { $0.day == key }
+        let descriptor = FetchDescriptor<DailyActivity>(predicate: predicate)
+        return try? context.fetch(descriptor).first
+    }
+
+    public func bulkInsertActivity(_ activities: [DailyActivity], replacingExisting: Bool) {
+        for incoming in activities {
+            if let existing = dailyActivity(on: incoming.day) {
                 if replacingExisting {
                     context.delete(existing)
                 } else {

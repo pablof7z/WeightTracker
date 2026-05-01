@@ -6,6 +6,7 @@ import HealthKit
 @MainActor
 public final class SleepHealthKit: ObservableObject {
     @Published public private(set) var lastSyncedAt: Date?
+    public var onSleepChanged: (() -> Void)?
 
     private let repository: ReadingRepository
     private let anchorKey = "sleepHealthKit.anchor"
@@ -112,6 +113,9 @@ public final class SleepHealthKit: ObservableObject {
         let nights = Self.reduceSamples(categorySamples)
         repository.bulkInsertSleep(nights, replacingExisting: true)
         lastSyncedAt = Date()
+        if !nights.isEmpty {
+            onSleepChanged?()
+        }
         return nights.count
     }
 

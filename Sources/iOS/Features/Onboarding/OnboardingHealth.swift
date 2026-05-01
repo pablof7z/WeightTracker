@@ -14,6 +14,7 @@ struct OnboardingHealth: View {
             Image(systemName: "heart.fill")
                 .font(.system(size: 64))
                 .foregroundStyle(.pink)
+                .accessibilityHidden(true)
             Text("Connect Apple Health")
                 .font(.title.bold())
             Text("Read weights from your scale or Apple Watch, and write the ones you log here back to Apple Health.")
@@ -42,6 +43,7 @@ struct OnboardingHealth: View {
                             }
                         }
                         .font(.footnote)
+                        .accessibilityHint("Opens the iOS Settings app to grant Health permissions")
                         Text("You can enable this anytime in Settings.")
                             .font(.caption)
                             .foregroundStyle(.secondary)

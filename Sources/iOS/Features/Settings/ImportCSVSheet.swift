@@ -84,7 +84,7 @@ struct ImportCSVSheet: View {
                         Text(u.label).tag(u)
                     }
                 }
-                Text("Weight confidence: \(Int(p.weightUnitConfidence * 100))%")
+                Text("Unit detection confidence: \(Int(p.weightUnitConfidence * 100))%")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
@@ -120,7 +120,7 @@ struct ImportCSVSheet: View {
                         }
                     }
                 }
-                .disabled(isImporting || p.validReadings.isEmpty)
+                .disabled(isImporting || p.validReadings.isEmpty || imported != nil)
             }
         }
     }
@@ -161,6 +161,7 @@ struct ImportCSVSheet: View {
         isImporting = true
         defer { isImporting = false }
         appServices.repository.bulkInsert(p.validReadings, replacingExisting: replaceExisting)
+        appServices.cutCoach.refresh(trigger: .weightSaved)
         imported = p.validReadings.count
         await appServices.notifications.scheduleEvaluatedTriggers()
     }

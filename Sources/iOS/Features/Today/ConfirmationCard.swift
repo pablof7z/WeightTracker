@@ -43,6 +43,7 @@ struct ConfirmationCard: View {
                     }
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(deltaColor(delta, clusterType: confirmation.clusterType))
+                    .accessibilityLabel("Change \(String(format: "%.1f", abs(delta))) \(confirmation.weightUnitSymbol) \(delta < 0 ? "down" : "up") from previous reading")
                 }
             }
 
@@ -68,7 +69,9 @@ struct ConfirmationCard: View {
     }
 
     private func deltaColor(_ delta: Double, clusterType: ClusterType?) -> Color {
-        guard clusterType == .cut else { return .secondary }
-        return delta < 0 ? .green : (delta > 0 ? .red : .secondary)
+        guard clusterType == .cut else { return Color.secondary }
+        if delta < 0 { return Color.primary }
+        if delta > 0 { return Color.secondary }
+        return Color.secondary
     }
 }

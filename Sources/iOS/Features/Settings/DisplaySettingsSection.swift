@@ -6,7 +6,7 @@ struct DisplaySettingsSection: View {
     @AppStorage(AppPrefKey.theme) private var themeRaw: String = ThemePreference.system.rawValue
 
     var body: some View {
-        Section("Display") {
+        Section {
             Picker("Weight unit", selection: $weightUnitRaw) {
                 ForEach(WeightUnit.allCases, id: \.rawValue) { u in
                     Text(u.label).tag(u.rawValue)
@@ -22,6 +22,10 @@ struct DisplaySettingsSection: View {
                     Text(t.label).tag(t.rawValue)
                 }
             }
+        } header: {
+            Text("Display")
+        } footer: {
+            Text("Weight and body units apply throughout the app. Theme overrides the system appearance for this app only.")
         }
     }
 }

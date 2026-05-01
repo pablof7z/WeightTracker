@@ -29,7 +29,6 @@ final class ChartViewModel: ObservableObject {
         self.sleepNightByDay = byDay
     }
 
-    /// Returns the sleep night whose nightDate matches the day-start of `date`.
     func sleepBefore(date: Date) -> SleepNight? {
         let key = Reading.dayStart(of: date)
         return sleepNightByDay[key]
@@ -44,13 +43,11 @@ final class ChartViewModel: ObservableObject {
         return max(7, days + 3) // small right-pad so target-line is visible
     }
 
-    /// X-axis right edge to scroll to (the latest of cut.targetEndDate or today).
     var cutScrollEnd: Date? {
         guard let cut = activeCut else { return nil }
         return max(cut.targetEndDate, Date())
     }
 
-    /// 30-day trailing average computed per reading date.
     static func trailingAverage(readings: [Reading], days: Int) -> [(date: Date, kg: Double)] {
         guard !readings.isEmpty else { return [] }
         var result: [(Date, Double)] = []

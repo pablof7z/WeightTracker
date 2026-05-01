@@ -10,6 +10,12 @@ struct DeleteRangeSheet: View {
     @State private var deletedCount: Int = 0
     @State private var showConfirm = false
 
+    private static let dateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        return f
+    }()
+
     var body: some View {
         NavigationStack {
             Form {
@@ -39,8 +45,8 @@ struct DeleteRangeSheet: View {
                 }
                 if didDelete {
                     Section {
-                        Text("Deleted \(deletedCount) reading\(deletedCount == 1 ? "" : "s").")
-                            .foregroundStyle(.secondary)
+                        Label("Deleted \(deletedCount) reading\(deletedCount == 1 ? "" : "s").", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
                     }
                 }
             }
@@ -61,10 +67,7 @@ struct DeleteRangeSheet: View {
     }
 
     private var confirmRangeText: String {
-        let fmt = DateFormatter()
-        fmt.dateStyle = .medium
-        fmt.timeStyle = .none
-        return "\(fmt.string(from: startDate)) – \(fmt.string(from: endDate))"
+        "\(Self.dateFmt.string(from: startDate)) – \(Self.dateFmt.string(from: endDate))"
     }
 
     private var matchingCount: Int {
@@ -74,6 +77,7 @@ struct DeleteRangeSheet: View {
     private func performDelete() {
         let count = matchingCount
         appServices.repository.deleteRange(range)
+        appServices.cutCoach.refresh(trigger: .weightSaved)
         deletedCount = count
         didDelete = true
         Task { await appServices.notifications.scheduleEvaluatedTriggers() }

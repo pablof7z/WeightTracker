@@ -31,7 +31,7 @@ struct OnboardingReminders: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(isRequesting || !master)
+            .disabled(isRequesting || !master || status?.contains("allowed") == true)
 
             if let status {
                 Text(status).font(.footnote).foregroundStyle(.secondary)

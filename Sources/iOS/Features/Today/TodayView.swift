@@ -4,15 +4,19 @@ import SwiftData
 struct TodayView: View {
     @EnvironmentObject var services: AppServices
     @StateObject private var viewModel = TodayViewModel()
+    @StateObject private var stt = ElevenLabsRealtimeSTT()
 
     @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
     @AppStorage(AppPrefKey.bodyUnit) private var bodyUnitRaw: String = BodyUnit.inches.rawValue
+    @AppStorage(AppPrefKey.elevenLabsSTTModel) private var sttModel: String = AppConstants.defaultElevenLabsSTTModel
 
     @State private var didLoad = false
-    @State private var isSaving = false
     @State private var showDatePicker = false
+    @State private var showVoiceCheckIn = false
+    @State private var todayCoachNote: CoachNote?
     @State private var swipeAccum: CGFloat = 0
     @State private var dismissTask: Task<Void, Never>?
+    @State private var saveTask: Task<Void, Never>?
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var bodyUnit: BodyUnit { BodyUnit(rawValue: bodyUnitRaw) ?? .inches }
@@ -29,23 +33,18 @@ struct TodayView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     NumericPad(
-                        value: $viewModel.displayValue,
+                        value: Binding(
+                            get: { viewModel.displayValue },
+                            set: { newValue in
+                                viewModel.displayValue = newValue
+                                viewModel.bumpEditTick()
+                            }
+                        ),
                         unitSymbol: weightUnit.symbol,
                         onUnitTap: toggleUnit
                     )
                     .opacity(viewModel.hasEntry ? 1.0 : 0.45)
                     .padding(.top, 16)
-
-                    OptionalDetailsRow(
-                        hipsValue: $viewModel.hipsValue,
-                        waistValue: $viewModel.waistValue,
-                        note: $viewModel.note,
-                        bodyUnitSymbol: bodyUnit.symbol
-                    )
-                    .padding(.horizontal)
-
-                    saveButton
-                        .padding(.horizontal)
 
                     if let active = viewModel.activeCut, let projection = viewModel.projection {
                         ActiveCutMinichart(
@@ -56,6 +55,31 @@ struct TodayView: View {
                         )
                         .padding(.horizontal)
                         .transition(.opacity)
+
+                        Button {
+                            startVoiceCheckIn()
+                        } label: {
+                            Label("Check in", systemImage: "mic.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .padding(.horizontal)
+
+                        if let todayCoachNote {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Today note")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Text(todayCoachNote.text)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(3)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                            .glass(in: RoundedRectangle(cornerRadius: 12))
+                            .padding(.horizontal)
+                        }
                     }
 
                     if let saved = viewModel.lastSaved {
@@ -71,6 +95,7 @@ struct TodayView: View {
             }
             .contentShape(Rectangle())
             .gesture(swipeGesture)
+            .sensoryFeedback(.success, trigger: viewModel.lastSaved)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Button {
@@ -93,12 +118,14 @@ struct TodayView: View {
                         if canGoBack { goBack() }
                     } label: { Image(systemName: "chevron.left") }
                     .disabled(!canGoBack)
+                    .accessibilityLabel("Previous day")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         if canGoForward { goForward() }
                     } label: { Image(systemName: "chevron.right") }
                     .disabled(!canGoForward)
+                    .accessibilityLabel("Next day")
                 }
                 if !Calendar.current.isDateInToday(viewModel.date) {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -129,14 +156,30 @@ struct TodayView: View {
                 }
                 .presentationDetents([.medium, .large])
             }
+            .sheet(isPresented: $showVoiceCheckIn, onDismiss: {
+                if stt.isRecording || stt.isStarting {
+                    stt.cancel()
+                }
+            }) {
+                VoiceCheckInSheet(
+                    stt: stt,
+                    onFinish: finishVoiceCheckIn,
+                    onPause: { stt.pause() },
+                    onResume: { stt.resume() }
+                )
+                .presentationDetents([.height(320), .medium])
+                .presentationDragIndicator(.visible)
+            }
             .onAppear {
                 if !didLoad {
                     viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+                    reloadTodayCoachNote()
                     didLoad = true
                 }
             }
             .onChange(of: weightUnitRaw) { _, _ in
                 viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+                reloadTodayCoachNote()
             }
             .onChange(of: viewModel.lastSaved) { _, newValue in
                 dismissTask?.cancel()
@@ -147,6 +190,14 @@ struct TodayView: View {
                     withAnimation(.easeOut(duration: 0.25)) {
                         viewModel.lastSaved = nil
                     }
+                }
+            }
+            .onChange(of: viewModel.editTick) { _, _ in
+                saveTask?.cancel()
+                saveTask = Task {
+                    try? await Task.sleep(for: .milliseconds(700))
+                    guard !Task.isCancelled else { return }
+                    await viewModel.save(services: services, weightUnit: weightUnit, bodyUnit: bodyUnit)
                 }
             }
         }
@@ -199,6 +250,8 @@ struct TodayView: View {
         DragGesture(minimumDistance: 30)
             .onEnded { value in
                 let dx = value.translation.width
+                let dy = value.translation.height
+                guard abs(dx) > abs(dy) else { return }
                 if dx <= -50, canGoForward {
                     goForward()
                 } else if dx >= 50, canGoBack {
@@ -220,11 +273,26 @@ struct TodayView: View {
     private func selectDate(_ d: Date) {
         let day = Reading.dayStart(of: d)
         guard day != viewModel.date else { return }
+        let hadPendingSave = saveTask != nil
+        saveTask?.cancel()
+        saveTask = nil
         dismissTask?.cancel()
         dismissTask = nil
-        withAnimation(.easeInOut(duration: 0.2)) {
-            viewModel.lastSaved = nil
-            viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+        let load = {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                viewModel.lastSaved = nil
+                viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+                reloadTodayCoachNote()
+            }
+        }
+        if hadPendingSave {
+            // Flush the pending save against the outgoing date BEFORE we mutate state.
+            Task { @MainActor in
+                await viewModel.save(services: services, weightUnit: weightUnit, bodyUnit: bodyUnit)
+                load()
+            }
+        } else {
+            load()
         }
     }
 
@@ -235,27 +303,44 @@ struct TodayView: View {
         weightUnitRaw = next.rawValue
     }
 
-    private var saveButton: some View {
-        Button {
-            Task {
-                isSaving = true
-                await viewModel.save(services: services, weightUnit: weightUnit, bodyUnit: bodyUnit)
-                isSaving = false
+    private func startVoiceCheckIn() {
+        showVoiceCheckIn = true
+        Task { @MainActor in
+            do {
+                try await stt.start(modelID: sttModel)
+            } catch {
+                stt.recordStartFailure(error)
             }
-        } label: {
-            HStack {
-                if isSaving { ProgressView() }
-                Text(isSaving ? "Saving…" : (viewModel.hasEntry ? "Update" : "Save"))
-                    .font(.headline)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .glass(in: RoundedRectangle(cornerRadius: 14))
-            .foregroundStyle(.primary)
         }
-        .disabled(isSaving)
-        .sensoryFeedback(.success, trigger: viewModel.lastSaved)
     }
+
+    private func finishVoiceCheckIn() {
+        Task { @MainActor in
+            let recordingID = stt.currentRecordingID
+            let transcript = await stt.stop()
+            showVoiceCheckIn = false
+
+            if services.cutCoach.appendVoiceCheckInNote(
+                transcript: transcript,
+                audioDraftID: recordingID
+            ) != nil {
+                await services.coachAgent.run(transcript: transcript, trigger: .voiceCheckIn)
+                services.cutCoach.refresh(trigger: .voiceCheckIn)
+                reloadTodayCoachNote()
+            }
+        }
+    }
+
+    private func reloadTodayCoachNote() {
+        let day = Reading.dayStart(of: viewModel.date)
+        todayCoachNote = services.cutCoach
+            .recentNotes(limit: 20, userVisibleOnly: true)
+            .first { note in
+                guard let noteDay = note.day else { return false }
+                return Reading.dayStart(of: noteDay) == day
+            }
+    }
+
 }
 
 #Preview {

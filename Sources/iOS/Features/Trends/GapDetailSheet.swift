@@ -30,7 +30,7 @@ struct GapDetailSheet: View {
                 }
                 Section("Drift") {
                     row("Total", value: signedDelta(lb: gap.driftLb),
-                        valueColor: gap.didGain ? Color.red : Color.green)
+                        valueColor: gap.driftLb == 0 ? Color.secondary : (gap.didGain ? Color.red : Color.green))
                     row("Per month", value: signedDelta(lb: gap.driftLbPerMonth))
                 }
             }
@@ -59,7 +59,6 @@ struct GapDetailSheet: View {
 
     private func signedDelta(lb: Double) -> String {
         let v = weightUnit == .lbs ? lb : UnitConvert.lbToKg(lb)
-        let prefix = v >= 0 ? "+" : ""
-        return "\(prefix)\(String(format: "%.1f", v)) \(weightUnit.symbol)"
+        return String(format: "%+.1f", v) + " \(weightUnit.symbol)"
     }
 }

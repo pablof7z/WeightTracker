@@ -49,6 +49,7 @@ struct OnboardingCut: View {
                     )
                     ActiveCutStore.save(cut)
                     goalWeightKg = cut.targetWeightKg
+                    services.cutCoach.refresh(trigger: .activeCutChanged)
                     Task { await services.notifications.scheduleEvaluatedTriggers() }
                 } label: {
                     Label("Start a cut", systemImage: "play.fill")
@@ -57,8 +58,8 @@ struct OnboardingCut: View {
                 .buttonStyle(.borderedProminent)
 
                 Text("Skip — just tracking for now")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 8)
             }

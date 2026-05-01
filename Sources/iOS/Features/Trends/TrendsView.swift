@@ -47,6 +47,7 @@ struct TrendsView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        .padding(40)
+        .glass(in: RoundedRectangle(cornerRadius: 16))
     }
 }

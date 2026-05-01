@@ -54,12 +54,10 @@ struct RightNowCard: View {
             Spacer()
             Text(recent.source.displayName)
                 .font(.caption)
+                .foregroundStyle(.secondary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(
-                    Capsule().fill(Color(.tertiarySystemBackground))
-                )
-                .foregroundStyle(.secondary)
+                .glass(in: Capsule())
         }
     }
 

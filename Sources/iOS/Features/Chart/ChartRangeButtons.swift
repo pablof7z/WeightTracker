@@ -19,6 +19,16 @@ enum ChartRange: Int, CaseIterable, Identifiable {
         }
     }
 
+    var accessibilityTitle: String {
+        switch self {
+        case .sixMonths: return "6 months"
+        case .oneYear: return "1 year"
+        case .twoYears: return "2 years"
+        case .fiveYears: return "5 years"
+        case .all: return "All time"
+        }
+    }
+
     static func from(days: Int) -> ChartRange {
         ChartRange(rawValue: days) ?? .oneYear
     }
@@ -59,7 +69,8 @@ struct ChartRangeButtons: View {
                     }
                     .buttonStyle(.plain)
                     .opacity(cutPinned ? 1.0 : 0.5)
-                    .accessibilityLabel("Show active cut window")
+                    .accessibilityLabel(cutPinned ? "Hide active cut window" : "Show active cut window")
+                    .accessibilityAddTraits(cutPinned ? .isSelected : [])
                 }
 
                 ForEach(ChartRange.allCases) { r in
@@ -81,7 +92,7 @@ struct ChartRangeButtons: View {
                     }
                     .buttonStyle(.plain)
                     .opacity(isActive ? 1.0 : 0.5)
-                    .accessibilityLabel("Range \(r.title)")
+                    .accessibilityLabel(r.accessibilityTitle)
                 }
             }
         }

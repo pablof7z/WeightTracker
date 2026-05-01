@@ -37,7 +37,7 @@ struct EraSummaryTable: View {
             cell("Drift \(weightUnit.symbol)", weight: .semibold, align: .trailing, width: 72)
             cell("\(weightUnit.symbol)/mo", weight: .semibold, align: .trailing, width: 62)
             cell("Gaps", weight: .semibold, align: .trailing, width: 44)
-            cell("Gain days", weight: .semibold, align: .trailing, width: 70)
+            cell("Gain %", weight: .semibold, align: .trailing, width: 70)
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -60,6 +60,7 @@ struct EraSummaryTable: View {
             cell(percent(era.gainRatio), weight: .regular, align: .trailing, width: 70)
         }
         .font(.subheadline)
+        .monospacedDigit()
     }
 
     private func cell(

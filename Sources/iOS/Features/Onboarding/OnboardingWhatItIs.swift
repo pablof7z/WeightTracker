@@ -6,6 +6,7 @@ struct OnboardingWhatItIs: View {
             Image(systemName: "scalemass")
                 .font(.system(size: 72))
                 .foregroundStyle(.tint)
+                .accessibilityHidden(true)
             Text("Welcome to WeightTracker")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
@@ -25,6 +26,7 @@ struct OnboardingWhatItIs: View {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
                 .padding(.top, 2)
+                .accessibilityHidden(true)
             Text(s).font(.body)
         }
     }

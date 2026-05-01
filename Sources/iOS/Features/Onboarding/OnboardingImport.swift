@@ -45,7 +45,7 @@ struct OnboardingImport: View {
                         Task { await performImport(preview) }
                     } label: {
                         HStack {
-                            Text("Import \(preview.validReadings.count)")
+                            Text("Import \(preview.validReadings.count) readings")
                             if isImporting { ProgressView() }
                         }
                     }
@@ -91,6 +91,7 @@ struct OnboardingImport: View {
         isImporting = true
         defer { isImporting = false }
         appServices.repository.bulkInsert(p.validReadings, replacingExisting: true)
+        appServices.cutCoach.refresh(trigger: .weightSaved)
         imported = p.validReadings.count
     }
 }

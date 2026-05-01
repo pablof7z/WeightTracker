@@ -29,6 +29,7 @@ struct ActiveCutCard: View {
                 Text("\(Self.dateFmt.string(from: cut.startDate)) → \(Self.dateFmt.string(from: cut.targetEndDate))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel("Cut runs from \(Self.dateFmt.string(from: cut.startDate)) to \(Self.dateFmt.string(from: cut.targetEndDate))")
             }
 
             HStack(spacing: 16) {
@@ -37,8 +38,8 @@ struct ActiveCutCard: View {
                     value: "\(cut.daysElapsed())"
                 )
                 metric(
-                    title: "Days left",
-                    value: "\(cut.daysRemaining())"
+                    title: cut.daysRemaining() < 0 ? "Status" : "Days left",
+                    value: cut.daysRemaining() < 0 ? "Overdue" : "\(cut.daysRemaining())"
                 )
                 metric(
                     title: "Target",
@@ -143,13 +144,19 @@ struct ActiveCutCard: View {
             case .reversed: return ("Reversed", .red)
             }
         }()
-        Text(resolved?.label ?? " ")
-            .font(.caption).bold()
-            .padding(.horizontal, 10).padding(.vertical, 6)
-            .background((resolved?.color ?? Color.clear).opacity(0.18), in: Capsule())
-            .foregroundStyle(resolved?.color ?? Color.clear)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityHidden(resolved == nil)
+        if let resolved {
+            Text(resolved.label)
+                .font(.caption).bold()
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(resolved.color.opacity(0.18), in: Capsule())
+                .foregroundStyle(resolved.color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            Text("—")
+                .font(.title3).bold()
+                .foregroundStyle(Color.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private func formatWeight(_ kg: Double) -> String {

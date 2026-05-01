@@ -23,7 +23,7 @@ struct SleepOverlayLegend: View {
                         .fill(item.color)
                         .frame(width: 8, height: 8)
                     Text(item.label)
-                        .font(.system(size: 12))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -32,6 +32,8 @@ struct SleepOverlayLegend: View {
         .padding(.vertical, 6)
         .glass(in: Capsule())
         .padding(.horizontal)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Sleep hours color legend: under 5 hours red, 5 to 6.5 orange, 6.5 to 7.5 yellow, 7.5 or more green, no data gray")
     }
 }
 

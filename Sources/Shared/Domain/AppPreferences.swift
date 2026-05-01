@@ -30,6 +30,20 @@ public enum AppPrefKey {
 
     // AI
     public static let openRouterModel = "ai.openRouterModel"
+    public static let elevenLabsSTTModel = "ai.elevenLabsSTTModel"
+
+    // Macro priors (silent defaults; no Settings UI in M1)
+    public static let userSex = "macros.userSex"
+    public static let userAgeYears = "macros.userAgeYears"
+    public static let userHeightCm = "macros.userHeightCm"
+    public static let userActivityFactor = "macros.userActivityFactor"
+}
+
+public enum MacroDefaultsPrefs {
+    public static let sex: String = Sex.male.rawValue
+    public static let ageYears: Int = 35
+    public static let heightCm: Double = 175
+    public static let activityFactor: Double = 1.5
 }
 
 public enum AppGroup {
@@ -42,4 +56,5 @@ public enum AppConstants {
     public static let defaultGoalLb: Double = 158.0
     public static let defaultCutDurationWeeks: Int = 16
     public static let defaultOpenRouterModel = "openai/gpt-5.2"
+    public static let defaultElevenLabsSTTModel = "scribe_v2_realtime"
 }
