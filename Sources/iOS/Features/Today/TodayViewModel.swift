@@ -27,6 +27,7 @@ final class TodayViewModel: ObservableObject {
         let deltaDisplay: Double?
         let date: Date
         let clusterNote: String?
+        let clusterType: ClusterType?
     }
 
     /// Load state for a given date. If a reading exists on that date, populate from it.
@@ -148,7 +149,8 @@ final class TodayViewModel: ObservableObject {
             weightUnitSymbol: weightUnit.symbol,
             deltaDisplay: deltaDisplay,
             date: day,
-            clusterNote: clusterNote
+            clusterNote: clusterNote,
+            clusterType: active?.classification
         )
     }
 }

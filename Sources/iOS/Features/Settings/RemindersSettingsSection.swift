@@ -37,7 +37,9 @@ struct RemindersSettingsSection: View {
                 DatePicker("Quiet from", selection: quietStartBinding, displayedComponents: .hourAndMinute)
                 DatePicker("Quiet until", selection: quietEndBinding, displayedComponents: .hourAndMinute)
 
-                Section(footer: Text("Quiet hours wrap past midnight when the end time is earlier than the start (e.g. 10 PM → 7 AM).")) { }
+                Text("Quiet hours wrap past midnight when end is earlier than start (e.g. 10 PM → 7 AM).")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
 
                 if let until = pausedUntil, until > Date() {
                     HStack {
@@ -53,12 +55,18 @@ struct RemindersSettingsSection: View {
         }
     }
 
-    private func formatHour(_ h: Int) -> String {
-        var c = DateComponents()
-        c.hour = h
-        c.minute = 0
-        let date = Calendar.current.date(from: c) ?? Date()
-        return date.formatted(date: .omitted, time: .shortened)
+    private var quietStartBinding: Binding<Date> {
+        Binding(
+            get: { Calendar.current.date(bySettingHour: quietStartHour, minute: 0, second: 0, of: Date()) ?? Date() },
+            set: { quietStartHour = Calendar.current.component(.hour, from: $0); reschedule() }
+        )
+    }
+
+    private var quietEndBinding: Binding<Date> {
+        Binding(
+            get: { Calendar.current.date(bySettingHour: quietEndHour, minute: 0, second: 0, of: Date()) ?? Date() },
+            set: { quietEndHour = Calendar.current.component(.hour, from: $0); reschedule() }
+        )
     }
 
     private func pauseToday() {

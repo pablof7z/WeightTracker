@@ -8,6 +8,7 @@ struct DeleteRangeSheet: View {
     @State private var endDate: Date = Date()
     @State private var didDelete = false
     @State private var deletedCount: Int = 0
+    @State private var showConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -22,9 +23,19 @@ struct DeleteRangeSheet: View {
                 }
                 Section {
                     Button("Delete readings in range", role: .destructive) {
-                        performDelete()
+                        showConfirm = true
                     }
                     .disabled(matchingCount == 0 || startDate > endDate)
+                    .confirmationDialog(
+                        "Delete \(matchingCount) reading\(matchingCount == 1 ? "" : "s")?",
+                        isPresented: $showConfirm,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Delete", role: .destructive) { performDelete() }
+                        Button("Cancel", role: .cancel) { }
+                    } message: {
+                        Text(confirmRangeText)
+                    }
                 }
                 if didDelete {
                     Section {
@@ -47,6 +58,13 @@ struct DeleteRangeSheet: View {
         let lo = Reading.dayStart(of: min(startDate, endDate))
         let hi = Reading.dayStart(of: max(startDate, endDate))
         return lo...hi
+    }
+
+    private var confirmRangeText: String {
+        let fmt = DateFormatter()
+        fmt.dateStyle = .medium
+        fmt.timeStyle = .none
+        return "\(fmt.string(from: startDate)) – \(fmt.string(from: endDate))"
     }
 
     private var matchingCount: Int {
