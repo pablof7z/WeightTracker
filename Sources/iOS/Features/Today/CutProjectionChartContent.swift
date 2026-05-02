@@ -57,6 +57,15 @@ struct CutProjectionChartContent: View {
             if !projection.isTargetReached {
                 if let bestEnd = projection.bestEndKg {
                     LineMark(
+                        x: .value("Date", active.startDate),
+                        y: .value("Weight", display(active.startWeightKg)),
+                        series: .value("series", "best")
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .foregroundStyle(Self.bestColor)
+                    .interpolationMethod(.linear)
+
+                    LineMark(
                         x: .value("Date", projection.anchorDate),
                         y: .value("Weight", display(projection.anchorKg)),
                         series: .value("series", "best")
@@ -77,6 +86,15 @@ struct CutProjectionChartContent: View {
 
                 if let worstEnd = projection.worstEndKg {
                     LineMark(
+                        x: .value("Date", active.startDate),
+                        y: .value("Weight", display(active.startWeightKg)),
+                        series: .value("series", "worst")
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .foregroundStyle(Self.worstColor)
+                    .interpolationMethod(.linear)
+
+                    LineMark(
                         x: .value("Date", projection.anchorDate),
                         y: .value("Weight", display(projection.anchorKg)),
                         series: .value("series", "worst")
@@ -95,7 +113,16 @@ struct CutProjectionChartContent: View {
                     .interpolationMethod(.linear)
                 }
 
-                // Avg path with wiggle (linear, NOT smoothed)
+                // Avg path with wiggle (linear, NOT smoothed), anchored at cut start
+                LineMark(
+                    x: .value("Date", active.startDate),
+                    y: .value("Weight", display(active.startWeightKg)),
+                    series: .value("series", "avg")
+                )
+                .interpolationMethod(.linear)
+                .lineStyle(StrokeStyle(lineWidth: 2))
+                .foregroundStyle(Self.avgColor)
+
                 ForEach(Array(projection.avgPath.enumerated()), id: \.offset) { _, point in
                     LineMark(
                         x: .value("Date", point.0),

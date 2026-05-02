@@ -74,6 +74,15 @@ struct ActiveCutMinichart: View {
                     if !projection.isTargetReached {
                         if let bestEnd = projection.bestEndKg {
                             LineMark(
+                                x: .value("Date", active.startDate),
+                                y: .value("Weight", display(active.startWeightKg)),
+                                series: .value("series", "best")
+                            )
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                            .foregroundStyle(Self.bestColor)
+                            .interpolationMethod(.linear)
+
+                            LineMark(
                                 x: .value("Date", projection.anchorDate),
                                 y: .value("Weight", display(projection.anchorKg)),
                                 series: .value("series", "best")
@@ -94,6 +103,15 @@ struct ActiveCutMinichart: View {
 
                         if let worstEnd = projection.worstEndKg {
                             LineMark(
+                                x: .value("Date", active.startDate),
+                                y: .value("Weight", display(active.startWeightKg)),
+                                series: .value("series", "worst")
+                            )
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                            .foregroundStyle(Self.worstColor)
+                            .interpolationMethod(.linear)
+
+                            LineMark(
                                 x: .value("Date", projection.anchorDate),
                                 y: .value("Weight", display(projection.anchorKg)),
                                 series: .value("series", "worst")
@@ -112,7 +130,16 @@ struct ActiveCutMinichart: View {
                             .interpolationMethod(.linear)
                         }
 
-                        // Avg path (solid blue with wiggle preserved — linear, NOT catmullRom).
+                        // Avg path (solid blue with wiggle preserved — linear, NOT catmullRom), anchored at cut start.
+                        LineMark(
+                            x: .value("Date", active.startDate),
+                            y: .value("Weight", display(active.startWeightKg)),
+                            series: .value("series", "avg")
+                        )
+                        .interpolationMethod(.linear)
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+                        .foregroundStyle(Self.avgColor)
+
                         ForEach(Array(projection.avgPath.enumerated()), id: \.offset) { _, point in
                             LineMark(
                                 x: .value("Date", point.0),
@@ -188,13 +215,13 @@ struct ActiveCutMinichart: View {
         out.append(.init(name: "Actual", style: .actualSolidPrimary, points: inCutReadings.map { ($0.date, $0.weightKg) }))
         if !projection.isTargetReached {
             if let bestEnd = projection.bestEndKg {
-                out.append(.init(name: "Best", style: .projectionDashedGreen, points: [(projection.anchorDate, projection.anchorKg), (projection.targetEndDate, bestEnd)]))
+                out.append(.init(name: "Best", style: .projectionDashedGreen, points: [(active.startDate, active.startWeightKg), (projection.anchorDate, projection.anchorKg), (projection.targetEndDate, bestEnd)]))
             }
             if let worstEnd = projection.worstEndKg {
-                out.append(.init(name: "Worst", style: .projectionDashedRed, points: [(projection.anchorDate, projection.anchorKg), (projection.targetEndDate, worstEnd)]))
+                out.append(.init(name: "Worst", style: .projectionDashedRed, points: [(active.startDate, active.startWeightKg), (projection.anchorDate, projection.anchorKg), (projection.targetEndDate, worstEnd)]))
             }
             if !projection.avgPath.isEmpty {
-                out.append(.init(name: "Avg", style: .projectionSolidBlue, points: projection.avgPath))
+                out.append(.init(name: "Avg", style: .projectionSolidBlue, points: [(active.startDate, active.startWeightKg)] + projection.avgPath))
             }
         }
         return out
