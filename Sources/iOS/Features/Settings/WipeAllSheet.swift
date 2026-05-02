@@ -26,9 +26,14 @@ struct WipeAllSheet: View {
                             .keyboardType(.decimalPad)
                     }
                     Section {
-                        Button("Wipe all data", role: .destructive) {
+                        Button(role: .destructive) {
                             performWipe()
+                        } label: {
+                            Text("Wipe all data")
+                                .frame(maxWidth: .infinity)
                         }
+                        .glassButtonStyle(prominent: true)
+                        .tint(.red)
                         .disabled(!matches(prompt))
                     }
                 } else {
@@ -41,6 +46,7 @@ struct WipeAllSheet: View {
                     Section { Label("All readings deleted.", systemImage: "checkmark.circle.fill").foregroundStyle(.green) }
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Wipe all data")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -28,6 +28,7 @@ struct MacroHistorySheet: View {
                 untrackedSection
                 legendSection
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle(MacroCopy.historyTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

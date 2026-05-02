@@ -7,22 +7,27 @@ struct WatchEntryView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 8) {
-                Text(String(format: "%.1f", viewModel.displayValue))
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                    .focusable(true)
-                    .digitalCrownRotation(
-                        $viewModel.displayValue,
-                        from: 50,
-                        through: 500,
-                        by: 0.1,
-                        sensitivity: .low,
-                        isContinuous: false,
-                        isHapticFeedbackEnabled: true
-                    )
+                VStack(spacing: 8) {
+                    Text(String(format: "%.1f", viewModel.displayValue))
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        .focusable(true)
+                        .digitalCrownRotation(
+                            $viewModel.displayValue,
+                            from: 50,
+                            through: 500,
+                            by: 0.1,
+                            sensitivity: .low,
+                            isContinuous: false,
+                            isHapticFeedbackEnabled: true
+                        )
 
-                Text(unitSymbol)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    Text(unitSymbol)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Weight")
+                .accessibilityValue("\(String(format: "%.1f", viewModel.displayValue)) \(unitSymbol)")
 
                 Button {
                     Task { await viewModel.save() }
@@ -34,7 +39,9 @@ struct WatchEntryView: View {
                         Image(systemName: "checkmark.circle.fill")
                     }
                 }
-                .buttonStyle(.borderedProminent)
+                .glassButtonStyle(prominent: true)
+                .accessibilityLabel("Save weight")
+                .accessibilityHint("Saves and writes to Health")
                 .animation(.easeInOut(duration: 0.2), value: viewModel.saved)
             }
             .padding()

@@ -50,7 +50,7 @@ struct HistoricalCutCard: View {
             .onTapGesture { showFullscreen = true }
         }
         .padding()
-        .glass(in: RoundedRectangle(cornerRadius: 12))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
         .fullScreenCover(isPresented: $showFullscreen) {
             let cutReadings = readings.filter { $0.date >= cut.startDate && $0.date <= cut.endDate }
             FullscreenChartView(

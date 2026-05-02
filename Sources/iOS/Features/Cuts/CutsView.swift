@@ -27,6 +27,9 @@ struct CutsView: View {
                         Label("History", systemImage: "clock")
                     }
                 }
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                }
                 if viewModel.activeCut == nil {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
@@ -106,7 +109,7 @@ struct CutsView: View {
                     Label("Start a Cut", systemImage: "plus.circle.fill")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .glassButtonStyle(prominent: true)
                 .disabled(viewModel.mostRecentReading == nil)
                 .padding(.top, 4)
                 if viewModel.mostRecentReading == nil {
@@ -118,7 +121,7 @@ struct CutsView: View {
                 }
             }
             .padding()
-            .glass(in: RoundedRectangle(cornerRadius: 12))
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
         }
     }
 
@@ -141,7 +144,7 @@ struct CutsView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(40)
-                        .glass(in: RoundedRectangle(cornerRadius: 16))
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
                     } else {
                         ForEach(viewModel.historicalCuts) { cut in
                             HistoricalCutCard(

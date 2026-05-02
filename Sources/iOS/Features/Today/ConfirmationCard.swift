@@ -20,7 +20,7 @@ struct ConfirmationCard: View {
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.secondary)
                         .padding(6)
-                        .background(.thinMaterial, in: Circle())
+                        .background(Color(.secondarySystemFill), in: Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Dismiss confirmation")

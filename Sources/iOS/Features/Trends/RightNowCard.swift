@@ -38,7 +38,7 @@ struct RightNowCard: View {
             }
         }
         .padding(16)
-        .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func latestRow(recent: Reading) -> some View {

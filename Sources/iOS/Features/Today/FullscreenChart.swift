@@ -107,101 +107,103 @@ public struct FullscreenChartView: View {
 
     public var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                if let sel = selectedDate, let hit = selection(for: sel) {
-                    selectionBanner(date: hit.point.0, kg: hit.point.1, seriesName: hit.series.name, color: hit.series.style.color)
-                } else {
-                    placeholderBanner
-                }
-
-                Chart {
-                    if let target = targetWeightKg {
-                        RuleMark(y: .value("Target", display(target)))
-                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
-                            .foregroundStyle(.gray.opacity(0.6))
-                            .annotation(position: .topTrailing, alignment: .trailing) {
-                                Text("Target \(String(format: "%.1f", display(target))) \(unit.symbol)")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
+            LiquidGlassContainer(spacing: 8) {
+                VStack(spacing: 0) {
+                    if let sel = selectedDate, let hit = selection(for: sel) {
+                        selectionBanner(date: hit.point.0, kg: hit.point.1, seriesName: hit.series.name, color: hit.series.style.color)
+                    } else {
+                        placeholderBanner
                     }
 
-                    ForEach(series) { s in
-                        let dash = s.style.dash
-                        let stroke: StrokeStyle = dash.map { StrokeStyle(lineWidth: s.style.lineWidth, dash: $0) } ?? StrokeStyle(lineWidth: s.style.lineWidth)
-                        ForEach(Array(s.points.enumerated()), id: \.offset) { _, p in
-                            LineMark(
-                                x: .value("Date", p.0),
-                                y: .value("Weight", display(p.1)),
-                                series: .value("series", s.name)
-                            )
-                            .interpolationMethod(.linear)
-                            .lineStyle(stroke)
-                            .foregroundStyle(s.style.color)
+                    Chart {
+                        if let target = targetWeightKg {
+                            RuleMark(y: .value("Target", display(target)))
+                                .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                                .foregroundStyle(.gray.opacity(0.6))
+                                .annotation(position: .topTrailing, alignment: .trailing) {
+                                    Text("Target \(String(format: "%.1f", display(target))) \(unit.symbol)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
                         }
-                        if dash == nil {
+
+                        ForEach(series) { s in
+                            let dash = s.style.dash
+                            let stroke: StrokeStyle = dash.map { StrokeStyle(lineWidth: s.style.lineWidth, dash: $0) } ?? StrokeStyle(lineWidth: s.style.lineWidth)
                             ForEach(Array(s.points.enumerated()), id: \.offset) { _, p in
-                                PointMark(
+                                LineMark(
                                     x: .value("Date", p.0),
-                                    y: .value("Weight", display(p.1))
+                                    y: .value("Weight", display(p.1)),
+                                    series: .value("series", s.name)
                                 )
-                                .symbolSize(14)
+                                .interpolationMethod(.linear)
+                                .lineStyle(stroke)
                                 .foregroundStyle(s.style.color)
                             }
+                            if dash == nil {
+                                ForEach(Array(s.points.enumerated()), id: \.offset) { _, p in
+                                    PointMark(
+                                        x: .value("Date", p.0),
+                                        y: .value("Weight", display(p.1))
+                                    )
+                                    .symbolSize(14)
+                                    .foregroundStyle(s.style.color)
+                                }
+                            }
+                        }
+
+                        if let sel = selectedDate {
+                            RuleMark(x: .value("sel", sel))
+                                .lineStyle(StrokeStyle(lineWidth: 1))
+                                .foregroundStyle(.secondary.opacity(0.5))
                         }
                     }
-
-                    if let sel = selectedDate {
-                        RuleMark(x: .value("sel", sel))
-                            .lineStyle(StrokeStyle(lineWidth: 1))
-                            .foregroundStyle(.secondary.opacity(0.5))
+                    .chartXScale(domain: firstDate...lastDate)
+                    .chartYScale(domain: yMin...yMax)
+                    .chartScrollableAxes(.horizontal)
+                    .chartXVisibleDomain(length: effectiveSpanDays * 86_400)
+                    .chartXSelection(value: $selectedDate)
+                    .chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 6)) { _ in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                        }
                     }
-                }
-                .chartXScale(domain: firstDate...lastDate)
-                .chartYScale(domain: yMin...yMax)
-                .chartScrollableAxes(.horizontal)
-                .chartXVisibleDomain(length: effectiveSpanDays * 86_400)
-                .chartXSelection(value: $selectedDate)
-                .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 6)) { _ in
-                        AxisGridLine()
-                        AxisTick()
-                        AxisValueLabel(format: .dateTime.month(.abbreviated).day())
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks { value in
-                        AxisGridLine()
-                        AxisValueLabel {
-                            if let v = value.as(Double.self) {
-                                Text("\(Int(v.rounded())) \(unit.symbol)")
+                    .chartYAxis {
+                        AxisMarks { value in
+                            AxisGridLine()
+                            AxisValueLabel {
+                                if let v = value.as(Double.self) {
+                                    Text("\(Int(v.rounded())) \(unit.symbol)")
+                                }
                             }
                         }
                     }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .frame(maxHeight: .infinity)
-
-                zoomBar
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
+                    .padding(.vertical, 8)
+                    .frame(maxHeight: .infinity)
 
-                seriesLegend
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
-            }
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Done") { dismiss() }
+                    zoomBar
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+
+                    seriesLegend
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
                 }
-                if let subtitle {
-                    ToolbarItem(placement: .principal) {
-                        VStack(spacing: 0) {
-                            Text(title).font(.headline)
-                            Text(subtitle).font(.caption2).foregroundStyle(.secondary)
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") { dismiss() }
+                    }
+                    ToolbarItem(id: "fullscreen-subtitle", placement: .principal) {
+                        if let subtitle {
+                            VStack(spacing: 0) {
+                                Text(title).font(.headline)
+                                Text(subtitle).font(.caption2).foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }

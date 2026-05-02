@@ -17,8 +17,8 @@ struct UsageCostSettingsView: View {
         .navigationTitle("Usage & Cost")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if !ledger.records.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(id: "usage-overflow", placement: .primaryAction) {
+                if !ledger.records.isEmpty {
                     Menu {
                         Button(role: .destructive) {
                             confirmClear = true

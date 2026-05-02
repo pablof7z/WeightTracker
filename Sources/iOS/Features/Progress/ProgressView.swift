@@ -151,7 +151,7 @@ struct ProgressTabView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(40)
-        .glass(in: RoundedRectangle(cornerRadius: 16))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
         .padding(.horizontal)
     }
 
@@ -170,7 +170,7 @@ struct ProgressTabView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(40)
-        .glass(in: RoundedRectangle(cornerRadius: 16))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
         .padding(.horizontal)
     }
 

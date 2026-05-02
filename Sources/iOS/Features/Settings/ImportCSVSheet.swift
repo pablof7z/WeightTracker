@@ -119,10 +119,13 @@ struct ImportCSVSheet: View {
                             ProgressView()
                         }
                     }
+                    .frame(maxWidth: .infinity)
                 }
+                .glassButtonStyle(prominent: true)
                 .disabled(isImporting || p.validReadings.isEmpty || imported != nil)
             }
         }
+        .scrollContentBackground(.hidden)
     }
 
     private func row(_ k: String, _ v: String) -> some View {

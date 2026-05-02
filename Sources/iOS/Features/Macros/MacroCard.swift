@@ -54,7 +54,7 @@ struct MacroCard: View {
                 Label(MacroCopy.cardEdit, systemImage: "pencil")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .glassButtonStyle()
 
             HStack {
                 Spacer()
@@ -67,7 +67,10 @@ struct MacroCard: View {
             }
         }
         .padding()
-        .glass(in: RoundedRectangle(cornerRadius: 12))
+        .background(
+            Color(.secondarySystemGroupedBackground),
+            in: RoundedRectangle(cornerRadius: 12)
+        )
         .onAppear { reload() }
         .sheet(isPresented: $showEdit) {
             let d = defaultsTuple()

@@ -41,8 +41,11 @@ struct OpenRouterModelSelectorView: View {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Done") { dismiss() }
             }
-            ToolbarItemGroup(placement: .primaryAction) {
-                providerMenu
+            ToolbarItem(placement: .primaryAction) { providerMenu }
+            if #available(iOS 26.0, *) {
+                ToolbarSpacer(.fixed, placement: .primaryAction)
+            }
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     Task { await viewModel.reload() }
                 } label: {
@@ -370,7 +373,7 @@ private struct OpenRouterModelDetailView: View {
                     Label(selectedModelID == model.id ? "Selected" : "Use Model", systemImage: "checkmark.circle.fill")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .glassButtonStyle(prominent: true)
                 .disabled(selectedModelID == model.id)
 
                 detailGroup("Pricing") {

@@ -40,12 +40,19 @@ struct ExportCSVSheet: View {
                     }
                 } else {
                     Section {
-                        Button("Generate CSV") { generate() }
+                        Button {
+                            generate()
+                        } label: {
+                            Text("Generate CSV")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .glassButtonStyle(prominent: true)
                     } footer: {
                         Text("Creates a plain-text file with all \(readings.count) entries. Includes date, weight, body measurements, source, and notes.")
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Export CSV")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

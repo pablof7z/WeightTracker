@@ -9,6 +9,7 @@ struct VoiceCheckInSheet: View {
 
     @State private var currentPressID: UUID?
     @State private var pauseActivated = false
+    @Namespace private var voiceMicNS
 
     private static let pauseActivationDelay: TimeInterval = 0.18
 
@@ -30,11 +31,16 @@ struct VoiceCheckInSheet: View {
                 .animation(.easeInOut(duration: 0.18), value: stt.isPaused)
 
             VStack(spacing: 16) {
-                Image(systemName: primaryIcon)
-                    .font(.system(size: 38, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .padding(.top, 10)
-                    .contentTransition(.symbolEffect(.replace))
+                LiquidGlassContainer(spacing: 24) {
+                    Image(systemName: primaryIcon)
+                        .font(.system(size: 38, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(28)
+                        .glass(in: Circle(), tint: stt.isPaused ? .orange : .accentColor)
+                        .contentTransition(.symbolEffect(.replace))
+                        .glassMorphID("voice.mic", in: voiceMicNS)
+                }
+                .padding(.top, 10)
 
                 Text(stt.transcript.isEmpty ? statusText : stt.transcript)
                     .font(.body)
@@ -69,6 +75,7 @@ struct VoiceCheckInSheet: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(stt.isPaused ? "Paused. Release to resume." : "Recording. Tap to finish, hold to pause.")
         .accessibilityAddTraits(.isButton)
+        .zoomNavigationTransition(sourceID: "voice.mic", in: voiceMicNS)
     }
 
     private var statusText: String {

@@ -62,8 +62,10 @@ struct MarkUntrackedSheet: View {
                             .frame(maxWidth: .infinity)
                             .font(.headline)
                     }
+                    .glassButtonStyle(prominent: true)
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle(MacroCopy.untrackedTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -86,10 +88,7 @@ struct MarkUntrackedSheet: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .frame(maxWidth: .infinity)
-                .background(
-                    selected ? Color.accentColor.opacity(0.18) : Color.clear,
-                    in: Capsule()
-                )
+                .glass(in: Capsule(), tint: selected ? .accentColor.opacity(0.25) : nil)
                 .overlay(
                     Capsule().stroke(selected ? Color.accentColor : Color.secondary.opacity(0.3))
                 )

@@ -1,5 +1,8 @@
 import Foundation
 import SwiftUI
+#if os(watchOS)
+import WatchKit
+#endif
 
 @MainActor
 final class WatchEntryViewModel: ObservableObject {
@@ -45,6 +48,9 @@ final class WatchEntryViewModel: ObservableObject {
         await services.healthKit.writeReading(reading)
 
         saved = true
+        #if os(watchOS)
+        WKInterfaceDevice.current().play(.success)
+        #endif
         try? await Task.sleep(nanoseconds: 1_500_000_000)
         saved = false
         loadLast()

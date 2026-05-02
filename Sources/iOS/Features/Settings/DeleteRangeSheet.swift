@@ -28,9 +28,14 @@ struct DeleteRangeSheet: View {
                         .foregroundStyle(.secondary)
                 }
                 Section {
-                    Button("Delete readings in range", role: .destructive) {
+                    Button(role: .destructive) {
                         showConfirm = true
+                    } label: {
+                        Text("Delete readings in range")
+                            .frame(maxWidth: .infinity)
                     }
+                    .glassButtonStyle(prominent: true)
+                    .tint(.red)
                     .disabled(matchingCount == 0 || startDate > endDate)
                     .confirmationDialog(
                         "Delete \(matchingCount) reading\(matchingCount == 1 ? "" : "s")?",
@@ -50,6 +55,7 @@ struct DeleteRangeSheet: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Delete date range")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
