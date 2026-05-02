@@ -16,7 +16,7 @@ struct NumericPad: View {
                 onValueTap?()
             } label: {
                 Text(formatted)
-                    .font(.system(size: 96, weight: .semibold, design: .rounded))
+                    .font(.system(size: 96, weight: .black, design: .default))
                     .monospacedDigit()
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
@@ -87,9 +87,9 @@ private struct PadButton: View {
     var body: some View {
         Image(systemName: symbol)
             .font(.system(size: 28, weight: .semibold))
-            .foregroundStyle(.tint)
+            .foregroundStyle(.primary)
             .frame(width: 72, height: 56)
-            .glass(in: Capsule(), tint: .accentColor.opacity(0.25))
+            .glass(in: Capsule())
             .contentShape(Capsule())
             .onTapGesture { onTap() }
             .simultaneousGesture(

@@ -49,8 +49,11 @@ final class TodayViewModel: ObservableObject {
         self.activeCut = cut
         if let cut {
             self.inCutReadings = allReadings.filter { $0.date >= cut.startDate }
-            let clusters = ClusterDetector.clusters(from: allReadings)
-            let historicals = HistoricalCutDetector.detect(in: clusters, readings: allReadings)
+            // Exclude current cut's readings from historical analysis — only past completed
+            // cuts should inform the rate estimates.
+            let preCurrentCut = allReadings.filter { $0.date < cut.startDate }
+            let clusters = ClusterDetector.clusters(from: preCurrentCut)
+            let historicals = HistoricalCutDetector.detect(in: clusters, readings: preCurrentCut)
             self.projection = CutProjection.project(
                 active: cut,
                 readings: allReadings,

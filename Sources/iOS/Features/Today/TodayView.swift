@@ -32,8 +32,8 @@ struct TodayView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
+            VStack(spacing: 0) {
+                VStack(spacing: 0) {
                     NumericPad(
                         value: Binding(
                             get: { viewModel.displayValue },
@@ -54,53 +54,50 @@ struct TodayView: View {
                     .opacity(viewModel.hasEntry ? 1.0 : 0.45)
                     .padding(.top, 16)
 
-                    if let active = viewModel.activeCut, let projection = viewModel.projection {
-                        ActiveCutMinichart(
-                            active: active,
-                            inCutReadings: viewModel.inCutReadings,
-                            projection: projection,
-                            unit: weightUnit
-                        )
-                        .padding(.horizontal)
-                        .transition(.opacity)
-
-                        Button {
-                            startVoiceCheckIn()
-                        } label: {
-                            Label("Check in", systemImage: "mic.fill")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .padding(.horizontal)
-
-                        if let todayCoachNote {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Today note")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                Text(todayCoachNote.text)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(3)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                            .glass(in: RoundedRectangle(cornerRadius: 12))
-                            .padding(.horizontal)
-                        }
-                    }
-
                     if let saved = viewModel.lastSaved {
                         ConfirmationCard(confirmation: saved) {
                             withAnimation { viewModel.lastSaved = nil }
                         }
                         .padding(.horizontal)
+                        .padding(.top, 12)
                     }
-
-                    Spacer(minLength: 32)
                 }
                 .frame(maxWidth: .infinity)
+
+                Spacer(minLength: 16)
+
+                if let active = viewModel.activeCut, let projection = viewModel.projection {
+                    if let todayCoachNote {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Today note")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Text(todayCoachNote.text)
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                                .lineLimit(3)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .glass(in: RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal)
+                        .padding(.bottom, 12)
+                    }
+
+                    cutProgressStrip(active: active, projection: projection)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
+
+                    ActiveCutMinichart(
+                        active: active,
+                        inCutReadings: viewModel.inCutReadings,
+                        projection: projection,
+                        unit: weightUnit
+                    )
+                    .transition(.opacity)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .contentShape(Rectangle())
             .gesture(swipeGesture)
             .sensoryFeedback(.success, trigger: viewModel.lastSaved)
@@ -138,6 +135,13 @@ struct TodayView: View {
                 if !Calendar.current.isDateInToday(viewModel.date) {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Today") { selectDate(Date()) }
+                    }
+                }
+                if viewModel.activeCut != nil {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { startVoiceCheckIn() } label: {
+                            Image(systemName: "mic")
+                        }
                     }
                 }
             }
@@ -253,6 +257,58 @@ struct TodayView: View {
             return Self.mediumDateFormatter.string(from: viewModel.date)
         }
         return viewModel.hasEntry ? "Logged" : "No entry"
+    }
+
+    // MARK: - Cut progress strip
+
+    private static let microStatsFmt: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "MMM d"; return f
+    }()
+
+    @ViewBuilder
+    private func cutProgressStrip(active: ActiveCut, projection: CutProjectionResult) -> some View {
+        let totalLoss = active.startWeightKg - active.targetWeightKg
+        let currentLoss = active.startWeightKg - projection.anchorKg
+        let progress = totalLoss > 0 ? max(0.0, min(1.0, currentLoss / totalLoss)) : 0.0
+
+        let cal = Calendar.current
+        let daysLeft = max(0, cal.dateComponents([.day], from: viewModel.date, to: active.targetEndDate).day ?? 0)
+
+        let targetDisplay = UnitConvert.displayWeight(kg: active.targetWeightKg, in: weightUnit)
+        let targetStr = String(format: "%.0f %@", targetDisplay, weightUnit.symbol)
+        let endStr = Self.microStatsFmt.string(from: active.targetEndDate)
+
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                Text("\(targetStr) · \(endStr)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.primary.opacity(0.06))
+                            .frame(height: 3)
+                        Capsule()
+                            .fill(Color.accentColor)
+                            .frame(width: max(4, geo.size.width * progress), height: 3)
+                    }
+                }
+                .frame(height: 4)
+
+                Text(projection.isTargetReached ? "Done" : "\(daysLeft)d left")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
+            }
+
+            if projection.isTargetReached {
+                Text("Target reached — maintain")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
     }
 
     // MARK: - Date navigation

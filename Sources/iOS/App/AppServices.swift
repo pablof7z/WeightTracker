@@ -17,9 +17,13 @@ final class AppServices: ObservableObject {
     let macroPlanStore: MacroPlanStore
     let macroUntrackedRangeStore: MacroUntrackedRangeStore
     let macroDeviationStore: MacroDeviationStore
+    let mealScheduleStore: MealScheduleStore
+    let mealEventStore: MealEventStore
     let coachAuditStore: CoachAuditStore
+    let mealCalculator: MealCalculator
     let coachAgent: CoachAgentSession
     let coachNostrAgent: CoachNostrAgentService
+    let feedback: FeedbackService
 
     @Published var lastSyncDate: Date?
 
@@ -42,20 +46,33 @@ final class AppServices: ObservableObject {
         self.macroPlanStore = planStore
         self.macroUntrackedRangeStore = untrackedStore
         self.macroDeviationStore = deviationStore
+        let mealSchedule = MealScheduleStore(container: container)
+        let mealEvents = MealEventStore(container: container)
+        self.mealScheduleStore = mealSchedule
+        self.mealEventStore = mealEvents
         let auditStore = CoachAuditStore(container: container)
         self.coachAuditStore = auditStore
 
         let nostrAgent = CoachNostrAgentService()
         self.coachNostrAgent = nostrAgent
+        self.feedback = FeedbackService()
 
         let coachModel = UserDefaults.standard.string(forKey: AppPrefKey.openRouterModel)
             ?? AppConstants.defaultOpenRouterModel
+        // The calculator shares the OpenRouter credential pool with the
+        // outer agent — the inner gpt-4o-mini call goes through the same
+        // account that powers the coach.
+        let calculator = MealCalculator(openRouterClient: CoachOpenRouterClient())
+        self.mealCalculator = calculator
         let agent = CoachAgentSession(
             repository: repository,
             macroPlanStore: planStore,
             macroDeviationStore: deviationStore,
             macroUntrackedRangeStore: untrackedStore,
+            mealScheduleStore: mealSchedule,
+            mealEventStore: mealEvents,
             auditStore: auditStore,
+            mealCalculator: calculator,
             model: coachModel,
             recordMemory: { text in
                 try nostrAgent.recordMemory(text: text)
@@ -84,6 +101,7 @@ final class AppServices: ObservableObject {
         await sleepHealthKit.startObservingIfAuthorized()
         await activityHealthKit.startObservingIfAuthorized()
         await notifications.scheduleEvaluatedTriggers()
+        await feedback.start(appName: "WeightTracker")
         coachNostrAgent.start()
     }
 }
