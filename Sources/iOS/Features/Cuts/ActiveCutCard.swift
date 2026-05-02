@@ -9,10 +9,7 @@ struct ActiveCutCard: View {
     let unit: WeightUnit
     var readings: [Reading] = []
     var projection: CutProjectionResult? = nil
-    var onMarkDone: () -> Void
-
     @State private var showFullscreen = false
-    @State private var confirmEnd = false
 
     private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
@@ -92,21 +89,6 @@ struct ActiveCutCard: View {
                 fullscreenChart
             }
 
-            Button {
-                confirmEnd = true
-            } label: {
-                Label("Mark done", systemImage: "checkmark.circle.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .tint(.green)
-            .padding(.top, 4)
-            .confirmationDialog("Finish this cut?", isPresented: $confirmEnd, titleVisibility: .visible) {
-                Button("End cut", role: .destructive) { onMarkDone() }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("Your progress will be saved as a historical cut if it qualifies. You can start a new cut anytime.")
-            }
         }
         .padding()
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))

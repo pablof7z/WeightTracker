@@ -90,9 +90,7 @@ struct CutsView: View {
                     unit: unit,
                     readings: viewModel.allReadings,
                     projection: viewModel.projection
-                ) {
-                    Task { await viewModel.markDone() }
-                }
+                )
 
                 MacroCard(cutStartDate: cut.startDate)
             }

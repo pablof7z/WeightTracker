@@ -168,7 +168,13 @@ public enum CutProjection {
             // index 0 has no wiggle (pinned to anchor).
             let wiggle: Double = (t == 0 || pool.isEmpty) ? 0.0 : (bootstrap[t] * anchorKg)
             let raw = trend + wiggle
-            avgPath.append((date, max(raw, cap)))
+            // Clamp within the best/worst corridor so the avg line never escapes its bounds.
+            let bestAtT = anchorKg + bestSlopeKgPerDay * Double(t)
+            let worstAtT = anchorKg + worstSlopeKgPerDay * Double(t)
+            let corridorLo = min(bestAtT, worstAtT)
+            let corridorHi = max(bestAtT, worstAtT)
+            let bounded = max(corridorLo, min(corridorHi, raw))
+            avgPath.append((date, max(bounded, cap)))
         }
 
         let result = CutProjectionResult(
