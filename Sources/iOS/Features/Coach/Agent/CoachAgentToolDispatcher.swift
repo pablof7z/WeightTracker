@@ -22,7 +22,10 @@ struct CoachAgentToolDispatcher {
     let macroPlanStore: MacroPlanStore
     let macroDeviationStore: MacroDeviationStore
     let macroUntrackedRangeStore: MacroUntrackedRangeStore
+    let mealScheduleStore: MealScheduleStore
+    let mealEventStore: MealEventStore
     let auditStore: CoachAgentAuditStore
+    let mealCalculator: MealCalculator
     let activeCutProvider: () -> ActiveCut?
     let onMutation: (() -> Void)?
     let recordMemory: ((String) throws -> CoachAgentMemory)?
@@ -34,7 +37,10 @@ struct CoachAgentToolDispatcher {
         macroPlanStore: MacroPlanStore,
         macroDeviationStore: MacroDeviationStore,
         macroUntrackedRangeStore: MacroUntrackedRangeStore,
+        mealScheduleStore: MealScheduleStore,
+        mealEventStore: MealEventStore,
         auditStore: CoachAgentAuditStore,
+        mealCalculator: MealCalculator,
         activeCutProvider: @escaping () -> ActiveCut? = { ActiveCutStore.load() },
         onMutation: (() -> Void)? = nil,
         recordMemory: ((String) throws -> CoachAgentMemory)? = nil,
@@ -45,7 +51,10 @@ struct CoachAgentToolDispatcher {
         self.macroPlanStore = macroPlanStore
         self.macroDeviationStore = macroDeviationStore
         self.macroUntrackedRangeStore = macroUntrackedRangeStore
+        self.mealScheduleStore = mealScheduleStore
+        self.mealEventStore = mealEventStore
         self.auditStore = auditStore
+        self.mealCalculator = mealCalculator
         self.activeCutProvider = activeCutProvider
         self.onMutation = onMutation
         self.recordMemory = recordMemory
@@ -165,6 +174,24 @@ struct CoachAgentToolDispatcher {
         )
 
         let recommendation = CutCoachEngine.evaluate(context: context)
+
+        // Meal scheduling block: schedule + recent events + 14d stats
+        let currentMealSchedule: CoachMealScheduleDTO? = {
+            guard let cutStart, let period = mealScheduleStore.currentPeriod(forCutStartDate: cutStart) else {
+                return nil
+            }
+            let slots = mealScheduleStore.slots(forScheduleId: period.id)
+            return CoachMealScheduleDTO(period, slots: slots)
+        }()
+        let recentMealEvents = mealEventStore
+            .eventsInLastDays(historyDays, now: now)
+            .map(CoachMealEventDTO.init)
+        let mealStats = computeMealStats(
+            scheduleSlots: mealSlotsForActiveSchedule(cutStart: cutStart),
+            now: now,
+            windowDays: 14
+        )
+
         return CoachSnapshotResult(
             activeCut: activeCut.map { CoachActiveCutDTO($0, now: now) },
             currentMacroPlan: currentPlan.map(CoachMacroPlanPeriodDTO.init),
@@ -174,8 +201,88 @@ struct CoachAgentToolDispatcher {
             recentSleep: allSleep.filter { $0.nightDate >= cutoff }.map(CoachSleepNightDTO.init),
             recentActivity: allActivity.filter { $0.day >= cutoff }.map(CoachDailyActivityDTO.init),
             recommendation: CoachRecommendationDTO(recommendation),
+            currentMealSchedule: currentMealSchedule,
+            recentMealEvents: recentMealEvents,
+            mealStats: mealStats,
             generatedAt: now
         )
+    }
+
+    private func mealSlotsForActiveSchedule(cutStart: Date?) -> [MealSlot] {
+        guard let cutStart, let period = mealScheduleStore.currentPeriod(forCutStartDate: cutStart) else {
+            return []
+        }
+        return mealScheduleStore.slots(forScheduleId: period.id)
+    }
+
+    /// Compute timing pattern stats over a fixed `windowDays` window.
+    /// Returns nil when there are fewer than 3 informative events.
+    private func computeMealStats(scheduleSlots: [MealSlot], now: Date, windowDays: Int) -> CoachMealStatsDTO? {
+        let events = mealEventStore.eventsInLastDays(windowDays, now: now)
+        let total = events.count
+        guard total >= 3 else { return nil }
+
+        // Group events by `slotNameSnapshot` (case-insensitive). Events without a
+        // snapshot fall back to "(unspecified)" so they still surface.
+        var grouped: [String: [MealEvent]] = [:]
+        for event in events {
+            let key = (event.slotNameSnapshot ?? "(unspecified)").lowercased()
+            grouped[key, default: []].append(event)
+        }
+
+        let slotByKey: [String: MealSlot] = Dictionary(
+            uniqueKeysWithValues: scheduleSlots.map { ($0.name.lowercased(), $0) }
+        )
+
+        var perMeal: [CoachMealStatPerMealDTO] = []
+        var skippedTotal = 0
+        for (key, group) in grouped {
+            let slot = slotByKey[key]
+            let scheduledMinutes = slot?.minutesFromMidnight ?? 0
+            let displayName = slot?.name ?? group.first?.slotNameSnapshot ?? key
+
+            let logged = group.count
+            let skipped = group.filter { $0.statusRaw == MealEventStatus.skipped.rawValue }.count
+            skippedTotal += skipped
+            let skipRate = logged == 0 ? 0 : Double(skipped) / Double(logged)
+
+            // Delays only computed for eaten/partial events with a known scheduled time.
+            let delays: [Int] = {
+                guard let slot else { return [] }
+                return group.compactMap { event -> Int? in
+                    guard event.statusRaw != MealEventStatus.skipped.rawValue else { return nil }
+                    return event.minutesFromMidnight - slot.minutesFromMidnight
+                }
+            }()
+            let medianDelay: Int? = delays.isEmpty ? nil : median(delays)
+            let lateCount = delays.filter { $0 > 60 }.count
+
+            perMeal.append(CoachMealStatPerMealDTO(
+                slotName: displayName,
+                scheduledMinutes: scheduledMinutes,
+                loggedCount: logged,
+                skippedCount: skipped,
+                skipRate: skipRate,
+                medianDelayMinutes: medianDelay,
+                lateCount: lateCount
+            ))
+        }
+
+        return CoachMealStatsDTO(
+            windowDays: windowDays,
+            perMeal: perMeal.sorted(by: { $0.scheduledMinutes < $1.scheduledMinutes }),
+            overallSkipRate: total == 0 ? 0 : Double(skippedTotal) / Double(total)
+        )
+    }
+
+    private func median(_ values: [Int]) -> Int {
+        let sorted = values.sorted()
+        guard !sorted.isEmpty else { return 0 }
+        let mid = sorted.count / 2
+        if sorted.count % 2 == 0 {
+            return (sorted[mid - 1] + sorted[mid]) / 2
+        }
+        return sorted[mid]
     }
 
     private func execute(tool: CoachTool, argsJSON: Data, runID: UUID) async throws -> DispatchExecutionResult {
@@ -207,6 +314,18 @@ struct CoachAgentToolDispatcher {
         case .markUntrackedRange:
             let args = try decode(argsJSON, as: MarkUntrackedRangeArgs.self)
             return try markUntrackedRange(args)
+        case .getMealSchedule:
+            let args = try decode(argsJSON, as: GetMealScheduleArgs.self)
+            return .read(try encode(getMealSchedule(args)))
+        case .replaceCurrentMealSchedule:
+            let args = try decode(argsJSON, as: ReplaceCurrentMealScheduleArgs.self)
+            return try replaceCurrentMealSchedule(args)
+        case .logMealEvent:
+            let args = try decode(argsJSON, as: LogMealEventArgs.self)
+            return try logMealEvent(args)
+        case .calculateMeal:
+            let args = try decode(argsJSON, as: CalculateMealArgs.self)
+            return try await calculateMeal(args)
         }
     }
 
@@ -429,6 +548,314 @@ struct CoachAgentToolDispatcher {
             beforeJSON: nil,
             afterJSON: encodeOptional(after)
         )
+    }
+
+    // MARK: - Meal scheduling tools
+
+    private func getMealSchedule(_ args: GetMealScheduleArgs) throws -> CoachMealScheduleResult {
+        let cutStart = try resolveActiveCutStart(args.cutStartDate)
+        let now = nowProvider()
+        let historyDays = min(90, max(1, args.historyDays ?? 14))
+
+        let scheduleDTO: CoachMealScheduleDTO? = {
+            guard let period = mealScheduleStore.currentPeriod(forCutStartDate: cutStart) else { return nil }
+            let slots = mealScheduleStore.slots(forScheduleId: period.id)
+            return CoachMealScheduleDTO(period, slots: slots)
+        }()
+
+        let events = mealEventStore.eventsInLastDays(historyDays, now: now)
+        let stats = computeMealStats(
+            scheduleSlots: mealSlotsForActiveSchedule(cutStart: cutStart),
+            now: now,
+            windowDays: 14
+        )
+
+        return CoachMealScheduleResult(
+            schedule: scheduleDTO,
+            recentEvents: events.map(CoachMealEventDTO.init),
+            stats: stats,
+            generatedAt: now
+        )
+    }
+
+    private func replaceCurrentMealSchedule(_ args: ReplaceCurrentMealScheduleArgs) throws -> DispatchExecutionResult {
+        let cutStart = try resolveActiveCutStart(args.cutStartDate)
+
+        guard !args.slots.isEmpty else {
+            throw CoachToolDispatchError.invalidArgs("slots must contain at least one entry")
+        }
+        guard args.slots.count <= 12 else {
+            throw CoachToolDispatchError.invalidArgs("slots must contain at most 12 entries")
+        }
+
+        var seenNames = Set<String>()
+        var lastMinutes = -1
+        var inputs: [MealSlotInput] = []
+        for (idx, slot) in args.slots.enumerated() {
+            let trimmedName = slot.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedName.isEmpty else {
+                throw CoachToolDispatchError.invalidArgs("slot[\(idx)].name cannot be empty")
+            }
+            let lowered = trimmedName.lowercased()
+            guard seenNames.insert(lowered).inserted else {
+                throw CoachToolDispatchError.invalidArgs("duplicate meal name '\(trimmedName)'")
+            }
+
+            let parsed = try parseTimeOfDay(slot.time)
+            guard parsed.minutesFromMidnight > lastMinutes else {
+                throw CoachToolDispatchError.invalidArgs("slot times must be strictly increasing; '\(slot.time)' is out of order")
+            }
+            lastMinutes = parsed.minutesFromMidnight
+
+            let kind: MealKind
+            if let raw = slot.kind?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
+                guard let parsedKind = MealKind(rawValue: raw) else {
+                    throw CoachToolDispatchError.invalidArgs("kind must be one of: breakfast, lunch, dinner, snack, preWorkout, postWorkout, custom")
+                }
+                kind = parsedKind
+            } else {
+                kind = .custom
+            }
+
+            try validatePercent(slot.kcalPercent, name: "kcalPercent")
+            try validatePercent(slot.proteinPercent, name: "proteinPercent")
+            try validatePercent(slot.fatPercent, name: "fatPercent")
+            try validatePercent(slot.carbsPercent, name: "carbsPercent")
+
+            try validateAbsoluteMacro(slot.kcal, name: "kcal", max: 6_000)
+            try validateAbsoluteMacro(slot.proteinG, name: "proteinG", max: 500)
+            try validateAbsoluteMacro(slot.fatG, name: "fatG", max: 500)
+            try validateAbsoluteMacro(slot.carbsG, name: "carbsG", max: 1_000)
+
+            // Stamp `calculatedAt` whenever the coach passed at least one
+            // absolute macro for this slot so the UI can show "calculated 2h
+            // ago" badges and the cache knows when to expire.
+            let hasCalculated = slot.kcal != nil
+                || slot.proteinG != nil
+                || slot.fatG != nil
+                || slot.carbsG != nil
+            let foodDescription = trimmedOptional(slot.foodDescription)
+
+            inputs.append(MealSlotInput(
+                name: trimmedName,
+                minutesFromMidnight: parsed.minutesFromMidnight,
+                kind: kind,
+                sortOrder: idx,
+                kcalPercent: slot.kcalPercent,
+                proteinPercent: slot.proteinPercent,
+                fatPercent: slot.fatPercent,
+                carbsPercent: slot.carbsPercent,
+                calculatedKcal: slot.kcal,
+                calculatedProteinG: slot.proteinG,
+                calculatedFatG: slot.fatG,
+                calculatedCarbsG: slot.carbsG,
+                calculatedAt: hasCalculated ? nowProvider() : nil,
+                foodDescription: foodDescription
+            ))
+        }
+
+        let beforeDTO: CoachMealScheduleDTO? = {
+            guard let p = mealScheduleStore.currentPeriod(forCutStartDate: cutStart) else { return nil }
+            let slots = mealScheduleStore.slots(forScheduleId: p.id)
+            return CoachMealScheduleDTO(p, slots: slots)
+        }()
+
+        let period: MealSchedulePeriod
+        do {
+            period = try mealScheduleStore.replaceCurrentPeriod(
+                cutStartDate: cutStart,
+                slotInputs: inputs,
+                note: trimmedOptional(args.note),
+                now: nowProvider()
+            )
+        } catch {
+            throw CoachToolDispatchError.mutationFailed("Could not replace meal schedule: \(error.localizedDescription)")
+        }
+        onMutation?()
+
+        let afterSlots = mealScheduleStore.slots(forScheduleId: period.id)
+        let afterDTO = CoachMealScheduleDTO(period, slots: afterSlots)
+        let result = CoachMealScheduleMutationResult(schedule: afterDTO)
+        return try DispatchExecutionResult(
+            data: encode(result),
+            targetEntity: "meal_schedule_period",
+            targetID: period.id,
+            beforeJSON: encodeOptional(beforeDTO),
+            afterJSON: encodeOptional(afterDTO)
+        )
+    }
+
+    private func logMealEvent(_ args: LogMealEventArgs) throws -> DispatchExecutionResult {
+        guard let status = MealEventStatus(rawValue: args.status) else {
+            throw CoachToolDispatchError.invalidArgs("status must be one of: eaten, skipped, partial")
+        }
+        let allowedCaptured: Set<String> = ["tap", "voice", "agent"]
+        guard allowedCaptured.contains(args.capturedFrom) else {
+            throw CoachToolDispatchError.invalidArgs("capturedFrom must be one of: tap, voice, agent")
+        }
+        let allowedQuality: Set<String> = ["exact", "approximate", "unknown"]
+        guard allowedQuality.contains(args.timeQuality) else {
+            throw CoachToolDispatchError.invalidArgs("timeQuality must be one of: exact, approximate, unknown")
+        }
+
+        let day = try parseDay(args.date)
+        let now = nowProvider()
+        let today = Reading.dayStart(of: now)
+        guard day <= today else {
+            throw CoachToolDispatchError.invalidArgs("date cannot be in the future")
+        }
+        let daysAgo = calendar.dateComponents([.day], from: day, to: today).day ?? 0
+        guard daysAgo <= 7 else {
+            throw CoachToolDispatchError.invalidArgs("date is more than 7 days in the past")
+        }
+
+        let trimmedName = args.mealName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            throw CoachToolDispatchError.invalidArgs("mealName cannot be empty")
+        }
+
+        if status == .skipped, let raw = args.ateAt, !raw.isEmpty {
+            throw CoachToolDispatchError.invalidArgs("ateAt must be omitted when status is skipped")
+        }
+        if (status == .eaten || status == .partial) && args.timeQuality != "unknown" {
+            guard let raw = args.ateAt, !raw.isEmpty else {
+                throw CoachToolDispatchError.invalidArgs("ateAt is required for status \(status.rawValue) unless timeQuality is unknown")
+            }
+            _ = try parseTimeOfDay(raw)
+        }
+
+        // Resolve slot from active schedule by case-insensitive name when possible.
+        let cutStart = activeCutProvider().map { Reading.dayStart(of: $0.startDate) }
+        let activePeriod = cutStart.flatMap { mealScheduleStore.currentPeriod(forCutStartDate: $0) }
+        let activeSlots = activePeriod.map { mealScheduleStore.slots(forScheduleId: $0.id) } ?? []
+        let matchedSlot = activeSlots.first { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }
+
+        // Compose `ateAt` Date for the event.
+        let ateAt: Date
+        if let raw = args.ateAt, !raw.isEmpty {
+            ateAt = try ateAtDate(timeStr: raw, day: day)
+        } else if let matchedSlot {
+            // Fall back to slot's scheduled time when ateAt was omitted.
+            let h = matchedSlot.minutesFromMidnight / 60
+            let m = matchedSlot.minutesFromMidnight % 60
+            ateAt = calendar.date(bySettingHour: h, minute: m, second: 0, of: day) ?? day
+        } else {
+            // No slot, no ateAt: stamp at the day boundary so we still record something.
+            ateAt = day
+        }
+
+        let hungerBefore = try args.hungerBefore.map(parseHunger)
+        let hungerAfter = try args.hungerAfter.map(parseHunger)
+
+        let beforeDTO = matchedSlot
+            .flatMap { mealEventStore.event(on: day, slotId: $0.id) }
+            .map(CoachMealEventDTO.init)
+
+        let event = mealEventStore.upsert(
+            slotId: matchedSlot?.id,
+            slotNameSnapshot: matchedSlot?.name ?? trimmedName,
+            scheduleId: activePeriod?.id,
+            ateAt: ateAt,
+            status: status,
+            hungerBefore: hungerBefore,
+            hungerAfter: hungerAfter,
+            note: trimmedOptional(args.note),
+            now: now
+        )
+        onMutation?()
+
+        let after = CoachMealEventDTO(event)
+        let result = CoachMealEventMutationResult(event: after)
+        return try DispatchExecutionResult(
+            data: encode(result),
+            targetEntity: "meal_event",
+            targetID: event.id,
+            beforeJSON: encodeOptional(beforeDTO),
+            afterJSON: encodeOptional(after)
+        )
+    }
+
+    // MARK: - calculate_meal
+
+    /// Pure-compute tool: parse food → look up nutrition → return per-item and
+    /// total macros. Performs no audit-relevant mutations; the coach is
+    /// expected to follow up with `replace_current_meal_schedule` or
+    /// `log_meal_event` if the result should be persisted.
+    private func calculateMeal(_ args: CalculateMealArgs) async throws -> DispatchExecutionResult {
+        let trimmedItems = args.items
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard !trimmedItems.isEmpty else {
+            throw CoachToolDispatchError.invalidArgs("calculate_meal.items must contain at least one entry")
+        }
+        guard trimmedItems.count <= MealCalculator.maxItems else {
+            throw CoachToolDispatchError.invalidArgs(
+                "calculate_meal.items must contain at most \(MealCalculator.maxItems) entries"
+            )
+        }
+
+        let mealName = trimmedOptional(args.mealName)
+        let assumeRaw = args.assumeRawWhenAmbiguous ?? true
+
+        let computed: CalculateMealResult
+        do {
+            computed = try await mealCalculator.calculate(
+                items: trimmedItems,
+                assumeRawWhenAmbiguous: assumeRaw
+            )
+        } catch let error as MealCalculatorError {
+            throw CoachToolDispatchError.mutationFailed(error.localizedDescription)
+        } catch {
+            throw CoachToolDispatchError.mutationFailed(
+                "Could not calculate meal: \(error.localizedDescription)"
+            )
+        }
+
+        let dto = CoachCalculateMealResult(from: computed, mealName: mealName)
+        return .read(try encode(dto))
+    }
+
+    private func validateAbsoluteMacro(_ value: Int?, name: String, max: Int) throws {
+        guard let value else { return }
+        guard (0...max).contains(value) else {
+            throw CoachToolDispatchError.invalidArgs("\(name) must be between 0 and \(max)")
+        }
+    }
+
+    private func parseTimeOfDay(_ raw: String) throws -> (hour: Int, minute: Int, minutesFromMidnight: Int) {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = trimmed.split(separator: ":")
+        guard parts.count == 2,
+              let hour = Int(parts[0]),
+              let minute = Int(parts[1]),
+              (0...23).contains(hour),
+              (0...59).contains(minute)
+        else {
+            throw CoachToolDispatchError.invalidArgs("time must be HH:mm 24-hour, got '\(raw)'")
+        }
+        return (hour, minute, hour * 60 + minute)
+    }
+
+    private func ateAtDate(timeStr: String, day: Date) throws -> Date {
+        let parsed = try parseTimeOfDay(timeStr)
+        guard let date = calendar.date(bySettingHour: parsed.hour, minute: parsed.minute, second: 0, of: day) else {
+            throw CoachToolDispatchError.invalidArgs("Could not combine date and time '\(timeStr)'")
+        }
+        return date
+    }
+
+    private func parseHunger(_ raw: String) throws -> HungerLevel {
+        guard let level = HungerLevel(rawValue: raw) else {
+            throw CoachToolDispatchError.invalidArgs("hunger level must be one of: low, moderate, high")
+        }
+        return level
+    }
+
+    private func validatePercent(_ value: Double?, name: String) throws {
+        guard let value else { return }
+        guard value >= 0, value <= 1 else {
+            throw CoachToolDispatchError.invalidArgs("\(name) must be between 0 and 1")
+        }
     }
 
     private func recordToolCall(

@@ -65,7 +65,7 @@ private struct CoachToolEnvelope: Encodable {
 }
 
 enum CoachTool: String, CaseIterable, Sendable {
-    static let schemaVersion = "coach-tools-v2"
+    static let schemaVersion = "coach-tools-v4"
 
     case getCoachSnapshot = "get_coach_snapshot"
     case listMacroPlanPeriods = "list_macro_plan_periods"
@@ -76,6 +76,10 @@ enum CoachTool: String, CaseIterable, Sendable {
     case replaceCurrentMacroPlan = "replace_current_macro_plan"
     case logMacroDeviation = "log_macro_deviation"
     case markUntrackedRange = "mark_untracked_range"
+    case getMealSchedule = "get_meal_schedule"
+    case replaceCurrentMealSchedule = "replace_current_meal_schedule"
+    case logMealEvent = "log_meal_event"
+    case calculateMeal = "calculate_meal"
 
     static var json: Data {
         let envelopes = allCases.map { CoachToolEnvelope(function: $0.definition) }
@@ -203,6 +207,87 @@ enum CoachTool: String, CaseIterable, Sendable {
                     required: ["startDate", "endDate", "reason"]
                 )
             )
+        case .getMealSchedule:
+            return .init(
+                name: rawValue,
+                description: "Read the user's current meal schedule, recent meal events, and timing pattern statistics for the active cut.",
+                parameters: .object(
+                    properties: [
+                        "cutStartDate": .string(description: "Optional yyyy-MM-dd cut start. Omit to use the active cut."),
+                        "historyDays": .integer(description: "Recent days of meal events to include. Defaults to 14; max 90.")
+                    ]
+                )
+            )
+        case .replaceCurrentMealSchedule:
+            return .init(
+                name: rawValue,
+                description: "Safely replace the active cut's current meal schedule. Only call after the user has explicitly accepted a proposed change in natural language.",
+                parameters: .object(
+                    properties: [
+                        "cutStartDate": .string(description: "Optional yyyy-MM-dd cut start. Omit to use the active cut."),
+                        "note": .string(description: "Optional short factual note explaining the change."),
+                        "slots": .array(
+                            items: .object(
+                                properties: [
+                                    "name": .string(description: "Meal name shown to the user, e.g. \"Breakfast\"."),
+                                    "time": .string(description: "Local time in HH:mm 24-hour format."),
+                                    "kind": .string(
+                                        description: "Optional meal kind tag.",
+                                        enumValues: ["breakfast", "lunch", "dinner", "snack", "preWorkout", "postWorkout", "custom"]
+                                    ),
+                                    "kcalPercent": .number(description: "Optional fraction 0-1 of daily calories for this meal."),
+                                    "proteinPercent": .number(description: "Optional fraction 0-1 of daily protein for this meal."),
+                                    "fatPercent": .number(description: "Optional fraction 0-1 of daily fat for this meal."),
+                                    "carbsPercent": .number(description: "Optional fraction 0-1 of daily carbs for this meal."),
+                                    "kcal": .integer(description: "Optional absolute kcal for this meal (use the value from calculate_meal). Takes priority over kcalPercent."),
+                                    "proteinG": .integer(description: "Optional absolute protein grams for this meal (from calculate_meal)."),
+                                    "fatG": .integer(description: "Optional absolute fat grams for this meal (from calculate_meal)."),
+                                    "carbsG": .integer(description: "Optional absolute carbs grams for this meal (from calculate_meal)."),
+                                    "foodDescription": .string(description: "Optional human-readable food summary, e.g. \"150g chicken + 200g rice\".")
+                                ],
+                                required: ["name", "time"]
+                            ),
+                            description: "Ordered list of meal slots, between 1 and 12 entries with monotonically increasing times."
+                        )
+                    ],
+                    required: ["slots"]
+                )
+            )
+        case .logMealEvent:
+            return .init(
+                name: rawValue,
+                description: "Log a single meal event reported by the user (eaten, skipped, or partial). One call per meal.",
+                parameters: .object(
+                    properties: [
+                        "date": .string(description: "yyyy-MM-dd day the meal happened. Cannot be in the future, max 7 days back."),
+                        "mealName": .string(description: "Meal slot name, matched case-insensitively against the active schedule."),
+                        "status": .string(description: "Whether the meal was eaten, skipped, or partially eaten.", enumValues: ["eaten", "skipped", "partial"]),
+                        "capturedFrom": .string(description: "Source of the report.", enumValues: ["tap", "voice", "agent"]),
+                        "ateAt": .string(description: "Optional HH:mm local time the meal was eaten. Required when status is eaten or partial unless timeQuality is unknown. Must be omitted when status is skipped."),
+                        "timeQuality": .string(description: "Confidence in the ateAt time.", enumValues: ["exact", "approximate", "unknown"]),
+                        "hungerBefore": .string(description: "Optional hunger level just before eating.", enumValues: ["low", "moderate", "high"]),
+                        "hungerAfter": .string(description: "Optional hunger level shortly after eating.", enumValues: ["low", "moderate", "high"]),
+                        "note": .string(description: "Optional short factual note.")
+                    ],
+                    required: ["date", "mealName", "status", "capturedFrom", "timeQuality"]
+                )
+            )
+        case .calculateMeal:
+            return .init(
+                name: rawValue,
+                description: "Calculate nutrition (kcal, protein, fat, carbs) for a list of food items. Each item is a natural language description like '150g raw chicken breast' or '1 cup cooked basmati rice'. Returns per-item and total macros. This tool only COMPUTES — it does not log or store anything. After getting results, use replace_current_meal_schedule to update slot macros, or log_meal_event to record the meal.",
+                parameters: .object(
+                    properties: [
+                        "items": .array(
+                            items: .string(description: "Natural-language food item, e.g. '150g raw chicken breast' or '1 cup cooked basmati rice'."),
+                            description: "Between 1 and 20 food descriptions to price for one meal."
+                        ),
+                        "mealName": .string(description: "Optional meal slot name this calculation is for (audit only — the tool does not write to the slot)."),
+                        "assumeRawWhenAmbiguous": .boolean(description: "When true (default), unspecified weights are treated as raw rather than cooked.")
+                    ],
+                    required: ["items"]
+                )
+            )
         }
     }
 }
@@ -262,6 +347,53 @@ struct MarkUntrackedRangeArgs: Decodable {
     var customReasonLabel: String?
 }
 
+struct GetMealScheduleArgs: Decodable {
+    var cutStartDate: String?
+    var historyDays: Int?
+}
+
+struct MealSlotArg: Decodable {
+    var name: String
+    var time: String
+    var kind: String?
+    var kcalPercent: Double?
+    var proteinPercent: Double?
+    var fatPercent: Double?
+    var carbsPercent: Double?
+    // Absolute macros, optionally produced by `calculate_meal`. When supplied,
+    // these take priority over the percent-based fields when the UI resolves
+    // per-meal nutrition.
+    var kcal: Int?
+    var proteinG: Int?
+    var fatG: Int?
+    var carbsG: Int?
+    var foodDescription: String?
+}
+
+struct ReplaceCurrentMealScheduleArgs: Decodable {
+    var cutStartDate: String?
+    var note: String?
+    var slots: [MealSlotArg]
+}
+
+struct LogMealEventArgs: Decodable {
+    var date: String
+    var mealName: String
+    var status: String
+    var capturedFrom: String
+    var ateAt: String?
+    var timeQuality: String
+    var hungerBefore: String?
+    var hungerAfter: String?
+    var note: String?
+}
+
+struct CalculateMealArgs: Decodable {
+    var items: [String]
+    var mealName: String?
+    var assumeRawWhenAmbiguous: Bool?
+}
+
 struct CoachSnapshotResult: Codable, Equatable, Sendable {
     var activeCut: CoachActiveCutDTO?
     var currentMacroPlan: CoachMacroPlanPeriodDTO?
@@ -271,7 +403,60 @@ struct CoachSnapshotResult: Codable, Equatable, Sendable {
     var recentSleep: [CoachSleepNightDTO]
     var recentActivity: [CoachDailyActivityDTO]
     var recommendation: CoachRecommendationDTO?
+    var currentMealSchedule: CoachMealScheduleDTO?
+    var recentMealEvents: [CoachMealEventDTO]
+    var mealStats: CoachMealStatsDTO?
     var generatedAt: Date
+
+    init(
+        activeCut: CoachActiveCutDTO?,
+        currentMacroPlan: CoachMacroPlanPeriodDTO?,
+        recentReadings: [CoachReadingDTO],
+        recentMacroDeviations: [CoachMacroDeviationDTO],
+        recentUntrackedRanges: [CoachUntrackedRangeDTO],
+        recentSleep: [CoachSleepNightDTO],
+        recentActivity: [CoachDailyActivityDTO],
+        recommendation: CoachRecommendationDTO?,
+        currentMealSchedule: CoachMealScheduleDTO? = nil,
+        recentMealEvents: [CoachMealEventDTO] = [],
+        mealStats: CoachMealStatsDTO? = nil,
+        generatedAt: Date
+    ) {
+        self.activeCut = activeCut
+        self.currentMacroPlan = currentMacroPlan
+        self.recentReadings = recentReadings
+        self.recentMacroDeviations = recentMacroDeviations
+        self.recentUntrackedRanges = recentUntrackedRanges
+        self.recentSleep = recentSleep
+        self.recentActivity = recentActivity
+        self.recommendation = recommendation
+        self.currentMealSchedule = currentMealSchedule
+        self.recentMealEvents = recentMealEvents
+        self.mealStats = mealStats
+        self.generatedAt = generatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case activeCut, currentMacroPlan, recentReadings, recentMacroDeviations
+        case recentUntrackedRanges, recentSleep, recentActivity, recommendation
+        case currentMealSchedule, recentMealEvents, mealStats, generatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        activeCut = try c.decodeIfPresent(CoachActiveCutDTO.self, forKey: .activeCut)
+        currentMacroPlan = try c.decodeIfPresent(CoachMacroPlanPeriodDTO.self, forKey: .currentMacroPlan)
+        recentReadings = try c.decodeIfPresent([CoachReadingDTO].self, forKey: .recentReadings) ?? []
+        recentMacroDeviations = try c.decodeIfPresent([CoachMacroDeviationDTO].self, forKey: .recentMacroDeviations) ?? []
+        recentUntrackedRanges = try c.decodeIfPresent([CoachUntrackedRangeDTO].self, forKey: .recentUntrackedRanges) ?? []
+        recentSleep = try c.decodeIfPresent([CoachSleepNightDTO].self, forKey: .recentSleep) ?? []
+        recentActivity = try c.decodeIfPresent([CoachDailyActivityDTO].self, forKey: .recentActivity) ?? []
+        recommendation = try c.decodeIfPresent(CoachRecommendationDTO.self, forKey: .recommendation)
+        currentMealSchedule = try c.decodeIfPresent(CoachMealScheduleDTO.self, forKey: .currentMealSchedule)
+        recentMealEvents = try c.decodeIfPresent([CoachMealEventDTO].self, forKey: .recentMealEvents) ?? []
+        mealStats = try c.decodeIfPresent(CoachMealStatsDTO.self, forKey: .mealStats)
+        generatedAt = try c.decode(Date.self, forKey: .generatedAt)
+    }
 }
 
 struct CoachPlanPeriodsResult: Codable, Equatable, Sendable {
@@ -520,5 +705,198 @@ struct CoachAnalysisDTO: Codable, Equatable, Sendable {
         baselineSleepHours = analysis.baselineSleepHours
         recentSteps = analysis.recentSteps
         baselineSteps = analysis.baselineSteps
+    }
+}
+
+// MARK: - Meal scheduling DTOs
+
+struct CoachMealSlotDTO: Codable, Equatable, Sendable {
+    var id: UUID
+    var scheduleId: UUID
+    var name: String
+    var minutesFromMidnight: Int
+    var kind: String
+    var sortOrder: Int
+    var kcalPercent: Double?
+    var proteinPercent: Double?
+    var fatPercent: Double?
+    var carbsPercent: Double?
+    var note: String?
+
+    init(_ slot: MealSlot) {
+        id = slot.id
+        scheduleId = slot.scheduleId
+        name = slot.name
+        minutesFromMidnight = slot.minutesFromMidnight
+        kind = slot.kindRaw
+        sortOrder = slot.sortOrder
+        kcalPercent = slot.kcalPercent
+        proteinPercent = slot.proteinPercent
+        fatPercent = slot.fatPercent
+        carbsPercent = slot.carbsPercent
+        note = slot.note
+    }
+}
+
+struct CoachMealScheduleDTO: Codable, Equatable, Sendable {
+    var id: UUID
+    var cutStartDate: Date
+    var startDate: Date
+    var endDate: Date?
+    var note: String?
+    var createdAt: Date
+    var slots: [CoachMealSlotDTO]
+
+    init(_ period: MealSchedulePeriod, slots: [MealSlot]) {
+        id = period.id
+        cutStartDate = period.cutStartDate
+        startDate = period.startDate
+        endDate = period.endDate
+        note = period.note
+        createdAt = period.createdAt
+        self.slots = slots.map(CoachMealSlotDTO.init)
+    }
+}
+
+struct CoachMealEventDTO: Codable, Equatable, Sendable {
+    var id: UUID
+    var date: Date
+    var loggedAt: Date
+    var ateAt: Date
+    var minutesFromMidnight: Int
+    var scheduleId: UUID?
+    var slotId: UUID?
+    var slotNameSnapshot: String?
+    var status: String
+    var hungerBefore: String?
+    var hungerAfter: String?
+    var note: String?
+
+    init(_ event: MealEvent) {
+        id = event.id
+        date = event.date
+        loggedAt = event.loggedAt
+        ateAt = event.ateAt
+        minutesFromMidnight = event.minutesFromMidnight
+        scheduleId = event.scheduleId
+        slotId = event.slotId
+        slotNameSnapshot = event.slotNameSnapshot
+        status = event.statusRaw
+        hungerBefore = event.hungerBeforeRaw
+        hungerAfter = event.hungerAfterRaw
+        note = event.note
+    }
+}
+
+struct CoachMealStatPerMealDTO: Codable, Equatable, Sendable {
+    var slotName: String
+    var scheduledMinutes: Int
+    var loggedCount: Int
+    var skippedCount: Int
+    var skipRate: Double
+    var medianDelayMinutes: Int?
+    var lateCount: Int
+}
+
+struct CoachMealStatsDTO: Codable, Equatable, Sendable {
+    var windowDays: Int
+    var perMeal: [CoachMealStatPerMealDTO]
+    var overallSkipRate: Double
+}
+
+struct CoachMealScheduleResult: Codable, Equatable, Sendable {
+    var schedule: CoachMealScheduleDTO?
+    var recentEvents: [CoachMealEventDTO]
+    var stats: CoachMealStatsDTO?
+    var generatedAt: Date
+}
+
+struct CoachMealScheduleMutationResult: Codable, Equatable, Sendable {
+    var schedule: CoachMealScheduleDTO
+}
+
+struct CoachMealEventMutationResult: Codable, Equatable, Sendable {
+    var event: CoachMealEventDTO
+}
+
+// MARK: - Calculate-meal DTOs
+
+struct CoachCalculatedFoodItemDTO: Codable, Equatable, Sendable {
+    var input: String
+    var food: String
+    var fdcId: Int?
+    var dataType: String?
+    var grams: Double
+    var rawEquivalentGrams: Double
+    var state: String
+    var stateAdjustment: CoachCookingAdjustmentDTO?
+    var kcal: Int
+    var proteinG: Double
+    var fatG: Double
+    var carbsG: Double
+    var confidence: String
+    var source: String
+    var warnings: [String]
+
+    init(_ item: CalculatedFoodItem) {
+        input = item.input
+        food = item.food
+        fdcId = item.fdcId
+        dataType = item.dataType
+        grams = item.grams
+        rawEquivalentGrams = item.rawEquivalentGrams
+        state = item.state
+        stateAdjustment = item.stateAdjustment.map(CoachCookingAdjustmentDTO.init)
+        kcal = item.kcal
+        proteinG = item.proteinG
+        fatG = item.fatG
+        carbsG = item.carbsG
+        confidence = item.confidence
+        source = item.source
+        warnings = item.warnings
+    }
+}
+
+struct CoachCookingAdjustmentDTO: Codable, Equatable, Sendable {
+    var fromState: String
+    var toState: String
+    var factor: Double
+    var rule: String
+
+    init(_ info: CookingAdjustmentInfo) {
+        fromState = info.fromState
+        toState = info.toState
+        factor = info.factor
+        rule = info.rule
+    }
+}
+
+struct CoachMacroTotalsDTO: Codable, Equatable, Sendable {
+    var kcal: Int
+    var proteinG: Double
+    var fatG: Double
+    var carbsG: Double
+
+    init(_ totals: MacroTotals) {
+        kcal = totals.kcal
+        proteinG = totals.proteinG
+        fatG = totals.fatG
+        carbsG = totals.carbsG
+    }
+}
+
+struct CoachCalculateMealResult: Codable, Equatable, Sendable {
+    var items: [CoachCalculatedFoodItemDTO]
+    var total: CoachMacroTotalsDTO
+    var warnings: [String]
+    var mealName: String?
+    var schemaVersion: String
+
+    init(from result: CalculateMealResult, mealName: String?) {
+        items = result.items.map(CoachCalculatedFoodItemDTO.init)
+        total = CoachMacroTotalsDTO(result.total)
+        warnings = result.warnings
+        self.mealName = mealName
+        schemaVersion = result.schemaVersion
     }
 }
