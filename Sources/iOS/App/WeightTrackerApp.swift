@@ -34,7 +34,10 @@ struct WeightTrackerApp: App {
 }
 
 struct RootView: View {
+    @EnvironmentObject private var services: AppServices
     @AppStorage(AppPrefKey.onboardingComplete) private var onboardingComplete: Bool = false
+    @State private var feedbackPresented = false
+    @State private var lastShakeAt: Date = .distantPast
 
     var body: some View {
         Group {
@@ -45,6 +48,30 @@ struct RootView: View {
             }
         }
         .background(NostrApprovalPresenter())
+        .onShake(perform: handleShake)
+        .onOpenURL(perform: handleURL)
+        .sheet(isPresented: $feedbackPresented) {
+            FeedbackView()
+                .environmentObject(services)
+                .presentationDetents([.large])
+        }
+    }
+
+    private func handleShake() {
+        let now = Date()
+        guard now.timeIntervalSince(lastShakeAt) >= 1 else { return }
+        lastShakeAt = now
+        Haptics.light()
+        feedbackPresented = true
+    }
+
+    private func handleURL(_ url: URL) {
+        guard url.scheme == "weighttracker", url.host == "nip46" else { return }
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        guard let bunkerURI = items.first(where: { $0.name == "bunker" })?.value else { return }
+        Task {
+            try? await services.feedback.connectBunker(uri: bunkerURI)
+        }
     }
 }
 
@@ -53,7 +80,7 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            TodayView()
+            TodayPager()
                 .tag(0)
                 .tabItem { Label("Today", systemImage: "scalemass") }
             ProgressTabView()
