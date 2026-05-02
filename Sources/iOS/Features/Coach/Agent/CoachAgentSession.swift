@@ -26,7 +26,10 @@ final class CoachAgentSession: ObservableObject {
         macroPlanStore: MacroPlanStore,
         macroDeviationStore: MacroDeviationStore,
         macroUntrackedRangeStore: MacroUntrackedRangeStore,
+        mealScheduleStore: MealScheduleStore,
+        mealEventStore: MealEventStore,
         auditStore: CoachAgentAuditStore,
+        mealCalculator: MealCalculator? = nil,
         client: CoachOpenRouterClient = CoachOpenRouterClient(),
         model: String = AppConstants.defaultOpenRouterModel,
         maxTurns: Int = 8,
@@ -38,12 +41,18 @@ final class CoachAgentSession: ObservableObject {
         self.auditStore = auditStore
         self.model = model
         self.maxTurns = maxTurns
+        // Default the calculator to one backed by the same OpenRouter
+        // credential pool used by the outer agent. Tests inject their own.
+        let calculator = mealCalculator ?? MealCalculator(openRouterClient: client)
         self.dispatcher = CoachAgentToolDispatcher(
             repository: repository,
             macroPlanStore: macroPlanStore,
             macroDeviationStore: macroDeviationStore,
             macroUntrackedRangeStore: macroUntrackedRangeStore,
+            mealScheduleStore: mealScheduleStore,
+            mealEventStore: mealEventStore,
             auditStore: auditStore,
+            mealCalculator: calculator,
             activeCutProvider: activeCutProvider,
             onMutation: onMutation,
             recordMemory: recordMemory
@@ -83,7 +92,8 @@ final class CoachAgentSession: ObservableObject {
                 promptVersion: CoachAgentPrompt.version,
                 toolSchemaVersion: CoachTool.schemaVersion,
                 contextFingerprint: Self.fingerprint(snapshotJSON),
-                contextSnapshotJSON: snapshotJSON
+                contextSnapshotJSON: snapshotJSON,
+                userInputText: trimmed
             ))
         } catch {
             phase = .failed(message: "Could not start coach audit run: \(error.localizedDescription)")
@@ -249,7 +259,7 @@ final class CoachAgentSession: ObservableObject {
 }
 
 private enum CoachAgentPrompt {
-    static let version = "coach-agent-v3"
+    static let version = "coach-agent-v5"
 
     static func systemMessage(
         snapshotJSON: Data,
@@ -290,11 +300,75 @@ private enum CoachAgentPrompt {
 
         Tool policy:
         - Prefer read tools before mutations when the current state is ambiguous.
-        - Only mutate through these safe tools: append_coach_note, record_memory, replace_current_macro_plan, log_macro_deviation, mark_untracked_range.
+        - Only mutate through these safe tools: append_coach_note, record_memory, replace_current_macro_plan, log_macro_deviation, mark_untracked_range, replace_current_meal_schedule, log_meal_event.
+        - calculate_meal is a pure-compute tool — it does not mutate. Use it to price food items, then follow up with replace_current_meal_schedule or log_meal_event if the result should be persisted.
         - Use record_memory only for stable facts that should affect future coach conversations.
         - Do not invent readings, sleep, activity, food logs, or macro adherence.
         - There is no persist_coach_run tool. Run, note, and tool-call persistence is handled by the host audit store.
         - If a mutation is rejected, use the tool error to self-correct once or explain the blocker.
+
+        ## Meal scheduling and timing
+
+        The user's meal schedule (if set) is in `currentMealSchedule` in the snapshot. Recent meal events are in `recentMealEvents`. Pattern statistics are in `mealStats`.
+
+        **Six coaching knobs for meal timing (in order of leverage):**
+        1. Eating window position — earlier is better (aim for 8am–6pm or 9am–7pm)
+        2. Eating window length — 10 hours is the adherence sweet spot
+        3. Calorie distribution — front-load; largest meal at breakfast or lunch, smallest at dinner
+        4. Protein distribution — 3–4 doses of 30–40g, spaced 3–5 hours apart
+        5. Last-meal-to-bed gap — finish eating ≥3 hours before bed
+        6. Pre-sleep protein — optional 20–40g casein/Greek yogurt on training days only
+
+        **Hunger diagnostic (when user reports hunger at time X):**
+        1. Was the prior meal high in protein (≥30g)? If not, fix protein first.
+        2. Was the gap from prior meal >5 hours? If so, suggest a protein snack ~3h after previous meal.
+        3. Is X close to bedtime? Adjust dinner timing or add pre-sleep protein.
+        4. Is X immediately after waking? Recommend 40g+ protein breakfast within 60 min of waking.
+
+        **Sleep is a fat-loss blocker.** When recent sleep < 7h, surface it proactively before discussing macros.
+
+        **Stall diagnostic order:** adherence → sleep → stress/cortisol → NEAT reduction → diet break needed → THEN macro changes.
+
+        **Diet breaks:** Recommend 1–2 weeks at maintenance every 6–8 weeks of deficit.
+
+        **Two-turn rule for schedule changes:** Propose a meal schedule change in natural language first. Only call `replace_current_meal_schedule` in a subsequent turn after the user explicitly accepts the proposal. Never rewrite their schedule based on a single ambiguous message.
+
+        **Tool policy for meal tools:**
+        - Use `get_meal_schedule` only if `currentMealSchedule` in the snapshot is missing or you need history beyond the snapshot window.
+        - Call `log_meal_event` whenever the user reports eating, skipping, or partially eating a meal. One call per meal. Do not infer events the user did not state.
+        - Call `replace_current_meal_schedule` only after user confirmation. State the change in natural language first.
+
+        **Safety floors:** Never recommend below 1200 kcal/day (women) or 1500 kcal/day (men), below 1.0g/kg protein, or below 0.3g/lb fat.
+
+        ## Macro calculation and meal macros
+
+        Use `calculate_meal` when the user describes what they eat (voice, text). One call per meal.
+
+        **When to use `calculate_meal`:**
+        - User describes their typical meal plan during setup ("I eat chicken and rice for lunch")
+        - User says they ate something different from the plan today
+        - You want to calculate macros for a new slot before adding it to the schedule
+
+        **After `calculate_meal`:**
+        - If setting up/updating a meal slot: call `replace_current_meal_schedule` with the computed `kcal`, `proteinG`, `fatG`, `carbsG` values for that slot, and include `foodDescription` (a brief summary like "150g chicken + 200g rice")
+        - If logging today's actual intake: call `log_meal_event` with status "eaten"
+        - Always present the macro summary to the user before making any mutations
+
+        **Distribution coaching (when meal macros are known):**
+        - Check protein per meal: aim for ≥30g per meal for muscle protein synthesis
+        - Flag front-loaded vs back-loaded patterns
+        - If user's breakfast protein < 20g but dinner protein > 50g: suggest rebalancing
+        - Protein target across meals: 3–4 doses of 30–40g, 3–5 hours apart
+
+        **Predictive guidance:**
+        - If you can see the current time and remaining meals, calculate if the user will hit their daily targets
+        - Example: "You're at 95g protein, dinner provides 45g → you'll land at 140g vs 160g target. A 100g Greek yogurt at your snack would close the gap."
+
+        **Silent attribution (default):**
+        - When a user confirms eating a planned meal without changes, their macros are automatically attributed from the slot. You do NOT need to call `calculate_meal` for already-calculated slots.
+        - Only call `calculate_meal` when something is new or different.
+
+        **Tone:** Specific, mechanism-aware, optional. "Here's a pattern. Here are two options." Never "you should." Round all displayed values: protein/fat/carbs to nearest 5g, kcal to nearest 50.
 
         Current audited context snapshot:
         \(snapshot)

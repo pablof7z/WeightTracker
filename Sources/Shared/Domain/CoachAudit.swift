@@ -74,6 +74,7 @@ public final class CoachRun {
     public var toolSchemaVersion: String?
     public var contextFingerprint: String
     public var contextSnapshotJSON: Data?
+    public var userInputText: String?
     public var recommendationJSON: Data?
     public var finalResponseJSON: Data?
     public var errorMessage: String?
@@ -91,6 +92,7 @@ public final class CoachRun {
         toolSchemaVersion: String? = nil,
         contextFingerprint: String,
         contextSnapshotJSON: Data? = nil,
+        userInputText: String? = nil,
         recommendationJSON: Data? = nil,
         finalResponseJSON: Data? = nil,
         errorMessage: String? = nil
@@ -107,6 +109,7 @@ public final class CoachRun {
         self.toolSchemaVersion = toolSchemaVersion
         self.contextFingerprint = contextFingerprint
         self.contextSnapshotJSON = contextSnapshotJSON
+        self.userInputText = userInputText
         self.recommendationJSON = recommendationJSON
         self.finalResponseJSON = finalResponseJSON
         self.errorMessage = errorMessage

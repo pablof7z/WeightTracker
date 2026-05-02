@@ -34,6 +34,14 @@ public final class CoachAuditStore {
         return Array(((try? context.fetch(descriptor)) ?? []).prefix(limit))
     }
 
+    public func notes(runID: UUID) -> [CoachNote] {
+        let descriptor = FetchDescriptor<CoachNote>(
+            predicate: #Predicate<CoachNote> { $0.runID == runID },
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
     public func toolCalls(runID: UUID) -> [CoachToolCall] {
         let descriptor = FetchDescriptor<CoachToolCall>(
             predicate: #Predicate<CoachToolCall> { $0.runID == runID },
@@ -49,6 +57,7 @@ public final class CoachAuditStore {
         cutStartDate: Date?,
         contextFingerprint: String,
         contextSnapshotJSON: Data?,
+        userInputText: String? = nil,
         modelID: String? = nil,
         promptVersion: String? = nil,
         toolSchemaVersion: String? = nil,
@@ -63,7 +72,8 @@ public final class CoachAuditStore {
             promptVersion: promptVersion,
             toolSchemaVersion: toolSchemaVersion,
             contextFingerprint: contextFingerprint,
-            contextSnapshotJSON: contextSnapshotJSON
+            contextSnapshotJSON: contextSnapshotJSON,
+            userInputText: userInputText
         )
         context.insert(run)
         save()

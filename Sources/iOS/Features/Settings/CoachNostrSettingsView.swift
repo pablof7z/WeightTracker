@@ -8,6 +8,7 @@ private enum AgentSettingsDestination: Hashable {
     case memories
     case whitelist
     case conversations
+    case audit
 }
 
 struct AgentSettingsView: View {
@@ -89,6 +90,17 @@ struct AgentSettingsView: View {
                     )
                 }
             }
+
+            Section("Observability") {
+                NavigationLink(value: AgentSettingsDestination.audit) {
+                    AgentSettingsRow(
+                        title: "Audit",
+                        subtitle: "Every run, step by step",
+                        systemImage: "list.bullet.clipboard.fill",
+                        tint: .brown
+                    )
+                }
+            }
         }
         .navigationTitle("Agent")
         .navigationBarTitleDisplayMode(.inline)
@@ -101,6 +113,7 @@ struct AgentSettingsView: View {
             case .memories: AgentMemoriesSettingsView()
             case .whitelist: AgentWhitelistSettingsView()
             case .conversations: AgentConversationsSettingsView()
+            case .audit: AgentAuditListView()
             }
         }
         .onAppear {

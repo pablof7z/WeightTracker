@@ -40,6 +40,7 @@ struct CoachAgentRunAuditRecord: Codable, Equatable, Sendable {
     var toolSchemaVersion: String
     var contextFingerprint: String
     var contextSnapshotJSON: Data?
+    var userInputText: String?
 }
 
 struct CoachAgentRunCompletionAuditRecord: Codable, Equatable, Sendable {
@@ -116,6 +117,7 @@ extension CoachAuditStore: CoachAgentAuditStore {
             cutStartDate: record.cutStartDate,
             contextFingerprint: record.contextFingerprint,
             contextSnapshotJSON: record.contextSnapshotJSON,
+            userInputText: record.userInputText,
             modelID: record.modelID,
             promptVersion: record.promptVersion,
             toolSchemaVersion: record.toolSchemaVersion,
