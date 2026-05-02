@@ -39,6 +39,11 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>nostrsigner</string>
+		<string>primal</string>
+	</array>
 	<key>NSHealthShareUsageDescription</key>
 	<string>WeightTracker reads your body mass, sleep, and daily activity from Apple Health to keep your trends up to date.</string>
 	<key>NSHealthUpdateUsageDescription</key>

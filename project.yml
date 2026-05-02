@@ -26,7 +26,7 @@ settings:
     SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
     TARGETED_DEVICE_FAMILY: "1"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "2026050105"
+    CURRENT_PROJECT_VERSION: "202605021344"
 
 targets:
   WeightTracker:
@@ -49,6 +49,9 @@ targets:
           - CFBundleURLName: app.pfer.weighttracker.byok
             CFBundleURLSchemes:
               - weighttracker
+        LSApplicationQueriesSchemes:
+          - nostrsigner
+          - primal
         UILaunchScreen:
           UIColorName: ""
         UIApplicationSceneManifest:
@@ -109,11 +112,14 @@ targets:
       properties:
         CFBundleDisplayName: WeightTracker
         CFBundleIconName: AppIcon
+        CFBundleIconFiles:
+          - AppIcon
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
         WKWatchOnly: false
         WKCompanionAppBundleIdentifier: app.pfer.weighttracker
+        ITSAppUsesNonExemptEncryption: false
         NSHealthShareUsageDescription: "WeightTracker reads your weight from Apple Health to show your most recent reading."
         NSHealthUpdateUsageDescription: "WeightTracker writes weights you log on your watch to Apple Health."
     settings:
