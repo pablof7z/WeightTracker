@@ -65,7 +65,7 @@ private struct CoachToolEnvelope: Encodable {
 }
 
 enum CoachTool: String, CaseIterable, Sendable {
-    static let schemaVersion = "coach-tools-v4"
+    static let schemaVersion = "coach-tools-v5"
 
     case getCoachSnapshot = "get_coach_snapshot"
     case listMacroPlanPeriods = "list_macro_plan_periods"
@@ -80,6 +80,12 @@ enum CoachTool: String, CaseIterable, Sendable {
     case replaceCurrentMealSchedule = "replace_current_meal_schedule"
     case logMealEvent = "log_meal_event"
     case calculateMeal = "calculate_meal"
+    case scheduleNudge = "schedule_nudge"
+    case cancelNudge = "cancel_nudge"
+    case setStepTarget = "set_step_target"
+    case scheduleDietBreak = "schedule_diet_break"
+    case scheduleRefeed = "schedule_refeed"
+    case proposeMealPlan = "propose_meal_plan"
 
     static var json: Data {
         let envelopes = allCases.map { CoachToolEnvelope(function: $0.definition) }
@@ -288,6 +294,95 @@ enum CoachTool: String, CaseIterable, Sendable {
                     required: ["items"]
                 )
             )
+        case .scheduleNudge:
+            return .init(
+                name: rawValue,
+                description: "Schedule a proactive notification nudge to fire at a specific time or relative delay. Use this after check-ins to set watchers for missed meals, step shortfalls, or follow-up reminders. The coach plants these during sessions — they fire later without user action.",
+                parameters: .object(
+                    properties: [
+                        "message": .string(description: "Exact notification text, first-person, actionable in under 30 seconds."),
+                        "scheduledAt": .string(description: "ISO-8601 datetime when the nudge should fire."),
+                        "expiresAt": .string(description: "Optional ISO-8601 datetime after which the nudge is irrelevant even if not fired.")
+                    ],
+                    required: ["message", "scheduledAt"]
+                )
+            )
+        case .cancelNudge:
+            return .init(
+                name: rawValue,
+                description: "Cancel a previously scheduled nudge by its ID. Use when context changes (user travels, illness, plan change makes the nudge moot).",
+                parameters: .object(
+                    properties: [
+                        "nudgeId": .string(description: "UUID string of the nudge to cancel.")
+                    ],
+                    required: ["nudgeId"]
+                )
+            )
+        case .setStepTarget:
+            return .init(
+                name: rawValue,
+                description: "Set the user's daily step target. Stored as part of the active cut's plan. Use when establishing initial activity targets or adjusting based on observed performance.",
+                parameters: .object(
+                    properties: [
+                        "dailySteps": .integer(description: "Target step count per day, between 2000 and 20000."),
+                        "rationale": .string(description: "Optional brief factual reason for the target.")
+                    ],
+                    required: ["dailySteps"]
+                )
+            )
+        case .scheduleDietBreak:
+            return .init(
+                name: rawValue,
+                description: "Schedule a diet break at maintenance calories, starting today or on a future date. Creates a new macro plan period with the dietBreak tag and duration. The coach uses this after detecting prolonged deficit without progress.",
+                parameters: .object(
+                    properties: [
+                        "durationDays": .integer(description: "Length of the break, 7 to 21."),
+                        "kcal": .integer(description: "Maintenance calories during the break."),
+                        "proteinG": .integer(description: "Optional protein target during break (default: same as cut target)."),
+                        "startDate": .string(description: "Optional yyyy-MM-dd start date, defaults to today."),
+                        "note": .string(description: "Optional reason for the break.")
+                    ],
+                    required: ["durationDays", "kcal"]
+                )
+            )
+        case .scheduleRefeed:
+            return .init(
+                name: rawValue,
+                description: "Schedule a single-day carbohydrate refeed. Creates a new macro plan period with the refeed tag for one day, then returns to the prior plan. Use this as a lighter intervention before a full diet break.",
+                parameters: .object(
+                    properties: [
+                        "kcal": .integer(description: "Refeed day calories (typically 15-20% above deficit)."),
+                        "carbsG": .integer(description: "Carbs target for the refeed day (majority of extra calories)."),
+                        "proteinG": .integer(description: "Optional protein target (default: same as cut)."),
+                        "fatG": .integer(description: "Optional fat target (keep low on refeed — carbs are the lever)."),
+                        "note": .string(description: "Optional reason.")
+                    ],
+                    required: ["kcal", "carbsG"]
+                )
+            )
+        case .proposeMealPlan:
+            return .init(
+                name: rawValue,
+                description: "Generate 2-3 concrete food combinations for a meal slot given macro targets and preferences. Returns food items with grams and computed macros. Call this when setting up meal slots, after the user asks 'what should I eat', or when proposing substitutions. Always verify with the returned macros before presenting.",
+                parameters: .object(
+                    properties: [
+                        "mealName": .string(description: "Slot name, e.g. \"Lunch\"."),
+                        "targetKcal": .integer(description: "Calorie target for this meal."),
+                        "targetProteinG": .integer(description: "Protein target in grams."),
+                        "targetFatG": .integer(description: "Optional fat target in grams."),
+                        "targetCarbsG": .integer(description: "Optional carbs target in grams."),
+                        "preferences": .array(
+                            items: .string(description: "Food preference or dietary style."),
+                            description: "Optional foods the user likes or dietary style (e.g. \"high volume\", \"Mediterranean\")."
+                        ),
+                        "excludes": .array(
+                            items: .string(description: "Food to exclude."),
+                            description: "Optional foods to exclude (allergies, dislikes)."
+                        )
+                    ],
+                    required: ["mealName", "targetKcal", "targetProteinG"]
+                )
+            )
         }
     }
 }
@@ -392,6 +487,47 @@ struct CalculateMealArgs: Decodable {
     var items: [String]
     var mealName: String?
     var assumeRawWhenAmbiguous: Bool?
+}
+
+struct ScheduleNudgeArgs: Decodable {
+    var message: String
+    var scheduledAt: String
+    var expiresAt: String?
+}
+
+struct CancelNudgeArgs: Decodable {
+    var nudgeId: String
+}
+
+struct SetStepTargetArgs: Decodable {
+    var dailySteps: Int
+    var rationale: String?
+}
+
+struct ScheduleDietBreakArgs: Decodable {
+    var durationDays: Int
+    var kcal: Int
+    var proteinG: Int?
+    var startDate: String?
+    var note: String?
+}
+
+struct ScheduleRefeedArgs: Decodable {
+    var kcal: Int
+    var carbsG: Int
+    var proteinG: Int?
+    var fatG: Int?
+    var note: String?
+}
+
+struct ProposeMealPlanArgs: Decodable {
+    var mealName: String
+    var targetKcal: Int
+    var targetProteinG: Int
+    var targetFatG: Int?
+    var targetCarbsG: Int?
+    var preferences: [String]?
+    var excludes: [String]?
 }
 
 struct CoachSnapshotResult: Codable, Equatable, Sendable {

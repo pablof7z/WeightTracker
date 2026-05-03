@@ -7,6 +7,7 @@ struct CutsView: View {
     @State private var showStartSheet = false
     @State private var showEditSheet = false
     @State private var showHistory = false
+    @State private var navigateToMealPlan = false
 
     private var unit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
 
@@ -72,6 +73,14 @@ struct CutsView: View {
             .sheet(isPresented: $showHistory) {
                 historySheet
             }
+            .navigationDestination(isPresented: $navigateToMealPlan) {
+                if let cut = viewModel.activeCut {
+                    MealPlanDetail(cutStartDate: cut.startDate)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openMealPlanEditor)) { _ in
+                navigateToMealPlan = true
+            }
             .onAppear { viewModel.reload() }
             .refreshable { viewModel.reload() }
         }
@@ -93,6 +102,12 @@ struct CutsView: View {
                 )
 
                 MacroCard(cutStartDate: cut.startDate)
+
+                MealPlanCard(cutStartDate: cut.startDate)
+
+                ActivityCard()
+
+                CoachCard()
             }
         } else {
             VStack(alignment: .leading, spacing: 8) {

@@ -44,6 +44,8 @@
 		<string>nostrsigner</string>
 		<string>primal</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>WeightTracker uses the camera so you can photograph food labels and share them with the coach.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>WeightTracker reads your body mass, sleep, and daily activity from Apple Health to keep your trends up to date.</string>
 	<key>NSHealthUpdateUsageDescription</key>

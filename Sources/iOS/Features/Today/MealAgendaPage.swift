@@ -1,22 +1,24 @@
 import SwiftUI
 
+extension Notification.Name {
+    /// Posted when the user taps "Edit plan" inside the Today meal agenda.
+    /// The Cuts tab observes this and routes the user to the meal-plan editor.
+    static let openMealPlanEditor = Notification.Name("openMealPlanEditor")
+}
+
 struct MealAgendaPage: View {
     @EnvironmentObject var services: AppServices
 
     @State private var schedule: MealSchedulePeriod?
     @State private var slots: [MealSlot] = []
     @State private var todayEvents: [MealEvent] = []
-    @State private var setupSheetPresented = false
+    @State private var hasActiveCut = false
     @State private var lastLoggedSlotID: UUID?
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { context in
             let nowMinutes = Calendar.current.minutesFromMidnightHelper(context.date)
             content(nowMinutes: nowMinutes, now: context.date)
-        }
-        .sheet(isPresented: $setupSheetPresented, onDismiss: { reload() }) {
-            MealScheduleSetupSheet()
-                .environmentObject(services)
         }
         .task { reload() }
         .onReceive(NotificationCenter.default.publisher(for: .mealScheduleDidChange)) { _ in reload() }
@@ -53,15 +55,16 @@ struct MealAgendaPage: View {
 
                     if let schedule, !slots.isEmpty {
                         Button {
-                            setupSheetPresented = true
+                            // Today is read-and-log only — defer all editing to the Cuts-tab plan editor.
+                            NotificationCenter.default.post(name: .openMealPlanEditor, object: nil)
                         } label: {
-                            Label("Edit schedule", systemImage: "slider.horizontal.3")
+                            Label("Edit plan", systemImage: "slider.horizontal.3")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.plain)
                         .padding(.top, 12)
-                        .accessibilityLabel("Edit meal schedule")
+                        .accessibilityLabel("Edit meal plan")
                         .id(schedule.id) // re-render if schedule swaps
                     }
                 }
@@ -112,38 +115,44 @@ struct MealAgendaPage: View {
 
     private var emptyState: some View {
         VStack(spacing: 18) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.orange.opacity(0.18), Color.pink.opacity(0.12)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 88, height: 88)
-                Image(systemName: "fork.knife")
-                    .font(.system(size: 34, weight: .semibold))
-                    .foregroundStyle(.orange)
-            }
+            Image(systemName: hasActiveCut ? "fork.knife" : "scissors")
+                .font(.system(size: 40, weight: .semibold))
+                .foregroundStyle(.secondary)
+
             VStack(spacing: 6) {
-                Text("Plan your meals")
+                Text(hasActiveCut ? "Meals not set up" : "No active cut")
                     .font(.title3.weight(.semibold))
-                Text("Tell the app when you usually eat. We’ll keep the day on track and the coach will look for patterns.")
+                Text(hasActiveCut
+                     ? "Your meal plan lives in the Cuts tab. Set one up there and it’ll appear here."
+                     : "Start a cut first — your meal plan will live there.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Button {
-                setupSheetPresented = true
-            } label: {
-                Label("Set up meals", systemImage: "plus")
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 8)
+
+            VStack(spacing: 10) {
+                Button {
+                    NotificationCenter.default.post(name: .openMealPlanEditor, object: nil)
+                } label: {
+                    Label(hasActiveCut ? "Go to Cuts" : "Open Cuts", systemImage: "scissors")
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 8)
+                }
+                .glassButtonStyle(prominent: true)
+
+                if hasActiveCut {
+                    Button {
+                        NotificationCenter.default.post(name: .openCoachForMealSetup, object: nil)
+                    } label: {
+                        Text("Talk to coach")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            .glassButtonStyle(prominent: true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.bottom, 48)
@@ -213,17 +222,15 @@ struct MealAgendaPage: View {
 
     private func reload() {
         guard let cut = ActiveCutStore.load() else {
+            hasActiveCut = false
             schedule = nil
             slots = []
             todayEvents = []
             return
         }
+        hasActiveCut = true
         schedule = services.mealScheduleStore.currentPeriod(forCutStartDate: cut.startDate)
-        if let s = schedule {
-            slots = services.mealScheduleStore.slots(forScheduleId: s.id)
-        } else {
-            slots = []
-        }
+        slots = schedule.map { services.mealScheduleStore.slots(forScheduleId: $0.id) } ?? []
         reloadEvents()
     }
 
@@ -290,7 +297,7 @@ private struct MealSlotCard: View {
                     Text(desc)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
                 if let kcal = resolvedKcal {
                     let proteinStr = resolvedProtein.map { " · \($0)g P" } ?? ""

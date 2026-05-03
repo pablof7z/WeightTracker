@@ -31,6 +31,8 @@ public enum AppPrefKey {
     // AI
     public static let openRouterModel = "ai.openRouterModel"
     public static let elevenLabsSTTModel = "ai.elevenLabsSTTModel"
+    public static let elevenLabsVoiceID = "ai.elevenLabsVoiceID"
+    public static let coachVisionModel = "ai.coachVisionModel"
 
     // Agent
     public static let agentNostrEnabled = "agent.nostr.enabled"
@@ -66,4 +68,6 @@ public enum AppConstants {
     public static let defaultCutDurationWeeks: Int = 16
     public static let defaultOpenRouterModel = "openai/gpt-5.2"
     public static let defaultElevenLabsSTTModel = "scribe_v2_realtime"
+    public static let defaultElevenLabsVoiceID = "21m00Tcm4TlvDq8ikWAM"  // Rachel
+    public static let defaultCoachVisionModel = "anthropic/claude-sonnet-4-5"
 }

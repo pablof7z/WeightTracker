@@ -30,6 +30,7 @@ final class CoachAgentSession: ObservableObject {
         mealEventStore: MealEventStore,
         auditStore: CoachAgentAuditStore,
         mealCalculator: MealCalculator? = nil,
+        scheduledNudgeStore: ScheduledNudgeStore? = nil,
         client: CoachOpenRouterClient = CoachOpenRouterClient(),
         model: String = AppConstants.defaultOpenRouterModel,
         maxTurns: Int = 8,
@@ -53,6 +54,7 @@ final class CoachAgentSession: ObservableObject {
             mealEventStore: mealEventStore,
             auditStore: auditStore,
             mealCalculator: calculator,
+            scheduledNudgeStore: scheduledNudgeStore,
             activeCutProvider: activeCutProvider,
             onMutation: onMutation,
             recordMemory: recordMemory
@@ -64,6 +66,7 @@ final class CoachAgentSession: ObservableObject {
         trigger: CoachAgentRunTrigger = .manual,
         historyDays: Int = 21
     ) async {
+        UserDefaults.standard.set(Date(), forKey: "coach.lastRunAt")
         let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             phase = .failed(message: "No coach transcript provided")
@@ -81,12 +84,14 @@ final class CoachAgentSession: ObservableObject {
             return
         }
 
+        let cutStartDate = snapshot.activeCut?.startDate
+
         let runID: UUID
         do {
             runID = try await auditStore.beginRun(CoachAgentRunAuditRecord(
                 trigger: trigger,
                 status: .started,
-                cutStartDate: snapshot.activeCut?.startDate,
+                cutStartDate: cutStartDate,
                 startedAt: startedAt,
                 modelID: model,
                 promptVersion: CoachAgentPrompt.version,
@@ -151,7 +156,8 @@ final class CoachAgentSession: ObservableObject {
                     runID: runID,
                     toolCallCount: toolCallCount,
                     turnsExhausted: false,
-                    finalResponseJSON: response.assistantMessageJSON
+                    finalResponseJSON: response.assistantMessageJSON,
+                    cutStartDate: cutStartDate
                 )
                 return
             }
@@ -185,15 +191,111 @@ final class CoachAgentSession: ObservableObject {
             runID: runID,
             toolCallCount: toolCallCount,
             turnsExhausted: true,
-            finalResponseJSON: lastAssistantJSON
+            finalResponseJSON: lastAssistantJSON,
+            cutStartDate: cutStartDate
         )
+    }
+
+    // MARK: - Conversation mode
+
+    /// Build the initial messages array (system prompt only) for a fresh
+    /// back-and-forth conversation. Each turn appends a user message and the
+    /// assistant + tool messages produced by `runTurn`.
+    func buildInitialMessages(snapshotHistoryDays: Int = 21) -> [[String: Any]] {
+        let snapshot = dispatcher.makeSnapshot(historyDays: snapshotHistoryDays)
+        let snapshotJSON: Data
+        do {
+            snapshotJSON = try Self.encoder.encode(snapshot)
+        } catch {
+            snapshotJSON = Data("{}".utf8)
+        }
+        return [
+            [
+                "role": "system",
+                "content": CoachAgentPrompt.systemMessage(
+                    snapshotJSON: snapshotJSON,
+                    agentDefinition: CoachNostrAgentSettings.load().systemPrompt,
+                    memories: CoachNostrAgentState.load().memories
+                )
+            ]
+        ]
+    }
+
+    /// Execute a single conversation turn against OpenRouter while keeping the
+    /// existing conversation history intact. Returns the updated message list
+    /// (including the assistant reply and any tool messages) plus the final
+    /// assistant text — ready for TTS playback.
+    ///
+    /// When `imageAttached` is true we override the configured model with the
+    /// vision-capable default so that multimodal user messages are accepted.
+    func runTurn(
+        messages inputMessages: [[String: Any]],
+        userMessage: [String: Any],
+        imageAttached: Bool
+    ) async -> (messages: [[String: Any]], finalText: String?) {
+        var messages = inputMessages
+        messages.append(userMessage)
+
+        let visionModel = UserDefaults.standard.string(forKey: AppPrefKey.coachVisionModel)
+            ?? AppConstants.defaultCoachVisionModel
+        let modelOverride = imageAttached ? visionModel : model
+        var lastText: String?
+
+        for _ in 0..<maxTurns {
+            let response: CoachToolCallResponse
+            do {
+                response = try await client.chatToolCalling(
+                    messages: messages,
+                    tools: CoachTool.json,
+                    model: modelOverride,
+                    feature: "coach.conversation.turn"
+                )
+            } catch {
+                return (messages, nil)
+            }
+
+            guard let assistant = try? JSONSerialization.jsonObject(with: response.assistantMessageJSON) as? [String: Any] else {
+                return (messages, nil)
+            }
+            messages.append(assistant)
+
+            if response.toolCalls.isEmpty {
+                lastText = assistant["content"] as? String
+                return (messages, lastText)
+            }
+
+            for (index, toolCall) in response.toolCalls.enumerated() {
+                let resultData: Data
+                do {
+                    resultData = try await dispatcher.dispatch(
+                        name: toolCall.name,
+                        argsJSON: toolCall.arguments,
+                        runID: UUID(),
+                        providerCallID: toolCall.id,
+                        sequence: index
+                    )
+                } catch let dispatchError as CoachToolDispatchError {
+                    resultData = encodeError(dispatchError.message)
+                } catch {
+                    resultData = encodeError(error.localizedDescription)
+                }
+                messages.append([
+                    "role": "tool",
+                    "tool_call_id": toolCall.id,
+                    "content": String(data: resultData, encoding: .utf8) ?? "{}"
+                ])
+            }
+        }
+
+        return (messages, lastText)
     }
 
     private func finishSucceeded(
         runID: UUID,
         toolCallCount: Int,
         turnsExhausted: Bool,
-        finalResponseJSON: Data?
+        finalResponseJSON: Data?,
+        cutStartDate: Date?
     ) async {
         do {
             try await auditStore.finishRun(CoachAgentRunCompletionAuditRecord(
@@ -207,6 +309,28 @@ final class CoachAgentSession: ObservableObject {
             phase = .failed(message: "Could not finish coach audit run: \(error.localizedDescription)")
             return
         }
+
+        // Persist the coach's final reply as a userVisible note so the
+        // Daily Briefing can surface it as an observation card.
+        if let data = finalResponseJSON,
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let text = obj["content"] as? String,
+           !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            try? await auditStore.appendCoachNote(CoachAgentNoteAuditRecord(
+                runID: runID,
+                source: "agent",
+                kind: "observation",
+                visibility: "userVisible",
+                cutStartDate: cutStartDate,
+                day: nil,
+                text: text.trimmingCharacters(in: .whitespacesAndNewlines),
+                payloadJSON: nil,
+                audioDraftID: nil,
+                createdAt: Date()
+            ))
+        }
+
+        NotificationCenter.default.post(name: .coachProposalDidChange, object: nil)
 
         lastRunID = runID
         phase = .completed(
@@ -259,7 +383,7 @@ final class CoachAgentSession: ObservableObject {
 }
 
 private enum CoachAgentPrompt {
-    static let version = "coach-agent-v5"
+    static let version = "coach-agent-v6"
 
     static func systemMessage(
         snapshotJSON: Data,
@@ -280,97 +404,66 @@ private enum CoachAgentPrompt {
         \(memoryLines)
         """
         return """
-        You are the WeightTracker coach agent runtime for a deliberate weight cut.
+        You are the WeightTracker coach — a contracted nutritional professional managing an active weight cut. You are not a chatbot or a wellness assistant. You are a professional who owns the plan, notices patterns, and proposes specific changes.
         \(definitionBlock)
         \(memoriesBlock)
 
-        Coach operating model:
-        - Your job is to maintain today's and this week's calorie, macro, and training targets for an ADHD user cutting weight with minimal interaction.
-        - The user-facing product surface is targets plus factual bullet reasons. Do not produce pep talk, encouragement, streak language, moral judgment, long chat, or generic wellness copy.
-        - Treat the deterministic recommendation in the audited snapshot as the default plan. Override it only when the user's check-in or stored notes add relevant context that the deterministic engine cannot infer.
-        - Prefer stable trends over single-day scale movement. Use 7-14 day weight trend behavior when available; a single weigh-in, high-sodium day, poor sleep, soreness, digestion change, or training stress is not enough by itself to cut calories.
-        - Diagnose adherence and data quality before lowering targets. If macro adherence is unclear, food is untracked, or misses explain the trend, log/ask for the smallest useful missing detail instead of changing calories.
-        - Use small adjustments. Typical calorie changes should be 50-150 kcal/day. Avoid frequent reversals; if the prior change is recent and data is still forming, hold targets and leave an audit note.
-        - Keep protein stable unless the user explicitly asks or the current target is missing/implausible. Prefer changing carbs first when reducing calories, then fats only while preserving a reasonable fat floor. Never create impossible macros where protein and fat exceed calories.
-        - Do not reduce calories when sleep is materially below baseline, steps/activity are below baseline, training performance is dropping, mood is poor, digestion is abnormal, or the user reports unusually high difficulty. In those cases, hold targets, adjust expectations, or ask one focused question.
-        - Use sleep, steps, exercise minutes, training performance, mood, hunger, digestion, soreness, travel, illness, and stress notes as explanations for noisy weight or adherence risk, not as moral evaluations.
-        - Ask at most one question when data is missing. The question should be concrete and easy to answer, such as whether yesterday was on-plan, whether training performance dropped, or whether a date range should be marked untracked.
-        - For safety, do not recommend dehydration, purging, laxatives, extreme fasting, stimulant misuse, or very low-calorie crash dieting. If the user reports alarming symptoms, advise stopping the cut and getting qualified medical help in direct factual language.
-        - Preserve an audit trail. Use append_coach_note for relevant check-in facts, observations, plan reasons, and blockers. Use record_memory only for durable preferences or recurring constraints that should affect future runs.
+        ## Your job
 
-        Tool policy:
-        - Prefer read tools before mutations when the current state is ambiguous.
-        - Only mutate through these safe tools: append_coach_note, record_memory, replace_current_macro_plan, log_macro_deviation, mark_untracked_range, replace_current_meal_schedule, log_meal_event.
-        - calculate_meal is a pure-compute tool — it does not mutate. Use it to price food items, then follow up with replace_current_meal_schedule or log_meal_event if the result should be persisted.
-        - Use record_memory only for stable facts that should affect future coach conversations.
-        - Do not invent readings, sleep, activity, food logs, or macro adherence.
-        - There is no persist_coach_run tool. Run, note, and tool-call persistence is handled by the host audit store.
-        - If a mutation is rejected, use the tool error to self-correct once or explain the blocker.
+        Read the data in the snapshot. Notice what is worth noticing. Draw your own conclusions from the evidence — do not apply a checklist, do not label things before you have looked. The user's situation is always specific; your response should be specific to it.
 
-        ## Meal scheduling and timing
+        What to look for (not an ordered checklist — consider all of these as you read the data):
+        - Weight trend over 7–14 days. Is it moving? At what rate? Does it match the plan?
+        - Macro adherence. Is it consistent? Which macro drifts most? Is adherence clear or ambiguous?
+        - Meal timing and skip patterns. Is there a slot the user consistently misses or delays? What does hunger-after look like?
+        - Activity. Are steps trending up or down relative to the user's target? Has there been a meaningful change in exercise minutes?
+        - Sleep. Is it above or below 7h? Has it changed recently?
+        - Untracked ranges. Do gaps in the data explain anything that might otherwise look like non-adherence?
+        - Coach notes. What has already been tried? What did the user push back on? What was the rationale for the last plan change?
+        - Memories. What does the user want you to remember about their constraints, preferences, and lifestyle?
 
-        The user's meal schedule (if set) is in `currentMealSchedule` in the snapshot. Recent meal events are in `recentMealEvents`. Pattern statistics are in `mealStats`.
+        The answer to "what is going on" emerges from reading these together, not from any one signal.
 
-        **Six coaching knobs for meal timing (in order of leverage):**
-        1. Eating window position — earlier is better (aim for 8am–6pm or 9am–7pm)
-        2. Eating window length — 10 hours is the adherence sweet spot
-        3. Calorie distribution — front-load; largest meal at breakfast or lunch, smallest at dinner
-        4. Protein distribution — 3–4 doses of 30–40g, spaced 3–5 hours apart
-        5. Last-meal-to-bed gap — finish eating ≥3 hours before bed
-        6. Pre-sleep protein — optional 20–40g casein/Greek yogurt on training days only
+        ## Communication style
 
-        **Hunger diagnostic (when user reports hunger at time X):**
-        1. Was the prior meal high in protein (≥30g)? If not, fix protein first.
-        2. Was the gap from prior meal >5 hours? If so, suggest a protein snack ~3h after previous meal.
-        3. Is X close to bedtime? Adjust dinner timing or add pre-sleep protein.
-        4. Is X immediately after waking? Recommend 40g+ protein breakfast within 60 min of waking.
+        Direct, second-person, present tense. Every sentence references a number, a date, or a behavior. Silence when there is nothing specific to say. Prescriptive, not Socratic — propose a change, state the reason, ask for confirmation. Never encourage, never moralize.
 
-        **Sleep is a fat-loss blocker.** When recent sleep < 7h, surface it proactively before discussing macros.
+        NEVER say: "as an AI", "great job", "you're doing amazing", "trust the process", "maybe try", "you could consider", "I noticed something interesting." No hedging. No motivation filler. If you have nothing concrete, say nothing.
 
-        **Stall diagnostic order:** adherence → sleep → stress/cortisol → NEAT reduction → diet break needed → THEN macro changes.
+        ## Intervention toolkit (coach knowledge — apply when the situation calls for it)
 
-        **Diet breaks:** Recommend 1–2 weeks at maintenance every 6–8 weeks of deficit.
+        These are interventions you know about. Use them when the evidence supports it, not on a fixed schedule.
 
-        **Two-turn rule for schedule changes:** Propose a meal schedule change in natural language first. Only call `replace_current_meal_schedule` in a subsequent turn after the user explicitly accepts the proposal. Never rewrite their schedule based on a single ambiguous message.
+        **Macro adjustments:** typically 50–150 kcal/day. Prefer reducing carbs first. Never create impossible macros (protein + fat > kcal). Keep protein ≥1.0 g/kg bodyweight. Keep fat ≥0.3 g/lb. Minimums: 1200 kcal (women), 1500 kcal (men).
 
-        **Tool policy for meal tools:**
-        - Use `get_meal_schedule` only if `currentMealSchedule` in the snapshot is missing or you need history beyond the snapshot window.
-        - Call `log_meal_event` whenever the user reports eating, skipping, or partially eating a meal. One call per meal. Do not infer events the user did not state.
-        - Call `replace_current_meal_schedule` only after user confirmation. State the change in natural language first.
+        **Meal timing shifts:** Earlier eating window is generally better. Protein distribution: 3–4 doses of 30–40g, 3–5 hours apart. Largest meal earlier in the day. Last meal ≥3h before bed.
 
-        **Safety floors:** Never recommend below 1200 kcal/day (women) or 1500 kcal/day (men), below 1.0g/kg protein, or below 0.3g/lb fat.
+        **Activity targets:** Steps are the cheapest lever — no muscle-loss penalty. When the user is consistently below target, offer two options: hit the target, or compensate with a small kcal cut. Never just nag.
 
-        ## Macro calculation and meal macros
+        **Diet breaks and refeeds:** After prolonged deficit (typically 6–8 weeks) or when lean mass loss is a concern, a break at maintenance for 7–14 days restores leptin and improves adherence. A single-day refeed is a lighter intervention. Use `schedule_diet_break` and `schedule_refeed` tools.
 
-        Use `calculate_meal` when the user describes what they eat (voice, text). One call per meal.
+        **What to check before any kcal cut:** Is adherence actually good? Is sleep normal? Is activity stable? Are there untracked days that explain the flat trend? Fix execution problems before cutting food.
 
-        **When to use `calculate_meal`:**
-        - User describes their typical meal plan during setup ("I eat chicken and rice for lunch")
-        - User says they ate something different from the plan today
-        - You want to calculate macros for a new slot before adding it to the schedule
+        ## Concrete food
 
-        **After `calculate_meal`:**
-        - If setting up/updating a meal slot: call `replace_current_meal_schedule` with the computed `kcal`, `proteinG`, `fatG`, `carbsG` values for that slot, and include `foodDescription` (a brief summary like "150g chicken + 200g rice")
-        - If logging today's actual intake: call `log_meal_event` with status "eaten"
-        - Always present the macro summary to the user before making any mutations
+        When you propose a meal or slot, you must call `propose_meal_plan` first to get actual food items with grams. Do not present abstract macro numbers without food. Round displayed values: P/F/C to nearest 5g, kcal to nearest 50.
 
-        **Distribution coaching (when meal macros are known):**
-        - Check protein per meal: aim for ≥30g per meal for muscle protein synthesis
-        - Flag front-loaded vs back-loaded patterns
-        - If user's breakfast protein < 20g but dinner protein > 50g: suggest rebalancing
-        - Protein target across meals: 3–4 doses of 30–40g, 3–5 hours apart
+        When the user describes food, call `calculate_meal`. One call per meal. After calculating, present the result before logging or persisting anything.
 
-        **Predictive guidance:**
-        - If you can see the current time and remaining meals, calculate if the user will hit their daily targets
-        - Example: "You're at 95g protein, dinner provides 45g → you'll land at 140g vs 160g target. A 100g Greek yogurt at your snack would close the gap."
+        ## Proactive nudges
 
-        **Silent attribution (default):**
-        - When a user confirms eating a planned meal without changes, their macros are automatically attributed from the slot. You do NOT need to call `calculate_meal` for already-calculated slots.
-        - Only call `calculate_meal` when something is new or different.
+        You can schedule notifications via `schedule_nudge` — use this during check-ins to set up time-delayed reminders. Each nudge must be actionable in under 30 seconds. Maximum 2 per session. Write nudge text in first-person from the user's perspective: "Log lunch now or mark it skipped." The nudge fires without user action; it should not require context.
 
-        **Tone:** Specific, mechanism-aware, optional. "Here's a pattern. Here are two options." Never "you should." Round all displayed values: protein/fat/carbs to nearest 5g, kcal to nearest 50.
+        ## Tool policy
 
-        Current audited context snapshot:
+        - Read before mutating when state is ambiguous.
+        - Safe mutation tools: `append_coach_note`, `record_memory`, `replace_current_macro_plan`, `log_macro_deviation`, `mark_untracked_range`, `replace_current_meal_schedule`, `log_meal_event`, `set_step_target`, `schedule_nudge`, `cancel_nudge`, `schedule_diet_break`, `schedule_refeed`.
+        - Pure-compute tools (no side effects): `calculate_meal`, `propose_meal_plan`.
+        - Two-turn rule: for meal schedule changes and kcal changes, propose in natural language first. Execute the mutation only after the user explicitly accepts. Never rewrite a plan on a single ambiguous message.
+        - Use `record_memory` only for stable facts: food dislikes, dietary constraints, lifestyle patterns, long-arc goals. Precede every `record_memory` call with "I am going to remember that you …" in your reply.
+        - Use `append_coach_note` for all interventions, plan reasons, and user pushback. This is the audit trail.
+
+        Current data snapshot:
         \(snapshot)
         """
     }

@@ -16,6 +16,10 @@ public enum ModelContainerFactory {
             CoachRun.self,
             CoachNote.self,
             CoachToolCall.self,
+            CoachProposal.self,
+            CoachProposalChange.self,
+            CoachUserReply.self,
+            ScheduledNudge.self,
         ])
         // App Group URL for sharing with watchOS
         let groupURL = FileManager.default

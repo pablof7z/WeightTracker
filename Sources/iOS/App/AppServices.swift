@@ -20,6 +20,8 @@ final class AppServices: ObservableObject {
     let mealScheduleStore: MealScheduleStore
     let mealEventStore: MealEventStore
     let coachAuditStore: CoachAuditStore
+    let coachProposalStore: CoachProposalStore
+    let scheduledNudgeStore: ScheduledNudgeStore
     let mealCalculator: MealCalculator
     let coachAgent: CoachAgentSession
     let coachNostrAgent: CoachNostrAgentService
@@ -52,6 +54,9 @@ final class AppServices: ObservableObject {
         self.mealEventStore = mealEvents
         let auditStore = CoachAuditStore(container: container)
         self.coachAuditStore = auditStore
+        self.coachProposalStore = CoachProposalStore(container: container)
+        let nudgeStore = ScheduledNudgeStore(container: container)
+        self.scheduledNudgeStore = nudgeStore
 
         let nostrAgent = CoachNostrAgentService()
         self.coachNostrAgent = nostrAgent
@@ -73,6 +78,7 @@ final class AppServices: ObservableObject {
             mealEventStore: mealEvents,
             auditStore: auditStore,
             mealCalculator: calculator,
+            scheduledNudgeStore: nudgeStore,
             model: coachModel,
             recordMemory: { text in
                 try nostrAgent.recordMemory(text: text)
@@ -103,5 +109,6 @@ final class AppServices: ObservableObject {
         await notifications.scheduleEvaluatedTriggers()
         await feedback.start(appName: "WeightTracker")
         coachNostrAgent.start()
+        await scheduledNudgeStore.syncToNotificationCenter()
     }
 }

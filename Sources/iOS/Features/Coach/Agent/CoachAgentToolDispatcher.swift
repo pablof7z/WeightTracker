@@ -26,6 +26,7 @@ struct CoachAgentToolDispatcher {
     let mealEventStore: MealEventStore
     let auditStore: CoachAgentAuditStore
     let mealCalculator: MealCalculator
+    let scheduledNudgeStore: ScheduledNudgeStore?
     let activeCutProvider: () -> ActiveCut?
     let onMutation: (() -> Void)?
     let recordMemory: ((String) throws -> CoachAgentMemory)?
@@ -41,6 +42,7 @@ struct CoachAgentToolDispatcher {
         mealEventStore: MealEventStore,
         auditStore: CoachAgentAuditStore,
         mealCalculator: MealCalculator,
+        scheduledNudgeStore: ScheduledNudgeStore? = nil,
         activeCutProvider: @escaping () -> ActiveCut? = { ActiveCutStore.load() },
         onMutation: (() -> Void)? = nil,
         recordMemory: ((String) throws -> CoachAgentMemory)? = nil,
@@ -55,6 +57,7 @@ struct CoachAgentToolDispatcher {
         self.mealEventStore = mealEventStore
         self.auditStore = auditStore
         self.mealCalculator = mealCalculator
+        self.scheduledNudgeStore = scheduledNudgeStore
         self.activeCutProvider = activeCutProvider
         self.onMutation = onMutation
         self.recordMemory = recordMemory
@@ -326,6 +329,24 @@ struct CoachAgentToolDispatcher {
         case .calculateMeal:
             let args = try decode(argsJSON, as: CalculateMealArgs.self)
             return try await calculateMeal(args)
+        case .scheduleNudge:
+            let args = try decode(argsJSON, as: ScheduleNudgeArgs.self)
+            return try scheduleNudge(args)
+        case .cancelNudge:
+            let args = try decode(argsJSON, as: CancelNudgeArgs.self)
+            return try cancelNudge(args)
+        case .setStepTarget:
+            let args = try decode(argsJSON, as: SetStepTargetArgs.self)
+            return try setStepTarget(args)
+        case .scheduleDietBreak:
+            let args = try decode(argsJSON, as: ScheduleDietBreakArgs.self)
+            return try scheduleDietBreak(args)
+        case .scheduleRefeed:
+            let args = try decode(argsJSON, as: ScheduleRefeedArgs.self)
+            return try scheduleRefeed(args)
+        case .proposeMealPlan:
+            let args = try decode(argsJSON, as: ProposeMealPlanArgs.self)
+            return try await proposeMealPlan(args)
         }
     }
 
@@ -809,6 +830,231 @@ struct CoachAgentToolDispatcher {
             throw CoachToolDispatchError.mutationFailed(
                 "Could not calculate meal: \(error.localizedDescription)"
             )
+        }
+
+        let dto = CoachCalculateMealResult(from: computed, mealName: mealName)
+        return .read(try encode(dto))
+    }
+
+    // MARK: - Nudge tools
+
+    private func scheduleNudge(_ args: ScheduleNudgeArgs) throws -> DispatchExecutionResult {
+        let trimmedMessage = args.message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedMessage.isEmpty else {
+            throw CoachToolDispatchError.invalidArgs("schedule_nudge.message cannot be empty")
+        }
+
+        let isoFormatter = ISO8601DateFormatter()
+        let isoFormatterWithFractional: ISO8601DateFormatter = {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            return f
+        }()
+        guard let scheduledAt = isoFormatter.date(from: args.scheduledAt)
+            ?? isoFormatterWithFractional.date(from: args.scheduledAt)
+        else {
+            throw CoachToolDispatchError.invalidArgs("scheduledAt must be ISO-8601, got '\(args.scheduledAt)'")
+        }
+
+        let expiresAt: Date?
+        if let raw = args.expiresAt, !raw.isEmpty {
+            guard let parsed = isoFormatter.date(from: raw) ?? isoFormatterWithFractional.date(from: raw) else {
+                throw CoachToolDispatchError.invalidArgs("expiresAt must be ISO-8601, got '\(raw)'")
+            }
+            expiresAt = parsed
+        } else {
+            expiresAt = nil
+        }
+
+        guard let store = scheduledNudgeStore else {
+            return .read(try encode(["status": "nudge_scheduling_unavailable"]))
+        }
+
+        let triggerParams = "{\"fireAt\":\"\(isoFormatter.string(from: scheduledAt))\"}"
+        let nudge = store.schedule(
+            message: trimmedMessage,
+            triggerType: .timeOfDay,
+            triggerParams: triggerParams,
+            expiresAt: expiresAt
+        )
+        onMutation?()
+
+        let payload: [String: String] = [
+            "nudgeId": nudge.id.uuidString,
+            "scheduledAt": isoFormatter.string(from: scheduledAt)
+        ]
+        let resultData = try encode(payload)
+        return DispatchExecutionResult(
+            data: resultData,
+            targetEntity: "scheduled_nudge",
+            targetID: nudge.id,
+            beforeJSON: nil,
+            afterJSON: resultData
+        )
+    }
+
+    private func cancelNudge(_ args: CancelNudgeArgs) throws -> DispatchExecutionResult {
+        let trimmed = args.nudgeId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let uuid = UUID(uuidString: trimmed) else {
+            throw CoachToolDispatchError.invalidArgs("nudgeId must be a UUID, got '\(args.nudgeId)'")
+        }
+        guard let store = scheduledNudgeStore else {
+            return .read(try encode(["status": "nudge_scheduling_unavailable"]))
+        }
+        store.cancel(id: uuid)
+        onMutation?()
+        let payload: [String: String] = ["status": "cancelled", "nudgeId": uuid.uuidString]
+        let resultData = try encode(payload)
+        return DispatchExecutionResult(
+            data: resultData,
+            targetEntity: "scheduled_nudge",
+            targetID: uuid,
+            beforeJSON: nil,
+            afterJSON: resultData
+        )
+    }
+
+    private func setStepTarget(_ args: SetStepTargetArgs) throws -> DispatchExecutionResult {
+        guard (2_000...20_000).contains(args.dailySteps) else {
+            throw CoachToolDispatchError.invalidArgs("dailySteps must be between 2000 and 20000")
+        }
+        UserDefaults.standard.set(args.dailySteps, forKey: "coach.dailyStepTarget")
+        NotificationCenter.default.post(name: .activityTargetDidChange, object: nil)
+        onMutation?()
+
+        var payload: [String: String] = ["dailySteps": String(args.dailySteps)]
+        if let rationale = trimmedOptional(args.rationale) {
+            payload["rationale"] = rationale
+        }
+        let resultData = try encode(payload)
+        return DispatchExecutionResult(
+            data: resultData,
+            targetEntity: "step_target",
+            targetID: nil,
+            beforeJSON: nil,
+            afterJSON: resultData
+        )
+    }
+
+    private func scheduleDietBreak(_ args: ScheduleDietBreakArgs) throws -> DispatchExecutionResult {
+        guard (7...21).contains(args.durationDays) else {
+            throw CoachToolDispatchError.invalidArgs("durationDays must be between 7 and 21")
+        }
+        guard (800...6_000).contains(args.kcal) else {
+            throw CoachToolDispatchError.invalidArgs("kcal must be between 800 and 6000")
+        }
+        try validateGrams(args.proteinG, name: "proteinG", max: 500)
+
+        let cutStart = try resolveActiveCutStart(nil)
+        if let raw = args.startDate {
+            _ = try parseDay(raw) // validate format only
+        }
+
+        let currentPeriod = macroPlanStore.currentPeriod(forCutStartDate: cutStart)
+        let resolvedProtein = args.proteinG ?? currentPeriod?.proteinG
+        let resolvedFat = currentPeriod?.fatG
+
+        let before = currentPeriod.map(CoachMacroPlanPeriodDTO.init)
+        let period = macroPlanStore.replaceCurrentPeriod(
+            cutStartDate: cutStart,
+            kcal: args.kcal,
+            proteinG: resolvedProtein,
+            fatG: resolvedFat,
+            carbsG: nil,
+            tag: .dietBreak,
+            customTagLabel: nil,
+            note: trimmedOptional(args.note),
+            now: nowProvider()
+        )
+        onMutation?()
+
+        let after = CoachMacroPlanPeriodDTO(period)
+        let result = CoachMacroPlanMutationResult(period: after)
+        return try DispatchExecutionResult(
+            data: encode(result),
+            targetEntity: "macro_plan_period",
+            targetID: period.id,
+            beforeJSON: encodeOptional(before),
+            afterJSON: encodeOptional(after)
+        )
+    }
+
+    private func scheduleRefeed(_ args: ScheduleRefeedArgs) throws -> DispatchExecutionResult {
+        guard (800...6_000).contains(args.kcal) else {
+            throw CoachToolDispatchError.invalidArgs("kcal must be between 800 and 6000")
+        }
+        try validateGrams(args.carbsG, name: "carbsG", max: 1_000)
+        try validateGrams(args.proteinG, name: "proteinG", max: 500)
+        try validateGrams(args.fatG, name: "fatG", max: 500)
+
+        let cutStart = try resolveActiveCutStart(nil)
+        let currentPeriod = macroPlanStore.currentPeriod(forCutStartDate: cutStart)
+        let resolvedProtein = args.proteinG ?? currentPeriod?.proteinG
+        let resolvedFat = args.fatG ?? currentPeriod?.fatG
+
+        let before = currentPeriod.map(CoachMacroPlanPeriodDTO.init)
+        let period = macroPlanStore.replaceCurrentPeriod(
+            cutStartDate: cutStart,
+            kcal: args.kcal,
+            proteinG: resolvedProtein,
+            fatG: resolvedFat,
+            carbsG: args.carbsG,
+            tag: .refeed,
+            customTagLabel: nil,
+            note: trimmedOptional(args.note),
+            now: nowProvider()
+        )
+        onMutation?()
+
+        let after = CoachMacroPlanPeriodDTO(period)
+        let result = CoachMacroPlanMutationResult(period: after)
+        return try DispatchExecutionResult(
+            data: encode(result),
+            targetEntity: "macro_plan_period",
+            targetID: period.id,
+            beforeJSON: encodeOptional(before),
+            afterJSON: encodeOptional(after)
+        )
+    }
+
+    private func proposeMealPlan(_ args: ProposeMealPlanArgs) async throws -> DispatchExecutionResult {
+        let mealName = args.mealName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !mealName.isEmpty else {
+            throw CoachToolDispatchError.invalidArgs("mealName cannot be empty")
+        }
+        guard args.targetKcal > 0 else {
+            throw CoachToolDispatchError.invalidArgs("targetKcal must be greater than 0")
+        }
+        guard args.targetProteinG > 0 else {
+            throw CoachToolDispatchError.invalidArgs("targetProteinG must be greater than 0")
+        }
+
+        // Build a natural-language description that the calculator's LLM can
+        // translate into a concrete food list. The macro and preference
+        // constraints become the brief; the calculator returns one combination
+        // with per-item grams and computed macros.
+        var promptParts: [String] = []
+        promptParts.append("Suggest a single \(mealName) hitting approximately \(args.targetKcal) kcal and \(args.targetProteinG)g protein")
+        if let fat = args.targetFatG { promptParts.append("with about \(fat)g fat") }
+        if let carbs = args.targetCarbsG { promptParts.append("with about \(carbs)g carbs") }
+        if let prefs = args.preferences, !prefs.isEmpty {
+            promptParts.append("Prefer: \(prefs.joined(separator: ", "))")
+        }
+        if let excludes = args.excludes, !excludes.isEmpty {
+            promptParts.append("Exclude: \(excludes.joined(separator: ", "))")
+        }
+        let prompt = promptParts.joined(separator: ". ")
+
+        let computed: CalculateMealResult
+        do {
+            computed = try await mealCalculator.calculate(
+                items: [prompt],
+                assumeRawWhenAmbiguous: true
+            )
+        } catch let error as MealCalculatorError {
+            throw CoachToolDispatchError.mutationFailed(error.localizedDescription)
+        } catch {
+            throw CoachToolDispatchError.mutationFailed("Could not propose meal plan: \(error.localizedDescription)")
         }
 
         let dto = CoachCalculateMealResult(from: computed, mealName: mealName)

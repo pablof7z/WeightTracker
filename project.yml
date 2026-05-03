@@ -26,7 +26,7 @@ settings:
     SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
     TARGETED_DEVICE_FAMILY: "1"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "202605021344"
+    CURRENT_PROJECT_VERSION: "202605031118"
 
 targets:
   WeightTracker:
@@ -61,6 +61,7 @@ targets:
         NSHealthShareUsageDescription: "WeightTracker reads your body mass, sleep, and daily activity from Apple Health to keep your trends up to date."
         NSHealthUpdateUsageDescription: "WeightTracker writes weights you log here back to Apple Health so all your apps stay in sync."
         NSMicrophoneUsageDescription: "WeightTracker records voice check-ins so the cut coach can save notes and transcribe them with your ElevenLabs key."
+        NSCameraUsageDescription: "WeightTracker uses the camera so you can photograph food labels and share them with the coach."
         BGTaskSchedulerPermittedIdentifiers:
           - app.pfer.weighttracker.refresh
         UIBackgroundModes:

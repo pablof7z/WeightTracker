@@ -89,12 +89,21 @@ struct MainTabView: View {
             CutsView()
                 .tag(2)
                 .tabItem { Label("Cuts", systemImage: "scissors") }
-            SettingsView()
+            CoachTabView()
                 .tag(3)
+                .tabItem { Label("Coach", systemImage: "brain.head.profile") }
+            SettingsView()
+                .tag(4)
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openCutsTab)) { _ in
             selection = 2
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openMealPlanEditor)) { _ in
+            selection = 2
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openCoachForMealSetup)) { _ in
+            selection = 3
         }
     }
 }
