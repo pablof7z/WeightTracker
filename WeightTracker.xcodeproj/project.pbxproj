@@ -84,6 +84,7 @@
 		54F1B3C4F99A35AE427C60CD /* KnownSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1966F6DB967B46671A1890A5 /* KnownSigner.swift */; };
 		558E5669BE500AA4BE913BF5 /* MacroEnums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761EF586BFAF023230053680 /* MacroEnums.swift */; };
 		563E2BEAEA0757AB5736DB06 /* CoachAgentToolDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16481D83D76D3300E2AAC890 /* CoachAgentToolDispatcher.swift */; };
+		5689EB0BDB95E2442C864B9B /* WeightLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71DF41B2426749CFCA395111 /* WeightLogView.swift */; };
 		5894027DB5F45F291BBDAE8A /* MealCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E980F8166EC2A761F7E4DEED /* MealCalculator.swift */; };
 		5BB49C3F4553AEFE85811E3F /* MealSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1114DF6EB32E7EF1A43003E9 /* MealSlot.swift */; };
 		5BBB9BD2023179625162ADA4 /* CoachProposalSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37B127E6EE9B1EB1EA9081E /* CoachProposalSheet.swift */; };
@@ -351,6 +352,7 @@
 		711BBC2A64EA99CFD26B6A30 /* ChartOverlayToggles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartOverlayToggles.swift; sourceTree = "<group>"; };
 		714F028084AF0A6B75FC0A01 /* CoachAuditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachAuditSheet.swift; sourceTree = "<group>"; };
 		71A32D724E4383A5F646FAE7 /* CoachBriefingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachBriefingView.swift; sourceTree = "<group>"; };
+		71DF41B2426749CFCA395111 /* WeightLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightLogView.swift; sourceTree = "<group>"; };
 		73296E72BEA0DDAAD178193F /* TodayPager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayPager.swift; sourceTree = "<group>"; };
 		741D666F4590AC7B5967082F /* NostrCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrCrypto.swift; sourceTree = "<group>"; };
 		741E0C3C6691D4A414A5028D /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
@@ -685,6 +687,7 @@
 				73296E72BEA0DDAAD178193F /* TodayPager.swift */,
 				BBC72524D70DFFE6A05C1D9B /* TodayView.swift */,
 				3EB81FF4D99BC5DECAAFF13D /* TodayViewModel.swift */,
+				71DF41B2426749CFCA395111 /* WeightLogView.swift */,
 			);
 			path = Today;
 			sourceTree = "<group>";
@@ -1252,6 +1255,7 @@
 				87B14631C17F8F7DE308CCE6 /* VoiceNotesView.swift in Sources */,
 				082D53237284CB188EF3CAE6 /* VoiceRecordingDraftStore.swift in Sources */,
 				ECAE9FDC40F11D3C3C4D53D7 /* WeightChart.swift in Sources */,
+				5689EB0BDB95E2442C864B9B /* WeightLogView.swift in Sources */,
 				AEE776CD1B8FC79E0377D2C6 /* WeightTrackerApp.swift in Sources */,
 				2E8E0FC1C032557EF6F8F585 /* WipeAllSheet.swift in Sources */,
 			);
@@ -1365,7 +1369,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 202605031118;
+				CURRENT_PROJECT_VERSION = 202605061200;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1437,7 +1441,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 202605031118;
+				CURRENT_PROJECT_VERSION = 202605061200;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_NS_ASSERTIONS = NO;

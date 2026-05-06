@@ -18,11 +18,6 @@ final class TodayViewModel: ObservableObject {
     @Published var activeCut: ActiveCut?
     @Published var inCutReadings: [Reading] = []
     @Published var projection: CutProjectionResult?
-    /// Bumped only when the user explicitly edits the weight via the +/- pad.
-    /// Programmatic changes (loadForDate, unit toggle) do NOT bump this.
-    @Published var editTick: Int = 0
-
-    func bumpEditTick() { editTick &+= 1 }
 
     struct SavedConfirmation: Identifiable, Equatable {
         let id = UUID()

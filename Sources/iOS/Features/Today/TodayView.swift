@@ -13,10 +13,10 @@ struct TodayView: View {
     @State private var didLoad = false
     @State private var showDatePicker = false
     @State private var showVoiceCheckIn = false
+    @State private var showWeightLog = false
     @State private var todayCoachNote: CoachNote?
     @State private var swipeAccum: CGFloat = 0
     @State private var dismissTask: Task<Void, Never>?
-    @State private var saveTask: Task<Void, Never>?
     @State private var weightInputActive = false
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
@@ -42,7 +42,6 @@ struct TodayView: View {
                                     weightInputActive = true
                                 }
                                 viewModel.displayValue = newValue
-                                viewModel.bumpEditTick()
                             }
                         ),
                         unitSymbol: weightUnit.symbol,
@@ -60,6 +59,23 @@ struct TodayView: View {
                         }
                         .padding(.horizontal)
                         .padding(.top, 12)
+                    }
+
+                    if showWeightControls {
+                        Button {
+                            Task { @MainActor in
+                                await viewModel.save(services: services, weightUnit: weightUnit, bodyUnit: bodyUnit)
+                                weightInputActive = false
+                            }
+                        } label: {
+                            Text(viewModel.hasEntry ? "Update" : "Log Weight")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .padding(.horizontal)
+                        .padding(.top, 16)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -125,6 +141,14 @@ struct TodayView: View {
                     .disabled(!canGoBack)
                     .accessibilityLabel("Previous day")
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showWeightLog = true
+                    } label: {
+                        Image(systemName: "list.bullet")
+                    }
+                    .accessibilityLabel("Weight log")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         if canGoForward { goForward() }
@@ -182,6 +206,12 @@ struct TodayView: View {
                 .presentationDetents([.height(320), .medium])
                 .presentationDragIndicator(.visible)
             }
+            .sheet(isPresented: $showWeightLog, onDismiss: {
+                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+            }) {
+                WeightLogView()
+                    .environmentObject(services)
+            }
             .onAppear {
                 if !didLoad {
                     viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
@@ -204,14 +234,6 @@ struct TodayView: View {
                     withAnimation(.easeOut(duration: 0.25)) {
                         viewModel.lastSaved = nil
                     }
-                }
-            }
-            .onChange(of: viewModel.editTick) { _, _ in
-                saveTask?.cancel()
-                saveTask = Task {
-                    try? await Task.sleep(for: .milliseconds(700))
-                    guard !Task.isCancelled else { return }
-                    await viewModel.save(services: services, weightUnit: weightUnit, bodyUnit: bodyUnit)
                 }
             }
         }
@@ -340,27 +362,13 @@ struct TodayView: View {
     private func selectDate(_ d: Date) {
         let day = Reading.dayStart(of: d)
         guard day != viewModel.date else { return }
-        let hadPendingSave = saveTask != nil
-        saveTask?.cancel()
-        saveTask = nil
         dismissTask?.cancel()
         dismissTask = nil
-        let load = {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                viewModel.lastSaved = nil
-                weightInputActive = false
-                viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
-                reloadTodayCoachNote()
-            }
-        }
-        if hadPendingSave {
-            // Flush the pending save against the outgoing date BEFORE we mutate state.
-            Task { @MainActor in
-                await viewModel.save(services: services, weightUnit: weightUnit, bodyUnit: bodyUnit)
-                load()
-            }
-        } else {
-            load()
+        withAnimation(.easeInOut(duration: 0.2)) {
+            viewModel.lastSaved = nil
+            weightInputActive = false
+            viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+            reloadTodayCoachNote()
         }
     }
 
