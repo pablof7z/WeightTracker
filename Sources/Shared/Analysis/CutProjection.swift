@@ -81,15 +81,22 @@ public enum CutProjection {
         active: ActiveCut?,
         readings: [Reading],
         historicalCuts: [HistoricalCut],
-        now: Date = Date()
+        now: Date = Date(),
+        cycleStarts: [Date] = []
     ) -> CutProjectionResult? {
         guard let active else { return nil }
 
         // Step 3 — anchor weight from in-cut readings (last 7, drop max+min, mean of 5).
         let inCut = readings.filter { $0.date >= active.startDate && $0.date <= now }
+        let secondsPerDay: TimeInterval = 86_400
         let anchorKg: Double
         let anchorDate: Date
-        if let last = inCut.last {
+        if !cycleStarts.isEmpty,
+           CyclePhaseAnalyzer.isHighRetention(date: now, cycleStarts: cycleStarts),
+           let cycleAdjusted = cycleAdjustedAnchor(inCut: inCut, cycleStarts: cycleStarts, now: now, secondsPerDay: secondsPerDay) {
+            anchorDate = cycleAdjusted.date
+            anchorKg = cycleAdjusted.kg
+        } else if let last = inCut.last {
             anchorDate = last.date
             anchorKg = anchor(from: inCut)
         } else {
@@ -98,13 +105,12 @@ public enum CutProjection {
         }
 
         // Step 4 — projection days remaining.
-        let secondsPerDay: TimeInterval = 86_400
         let rawDays = active.targetEndDate.timeIntervalSince(anchorDate) / secondsPerDay
         let N = Int(rawDays.rounded(.down))
 
         // Memoization key
         let lastID = inCut.last?.id.uuidString ?? "nil"
-        let key = "\(lastID)|\(anchorKg)|\(active.targetEndDate.timeIntervalSince1970)|\(historicalCuts.count)|\(active.targetWeightKg)"
+        let key = "\(lastID)|\(anchorKg)|\(active.targetEndDate.timeIntervalSince1970)|\(historicalCuts.count)|\(active.targetWeightKg)|cycle:\(cycleStarts.count):\(cycleStarts.last?.timeIntervalSince1970 ?? 0)"
         cache.lock.lock()
         if cache.key == key, let cached = cache.result {
             cache.lock.unlock()
@@ -256,6 +262,19 @@ public enum CutProjection {
         }
         guard !kept.isEmpty else { return tail.last?.weightKg ?? 0 }
         return mean(kept)
+    }
+
+    private static func cycleAdjustedAnchor(
+        inCut: [Reading],
+        cycleStarts: [Date],
+        now: Date,
+        secondsPerDay: TimeInterval
+    ) -> (date: Date, kg: Double)? {
+        let cutoff = now.addingTimeInterval(-35 * secondsPerDay)
+        let recent = inCut.filter { $0.date >= cutoff }
+        let follicular = CyclePhaseAnalyzer.follicularReadings(from: recent, cycleStarts: cycleStarts)
+        guard let last = follicular.last else { return nil }
+        return (date: last.date, kg: last.weightKg)
     }
 
     // MARK: - Step 5: residual pool

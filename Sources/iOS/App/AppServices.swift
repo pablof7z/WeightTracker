@@ -12,6 +12,7 @@ final class AppServices: ObservableObject {
     let notifications: NotificationService
     let sleepHealthKit: SleepHealthKit
     let activityHealthKit: ActivityHealthKit
+    let cycleHealthKit: CycleHealthKit
 
     // Macro feature stores (M1)
     let macroPlanStore: MacroPlanStore
@@ -37,6 +38,7 @@ final class AppServices: ObservableObject {
         self.notifications = NotificationService(repository: repository)
         self.sleepHealthKit = SleepHealthKit(repository: repository)
         self.activityHealthKit = ActivityHealthKit(repository: repository)
+        self.cycleHealthKit = CycleHealthKit()
 
         let planStore = MacroPlanStore(container: container)
         let untrackedStore = MacroUntrackedRangeStore(container: container)
@@ -106,9 +108,15 @@ final class AppServices: ObservableObject {
         await healthKit.startObservingIfAuthorized()
         await sleepHealthKit.startObservingIfAuthorized()
         await activityHealthKit.startObservingIfAuthorized()
+        await cycleHealthKit.fetchAndStoreCycleStartsIfEnabled()
         await notifications.scheduleEvaluatedTriggers()
         await feedback.start(appName: "WeightTracker")
         coachNostrAgent.start()
         await scheduledNudgeStore.syncToNotificationCenter()
+    }
+
+    var cycleStarts: [Date] {
+        guard UserDefaults.standard.bool(forKey: AppPrefKey.cycleAdjustmentEnabled) else { return [] }
+        return cycleHealthKit.loadStoredCycleStarts()
     }
 }

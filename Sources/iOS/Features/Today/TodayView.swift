@@ -207,21 +207,21 @@ struct TodayView: View {
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showWeightLog, onDismiss: {
-                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
             }) {
                 WeightLogView()
                     .environmentObject(services)
             }
             .onAppear {
                 if !didLoad {
-                    viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+                    viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
                     weightInputActive = false
                     reloadTodayCoachNote()
                     didLoad = true
                 }
             }
             .onChange(of: weightUnitRaw) { _, _ in
-                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
                 weightInputActive = false
                 reloadTodayCoachNote()
             }
@@ -367,7 +367,7 @@ struct TodayView: View {
         withAnimation(.easeInOut(duration: 0.2)) {
             viewModel.lastSaved = nil
             weightInputActive = false
-            viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit)
+            viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
             reloadTodayCoachNote()
         }
     }

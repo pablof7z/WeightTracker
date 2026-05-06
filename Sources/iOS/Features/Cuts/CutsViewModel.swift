@@ -23,7 +23,7 @@ final class CutsViewModel: ObservableObject {
         let clusters = ClusterDetector.clusters(from: readings)
         let detected = HistoricalCutDetector.detect(in: clusters, readings: readings)
         historicalCuts = detected.sorted { $0.startDate > $1.startDate }
-        projection = CutProjection.project(active: activeCut, readings: readings, historicalCuts: detected)
+        projection = CutProjection.project(active: activeCut, readings: readings, historicalCuts: detected, cycleStarts: services.cycleStarts)
     }
 
     func startCut(_ cut: ActiveCut) async {

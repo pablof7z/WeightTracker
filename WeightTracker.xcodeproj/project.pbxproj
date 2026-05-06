@@ -147,6 +147,7 @@
 		9FE7CA28F9636EC6CF4A8B0C /* CutCoach.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091563735B54385116AD2BCD /* CutCoach.swift */; };
 		A013FCBE4EB0CAE16692B01F /* CostLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = F98BC89699A1171F520CA694 /* CostLedger.swift */; };
 		A10A180C848CB0B93A4BEDD1 /* EraSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 919E9FA191CCBC10E0E5C9ED /* EraSummary.swift */; };
+		A369E787CCB378E9D110CE6F /* CyclePhaseAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1265E087B394472E2B78669D /* CyclePhaseAnalyzer.swift */; };
 		A37848871689E5B6ACFACC27 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08AF12B16285F08AEE258679 /* CSVExporter.swift */; };
 		A38D51F73AEE7466808160FD /* MacroDeviationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD28A2FEFA07AE7DF3B8420 /* MacroDeviationStore.swift */; };
 		A46D2DFFD61436D65D03B5A8 /* ImportCSVSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C9D9B90EE07BFC553AC57F /* ImportCSVSheet.swift */; };
@@ -156,6 +157,8 @@
 		A87897341204732BC2846587 /* DailyActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037FF73300D51D36C446BB8F /* DailyActivity.swift */; };
 		A8B2F2A9C6B7EA7F571BF6AB /* HTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DF9A3115764DAF26A640622 /* HTTP.swift */; };
 		A8EE6D81A3B8C57A5526EB40 /* ClusterDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6A7869DAD317B65225D4C1D /* ClusterDetector.swift */; };
+		AA4064CA0771644D3A0F8665 /* CycleHealthKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219BBBCC1A3C6B4E34ABF22F /* CycleHealthKit.swift */; };
+		ABC5A3284124AF2BE46710EA /* CyclePhaseAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1265E087B394472E2B78669D /* CyclePhaseAnalyzer.swift */; };
 		AC789BCEDA226C5B4BDE179E /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 741E0C3C6691D4A414A5028D /* HealthKitManager.swift */; };
 		ADE5CE5B83F7F2F2DF8FAEB8 /* HistoricalCutCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78509E936D7DC105C253DB64 /* HistoricalCutCard.swift */; };
 		AE80612DD33F90FB53CEF230 /* ReadingSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2887D0AEEDA020AC376DC7BB /* ReadingSource.swift */; };
@@ -238,6 +241,7 @@
 		F9E33D66EB89B292EA64EBDE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2AADE6A603A3462CDA171429 /* Assets.xcassets */; };
 		F9E5AA799E4FD14AED69B486 /* FeedbackCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40C8003A7E29C36408E40D29 /* FeedbackCredentialStore.swift */; };
 		FA61ABC85E1C02EC720D96C6 /* MacroUntrackedRangeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F4681672989E29283A409E /* MacroUntrackedRangeStore.swift */; };
+		FB6CFDB312BE6F415D9F9311 /* CycleHealthKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219BBBCC1A3C6B4E34ABF22F /* CycleHealthKit.swift */; };
 		FE850E510164631B9A9607D9 /* GapAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58D8AAC80C055C280257CBC /* GapAnalyzer.swift */; };
 		FF68638BE51E3AF56EC2C032 /* CoachNostrSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2019E2250330C0F991662E7C /* CoachNostrSettingsView.swift */; };
 /* End PBXBuildFile section */
@@ -282,6 +286,7 @@
 		0F29F18C43580F96CA92FCC3 /* CoachProposalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProposalStore.swift; sourceTree = "<group>"; };
 		1114DF6EB32E7EF1A43003E9 /* MealSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealSlot.swift; sourceTree = "<group>"; };
 		1218EC80DEA54E365D98B7A6 /* VoiceNotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNotesView.swift; sourceTree = "<group>"; };
+		1265E087B394472E2B78669D /* CyclePhaseAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CyclePhaseAnalyzer.swift; sourceTree = "<group>"; };
 		16481D83D76D3300E2AAC890 /* CoachAgentToolDispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachAgentToolDispatcher.swift; sourceTree = "<group>"; };
 		1691EBF8C8B0B7CDA6DFFAC2 /* RecordingsPlaybackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsPlaybackController.swift; sourceTree = "<group>"; };
 		18FE7AFB65F5EB5CB3429D8A /* MacroPlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroPlanStore.swift; sourceTree = "<group>"; };
@@ -295,6 +300,7 @@
 		2045667B5260509E1378BA58 /* NostrEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrEvent.swift; sourceTree = "<group>"; };
 		204B7A82FA57F7D1AC2E2BBF /* StartCutMacrosDisclosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartCutMacrosDisclosure.swift; sourceTree = "<group>"; };
 		20D03D9D69E40FDC7DD6993E /* AboutSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutSection.swift; sourceTree = "<group>"; };
+		219BBBCC1A3C6B4E34ABF22F /* CycleHealthKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CycleHealthKit.swift; sourceTree = "<group>"; };
 		2887D0AEEDA020AC376DC7BB /* ReadingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSource.swift; sourceTree = "<group>"; };
 		29B8EDC2F540E89E7E50DD0D /* MacroHistorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroHistorySheet.swift; sourceTree = "<group>"; };
 		2A5688E1F47C7C58388DCB68 /* ReadingRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingRepository.swift; sourceTree = "<group>"; };
@@ -572,6 +578,7 @@
 			isa = PBXGroup;
 			children = (
 				6E88F08E4DB02DC8CA983C57 /* ActivityHealthKit.swift */,
+				219BBBCC1A3C6B4E34ABF22F /* CycleHealthKit.swift */,
 				741E0C3C6691D4A414A5028D /* HealthKitManager.swift */,
 				C7F173B36708CA358984F10F /* SleepHealthKit.swift */,
 			);
@@ -785,6 +792,7 @@
 				A6A7869DAD317B65225D4C1D /* ClusterDetector.swift */,
 				2EC2DA3E91617DE7CF26B785 /* CutCoachEngine.swift */,
 				3D3AF9863398574702E18EF5 /* CutProjection.swift */,
+				1265E087B394472E2B78669D /* CyclePhaseAnalyzer.swift */,
 				F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */,
 				919E9FA191CCBC10E0E5C9ED /* EraSummary.swift */,
 				C58D8AAC80C055C280257CBC /* GapAnalyzer.swift */,
@@ -1040,6 +1048,8 @@
 				9E21CA4FD9F380CD6062B16E /* CutCoach.swift in Sources */,
 				BD2C84DC930B633A54E72E0B /* CutCoachEngine.swift in Sources */,
 				678751A0DEE01572B8A5FF80 /* CutProjection.swift in Sources */,
+				FB6CFDB312BE6F415D9F9311 /* CycleHealthKit.swift in Sources */,
+				A369E787CCB378E9D110CE6F /* CyclePhaseAnalyzer.swift in Sources */,
 				DF10DCA71078F78E2414031F /* DailyActivity.swift in Sources */,
 				CC2549824257017B38301223 /* DriftEstimator.swift in Sources */,
 				A10A180C848CB0B93A4BEDD1 /* EraSummary.swift in Sources */,
@@ -1140,6 +1150,8 @@
 				E97D783DBD98C650C3BE36BA /* CutProjectionChartContent.swift in Sources */,
 				4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */,
 				E455B2D98C0FFED47B47ABB2 /* CutsViewModel.swift in Sources */,
+				AA4064CA0771644D3A0F8665 /* CycleHealthKit.swift in Sources */,
+				ABC5A3284124AF2BE46710EA /* CyclePhaseAnalyzer.swift in Sources */,
 				A87897341204732BC2846587 /* DailyActivity.swift in Sources */,
 				4A1D4A0A86447FAA5874E617 /* DataSettingsSection.swift in Sources */,
 				23B6338B3ACDD4D11BCB2F25 /* DataSettingsView.swift in Sources */,
@@ -1369,7 +1381,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 202605061953;
+				CURRENT_PROJECT_VERSION = 202605062100;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1441,7 +1453,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 202605061953;
+				CURRENT_PROJECT_VERSION = 202605062100;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_NS_ASSERTIONS = NO;

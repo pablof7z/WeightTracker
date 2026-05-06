@@ -15,6 +15,8 @@ struct WeightChart: View {
     var scrollEndDate: Date? = nil
     var colorBySleep: Bool = false
     var sleepLookup: (Date) -> SleepNight? = { _ in nil }
+    var cycleStarts: [Date] = []
+    var showCycleBands: Bool = false
 
     var body: some View {
         let endDate = scrollEndDate ?? readings.last?.date ?? Date()
@@ -23,6 +25,17 @@ struct WeightChart: View {
             ?? endDate.addingTimeInterval(-Double(max(visibleDays, 1)) * 86_400)
 
         Chart {
+            if showCycleBands && !cycleStarts.isEmpty {
+                let bands = CyclePhaseAnalyzer.highRetentionRanges(in: earliest...endDate, cycleStarts: cycleStarts)
+                ForEach(Array(bands.enumerated()), id: \.offset) { _, band in
+                    RectangleMark(
+                        xStart: .value("CycleStart", band.0),
+                        xEnd: .value("CycleEnd", band.1)
+                    )
+                    .foregroundStyle(Color.pink.opacity(0.08))
+                }
+            }
+
             if showClusters {
                 ForEach(clusters, id: \.id) { c in
                     RectangleMark(

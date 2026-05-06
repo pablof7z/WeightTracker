@@ -31,7 +31,7 @@ final class TodayViewModel: ObservableObject {
 
     /// Load state for a given date. If a reading exists on that date, populate from it.
     /// Otherwise fall back to the most-recent prior reading (or default) and mark as placeholder.
-    func loadForDate(_ date: Date, repository: ReadingRepository, unit: WeightUnit, bodyUnit: BodyUnit) {
+    func loadForDate(_ date: Date, repository: ReadingRepository, unit: WeightUnit, bodyUnit: BodyUnit, cycleStarts: [Date] = []) {
         let day = Reading.dayStart(of: date)
         self.date = day
 
@@ -52,7 +52,8 @@ final class TodayViewModel: ObservableObject {
             self.projection = CutProjection.project(
                 active: cut,
                 readings: allReadings,
-                historicalCuts: historicals
+                historicalCuts: historicals,
+                cycleStarts: cycleStarts
             )
         } else {
             self.inCutReadings = []
@@ -82,8 +83,8 @@ final class TodayViewModel: ObservableObject {
         }
     }
 
-    func prefill(from repository: ReadingRepository, unit: WeightUnit, bodyUnit: BodyUnit = .inches) {
-        loadForDate(Date(), repository: repository, unit: unit, bodyUnit: bodyUnit)
+    func prefill(from repository: ReadingRepository, unit: WeightUnit, bodyUnit: BodyUnit = .inches, cycleStarts: [Date] = []) {
+        loadForDate(Date(), repository: repository, unit: unit, bodyUnit: bodyUnit, cycleStarts: cycleStarts)
     }
 
     func adjust(by amount: Double) {

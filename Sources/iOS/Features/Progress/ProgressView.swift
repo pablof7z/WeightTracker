@@ -9,6 +9,7 @@ struct ProgressTabView: View {
     @StateObject private var chartViewModel = ChartViewModel()
     @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
     @AppStorage(AppPrefKey.lastChartRangeDays) private var rangeDays: Int = 365
+    @AppStorage(AppPrefKey.cycleAdjustmentEnabled) private var cycleEnabled: Bool = false
     @State private var showAverage: Bool = true
     @State private var showClusters: Bool = true
     @State private var showGaps: Bool = true
@@ -99,7 +100,9 @@ struct ProgressTabView: View {
                     colorBySleep: colorBySleep,
                     sleepLookup: { date in
                         chartViewModel.sleepBefore(date: date)
-                    }
+                    },
+                    cycleStarts: services.cycleStarts,
+                    showCycleBands: cycleEnabled
                 )
                 .padding(.horizontal)
                 .contentShape(Rectangle())

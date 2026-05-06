@@ -5,6 +5,7 @@ struct HealthSettingsSection: View {
 
     @AppStorage(AppPrefKey.healthKitReadEnabled) private var readEnabled: Bool = false
     @AppStorage(AppPrefKey.healthKitWriteEnabled) private var writeEnabled: Bool = false
+    @AppStorage(AppPrefKey.cycleAdjustmentEnabled) private var cycleEnabled: Bool = false
 
     @State private var isReplaying = false
     @State private var replayResult: String?
@@ -16,6 +17,29 @@ struct HealthSettingsSection: View {
     @State private var activityBackfillCount: Int?
 
     var body: some View {
+        cycleSection
+        appleHealthSection
+    }
+
+    private var cycleSection: some View {
+        Section {
+            Toggle("Cycle-adjusted trends", isOn: $cycleEnabled)
+                .onChange(of: cycleEnabled) { _, newValue in
+                    if newValue {
+                        Task {
+                            _ = await appServices.cycleHealthKit.requestAuthorization()
+                            _ = await appServices.cycleHealthKit.fetchAndStoreCycleStarts()
+                        }
+                    }
+                }
+        } header: {
+            Text("Trend Accuracy")
+        } footer: {
+            Text("Uses cycle data from Apple Health to reduce hormonal water-weight noise in your trend line and cut projection.")
+        }
+    }
+
+    private var appleHealthSection: some View {
         Section {
             if appServices.healthKit.isAvailable {
                 Toggle("Read from Apple Health", isOn: $readEnabled)

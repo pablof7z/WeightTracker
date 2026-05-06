@@ -27,6 +27,7 @@ public enum AppPrefKey {
     // HealthKit
     public static let healthKitReadEnabled = "hk.readEnabled"
     public static let healthKitWriteEnabled = "hk.writeEnabled"
+    public static let cycleAdjustmentEnabled = "cycle.adjustmentEnabled"
 
     // AI
     public static let openRouterModel = "ai.openRouterModel"
