@@ -34,30 +34,11 @@ struct CutDeficitWidget: View {
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Estimated cut progress")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            HStack(alignment: .top, spacing: 16) {
-                cumulativeColumn
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Divider()
-                    .frame(height: 36)
-
-                dailyRateColumn
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Text("Estimated from weight trend. Not based on logged intake.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+        HStack(alignment: .top, spacing: 24) {
+            cumulativeColumn
+            dailyRateColumn
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glass(in: RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal)
         .sheet(isPresented: $showExplainer) {
             CutDeficitExplainerSheet()
@@ -73,18 +54,17 @@ struct CutDeficitWidget: View {
         Button {
             showExplainer = true
         } label: {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 cumulativeValueText
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.primary)
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.secondary)
                     .monospacedDigit()
                 Text(cumulativeCaption)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -111,18 +91,17 @@ struct CutDeficitWidget: View {
         Button {
             showExplainer = true
         } label: {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 dailyRateValueText
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.primary)
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.secondary)
                     .monospacedDigit()
                 Text(dailyRateCaption)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
