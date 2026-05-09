@@ -92,21 +92,11 @@ struct CutDeficitWidget: View {
     }
 
     private var cumulativeValueText: Text {
-        switch result.cumulativeState {
-        case .calibrating:
-            return Text("Calibrating")
-        case .noActiveCut:
-            return Text("—")
-        case .active:
-            guard let kcal = result.cumulativeDeficitKcal else { return Text("—") }
-            return Text(formatCumulative(kcal))
-        }
+        guard let kcal = result.cumulativeDeficitKcal else { return Text("—") }
+        return Text(formatCumulative(kcal))
     }
 
     private var cumulativeCaption: String {
-        if case .calibrating(let n) = result.cumulativeState {
-            return "\(n) more day\(n == 1 ? "" : "s")"
-        }
         let dateStr = Self.startDateFmt.string(from: cutStartDate)
         if let kcal = result.cumulativeDeficitKcal, kcal < 0 {
             return "Estimated surplus since \(dateStr)"
@@ -140,33 +130,28 @@ struct CutDeficitWidget: View {
     }
 
     private var dailyRateValueText: Text {
-        switch result.dailyRateState {
-        case .calibrating:
-            return Text("Calibrating")
-        case .noActiveCut:
-            return Text("—")
-        case .active:
-            guard let kcal = result.dailyDeficitKcalPerDay else { return Text("—") }
-            return Text(formatDailyRate(kcal))
-        }
+        guard let kcal = result.dailyDeficitKcalPerDay else { return Text("—") }
+        return Text(formatDailyRate(kcal))
     }
 
     private var dailyRateCaption: String {
-        if case .calibrating(let n) = result.dailyRateState {
-            return "\(n) more day\(n == 1 ? "" : "s")"
+        let n = result.daysSinceCutStart ?? 0
+        if n + 1 < CutDeficitEstimator.dailyRateWindowDays {
+            let avail = max(2, n + 1)
+            return "Recent rate · last \(avail) day\(avail == 1 ? "" : "s")"
         }
         return "Recent rate · last 14 days"
     }
 
     // MARK: - Formatting
 
-    /// `~8,500 kcal`. Round to nearest 500. Sign is implicit; surplus uses the
-    /// caption ("Estimated surplus since…") rather than a sign on the number.
+    /// `8,247 kcal`. Exact integer value, thousands separator. Sign is implicit;
+    /// surplus uses the caption ("Estimated surplus since…") rather than a sign
+    /// on the number itself.
     private func formatCumulative(_ kcal: Double) -> String {
-        let magnitude = abs(kcal)
-        let rounded = (magnitude / 500.0).rounded() * 500.0
-        let str = Self.groupedFmt.string(from: NSNumber(value: rounded)) ?? "\(Int(rounded))"
-        return "~\(str) kcal"
+        let magnitude = abs(kcal).rounded()
+        let str = Self.groupedFmt.string(from: NSNumber(value: magnitude)) ?? "\(Int(magnitude))"
+        return "\(str) kcal"
     }
 
     /// `≈ 450 kcal/day` for deficit; `≈ +120 kcal/day surplus` for surplus.
@@ -198,15 +183,15 @@ struct CutDeficitExplainerSheet: View {
                     )
                     section(
                         title: "Recent rate",
-                        body: "We fit a straight line to the smoothed weight trend over the last 14 days and convert the slope to kcal/day. Two weeks of slope is the shortest window where day-to-day water swings stop dominating the signal."
+                        body: "We fit a straight line to the smoothed weight trend over the last 14 days (or fewer, if the cut just started) and convert the slope to kcal/day. Two weeks is the shortest window where day-to-day water swings stop dominating the signal — early-cut numbers will be noisier."
                     )
                     section(
                         title: "Energy density",
                         body: "We use 3,000 kcal per lb of body-weight change — a mix of fat and lean tissue, not pure fat. Real metabolism varies ±20%."
                     )
                     section(
-                        title: "Calibration period",
-                        body: "Cumulative needs 7 days, daily rate needs 14 days, before we trust the smoothing. Until then we hide the number rather than show something misleading."
+                        title: "Early-cut accuracy",
+                        body: "In the first week, the scale drops mostly from glycogen and water — energy density there is much lower than 3,000 kcal/lb, so the cumulative number can read high. We show it anyway; just take the early days with a grain of salt."
                     )
                     Text("Estimated from weight trend. Not based on logged intake.")
                         .font(.footnote)

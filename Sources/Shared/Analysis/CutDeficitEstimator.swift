@@ -105,28 +105,27 @@ public enum CutDeficitEstimator {
         let trendToday = trend[today]
 
         // --- Cumulative deficit -------------------------------------------------
+        // No calibration gating: show the number from day 0 if we have anchor +
+        // current-day trend points. Early-cut numbers will reflect water/glycogen
+        // flux — that's a known accuracy tradeoff the user explicitly accepted.
         let cumulativeKcal: Double? = {
             guard let start = trendAtCutStart, let now = trendToday else { return nil }
             // start − now in kg; positive when weight has dropped.
             let deltaLb = UnitConvert.kgToLb(start - now)
             return deltaLb * kcalPerLbBodyWeight
         }()
-        let cumulativeState: CalibrationState = {
-            if daysSinceStart < 7 {
-                return .calibrating(daysRemaining: 7 - daysSinceStart)
-            }
-            return .active
-        }()
+        let cumulativeState: CalibrationState = (cumulativeKcal == nil) ? .noActiveCut : .active
 
         // --- Daily rate ---------------------------------------------------------
+        // Use up to 14 trailing days of trend; if we have fewer than 14 days
+        // since cut start, fall back to whatever we have (minimum 2 points).
         let dailyKcal: Double? = {
-            guard daysSinceStart >= dailyRateWindowDays else { return nil }
-            // Build the trailing-14-day series from the trend (today included).
+            let windowDays = max(2, min(dailyRateWindowDays, daysSinceStart + 1))
             var series: [(dayIndex: Double, kg: Double)] = []
-            for offset in (0..<dailyRateWindowDays).reversed() {
+            for offset in (0..<windowDays).reversed() {
                 guard let day = calendar.date(byAdding: .day, value: -offset, to: today),
                       let kg = trend[calendar.startOfDay(for: day)] else { continue }
-                series.append((Double(dailyRateWindowDays - 1 - offset), kg))
+                series.append((Double(windowDays - 1 - offset), kg))
             }
             guard series.count >= 2 else { return nil }
             let slopeKgPerDay = olsSlope(series)
@@ -134,12 +133,7 @@ public enum CutDeficitEstimator {
             let slopeLbPerDay = UnitConvert.kgToLb(slopeKgPerDay)
             return -slopeLbPerDay * kcalPerLbBodyWeight
         }()
-        let dailyRateState: CalibrationState = {
-            if daysSinceStart < dailyRateWindowDays {
-                return .calibrating(daysRemaining: dailyRateWindowDays - daysSinceStart)
-            }
-            return .active
-        }()
+        let dailyRateState: CalibrationState = (dailyKcal == nil) ? .noActiveCut : .active
 
         return Result(
             cumulativeDeficitKcal: cumulativeKcal,
