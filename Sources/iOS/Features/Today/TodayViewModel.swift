@@ -22,6 +22,11 @@ final class TodayViewModel: ObservableObject {
     /// the currently-selected date. `nil` when fewer than 2 readings are available.
     @Published var ema7Kg: Double?
 
+    /// Estimated caloric deficit metrics for the active cut, derived from the
+    /// EWMA weight trend. See `CutDeficitEstimator` for the math. `nil` when
+    /// no active cut.
+    @Published var deficit: CutDeficitEstimator.Result?
+
     struct SavedConfirmation: Identifiable, Equatable {
         let id = UUID()
         let displayWeight: Double
@@ -64,6 +69,15 @@ final class TodayViewModel: ObservableObject {
             self.inCutReadings = []
             self.projection = nil
         }
+
+        // Recompute the deficit estimate. Always uses "today" as `asOf` (not
+        // the selected date) — the widget describes current cut progress, not
+        // a historical snapshot tied to whatever day the user is browsing.
+        self.deficit = CutDeficitEstimator.estimate(
+            activeCut: cut,
+            readings: allReadings,
+            asOf: Date()
+        )
 
         if let existing = repository.reading(on: day) {
             let display = UnitConvert.displayWeight(kg: existing.weightKg, in: unit)
@@ -159,8 +173,14 @@ final class TodayViewModel: ObservableObject {
             clusterType: active?.classification
         )
 
-        // Refresh the EMA to reflect the just-saved reading.
-        self.ema7Kg = Self.computeEMA7Kg(readings: services.repository.allReadings(), asOf: day)
+        // Refresh the EMA and deficit estimate to reflect the just-saved reading.
+        let refreshed = services.repository.allReadings()
+        self.ema7Kg = Self.computeEMA7Kg(readings: refreshed, asOf: day)
+        self.deficit = CutDeficitEstimator.estimate(
+            activeCut: ActiveCutStore.load(),
+            readings: refreshed,
+            asOf: Date()
+        )
     }
 
     /// 7-day EMA over the most recent ≤7 readings whose date is ≤ `asOf`.

@@ -189,6 +189,11 @@ struct TodayView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 12)
 
+                    if let deficit = viewModel.deficit {
+                        CutDeficitWidget(result: deficit, cutStartDate: active.startDate)
+                            .padding(.bottom, 12)
+                    }
+
                     ActiveCutMinichart(
                         active: active,
                         inCutReadings: viewModel.inCutReadings,

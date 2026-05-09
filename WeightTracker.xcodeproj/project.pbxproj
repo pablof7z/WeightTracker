@@ -129,6 +129,7 @@
 		8C46FC540854B3B2EE2281D1 /* CSVImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DACCDD58E173A5D210ABA434 /* CSVImporter.swift */; };
 		8E0397CB350508B2CE347258 /* Cut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7F1E9AA0F7B1F74B43DBD1 /* Cut.swift */; };
 		8E8D021D92E1AEE074C087E3 /* CoachAgentTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8292401FDE0F69A7301A7055 /* CoachAgentTools.swift */; };
+		90AC31B3E6482AD9CC2B0058 /* CutDeficitEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9EEA446F2994EFAD89C07ED /* CutDeficitEstimator.swift */; };
 		9189F91A916D98DA3E330A4A /* P256K in Frameworks */ = {isa = PBXBuildFile; productRef = DF79B42F337EAEA655C5C8B9 /* P256K */; };
 		927168ADB3EB88DCDA89E07D /* Nip46Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF781F28E4F57B9DA6D598E /* Nip46Client.swift */; };
 		941A34EBB3F1F2855C347EE5 /* MacroPlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18FE7AFB65F5EB5CB3429D8A /* MacroPlanStore.swift */; };
@@ -147,6 +148,7 @@
 		9FE7CA28F9636EC6CF4A8B0C /* CutCoach.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091563735B54385116AD2BCD /* CutCoach.swift */; };
 		A013FCBE4EB0CAE16692B01F /* CostLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = F98BC89699A1171F520CA694 /* CostLedger.swift */; };
 		A10A180C848CB0B93A4BEDD1 /* EraSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 919E9FA191CCBC10E0E5C9ED /* EraSummary.swift */; };
+		A28CA3A6426E1B93FD4CC095 /* CutDeficitEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9EEA446F2994EFAD89C07ED /* CutDeficitEstimator.swift */; };
 		A369E787CCB378E9D110CE6F /* CyclePhaseAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1265E087B394472E2B78669D /* CyclePhaseAnalyzer.swift */; };
 		A37848871689E5B6ACFACC27 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08AF12B16285F08AEE258679 /* CSVExporter.swift */; };
 		A38D51F73AEE7466808160FD /* MacroDeviationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD28A2FEFA07AE7DF3B8420 /* MacroDeviationStore.swift */; };
@@ -199,6 +201,7 @@
 		D8264C6227F355FF9317D35F /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB98B44B5F210DC2141981C7 /* AboutView.swift */; };
 		D88C72FE5EDF2F6384CA593A /* MacroDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E9FC5FE25950AA95ADEDC8 /* MacroDefaults.swift */; };
 		D9280A3E23887867E06FD19C /* WatchEntryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6A6A42C1DBDD86D5ABD0F6 /* WatchEntryViewModel.swift */; };
+		D94463E98A78BEAFB433F18C /* CutDeficitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 590ACA81DEE2552B0F672E75 /* CutDeficitWidget.swift */; };
 		D9791035E04F87DF82ED397E /* CoachProposalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F29F18C43580F96CA92FCC3 /* CoachProposalStore.swift */; };
 		DA0BBA60D25FC9D1E82B17BA /* BackgroundTaskRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8885B77FE02003877B5CDD /* BackgroundTaskRegistration.swift */; };
 		DA7067D3CEB6CE42B2B6FAAF /* CoachProposal.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFD4B595DA45541A8BFD3FC5 /* CoachProposal.swift */; };
@@ -337,6 +340,7 @@
 		5813F2E2F81D2BCB4075507E /* ProviderLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderLogoView.swift; sourceTree = "<group>"; };
 		58B7674AA262925D88A163EF /* MacroDeviation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroDeviation.swift; sourceTree = "<group>"; };
 		58E9FC5FE25950AA95ADEDC8 /* MacroDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroDefaults.swift; sourceTree = "<group>"; };
+		590ACA81DEE2552B0F672E75 /* CutDeficitWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutDeficitWidget.swift; sourceTree = "<group>"; };
 		5A9930AC1805F79B7C4D773A /* CoachOpenRouterClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachOpenRouterClient.swift; sourceTree = "<group>"; };
 		5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		5E1C3A773A1E53D2B4DDE18C /* DataSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSettingsView.swift; sourceTree = "<group>"; };
@@ -431,6 +435,7 @@
 		D1419CA0A2E104910DA7109C /* Gap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gap.swift; sourceTree = "<group>"; };
 		D259CBD19AC33E6FD75C0B4C /* StartCutSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartCutSheet.swift; sourceTree = "<group>"; };
 		D3AEB1439E7547DAC2C7E782 /* HealthSettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSettingsSection.swift; sourceTree = "<group>"; };
+		D9EEA446F2994EFAD89C07ED /* CutDeficitEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutDeficitEstimator.swift; sourceTree = "<group>"; };
 		DACCDD58E173A5D210ABA434 /* CSVImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVImporter.swift; sourceTree = "<group>"; };
 		DAF781F28E4F57B9DA6D598E /* Nip46Client.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nip46Client.swift; sourceTree = "<group>"; };
 		DAF92C62D65AA29A85E6C4B2 /* OnboardingWhatItIs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWhatItIs.swift; sourceTree = "<group>"; };
@@ -687,6 +692,7 @@
 			children = (
 				706CFB73D30C301DD4679BF2 /* ActiveCutMinichart.swift */,
 				BDE678CB61C4C50F510F4FD9 /* ConfirmationCard.swift */,
+				590ACA81DEE2552B0F672E75 /* CutDeficitWidget.swift */,
 				2FBDAE013B33AE9B7726F5C5 /* CutProjectionChartContent.swift */,
 				ED2C1CB0F4BF104B7D9054D5 /* FullscreenChart.swift */,
 				913998D2719855E2DC7B986D /* LandscapeFocusChart.swift */,
@@ -794,6 +800,7 @@
 			children = (
 				A6A7869DAD317B65225D4C1D /* ClusterDetector.swift */,
 				2EC2DA3E91617DE7CF26B785 /* CutCoachEngine.swift */,
+				D9EEA446F2994EFAD89C07ED /* CutDeficitEstimator.swift */,
 				3D3AF9863398574702E18EF5 /* CutProjection.swift */,
 				1265E087B394472E2B78669D /* CyclePhaseAnalyzer.swift */,
 				F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */,
@@ -1050,6 +1057,7 @@
 				8E0397CB350508B2CE347258 /* Cut.swift in Sources */,
 				9E21CA4FD9F380CD6062B16E /* CutCoach.swift in Sources */,
 				BD2C84DC930B633A54E72E0B /* CutCoachEngine.swift in Sources */,
+				A28CA3A6426E1B93FD4CC095 /* CutDeficitEstimator.swift in Sources */,
 				678751A0DEE01572B8A5FF80 /* CutProjection.swift in Sources */,
 				FB6CFDB312BE6F415D9F9311 /* CycleHealthKit.swift in Sources */,
 				A369E787CCB378E9D110CE6F /* CyclePhaseAnalyzer.swift in Sources */,
@@ -1148,6 +1156,8 @@
 				3F6ABC41A5F6F1CC3E4E85FF /* Cut.swift in Sources */,
 				9FE7CA28F9636EC6CF4A8B0C /* CutCoach.swift in Sources */,
 				62D9B46C8D17852D5C600D16 /* CutCoachEngine.swift in Sources */,
+				90AC31B3E6482AD9CC2B0058 /* CutDeficitEstimator.swift in Sources */,
+				D94463E98A78BEAFB433F18C /* CutDeficitWidget.swift in Sources */,
 				5178402B720BD8ADEA206581 /* CutInlineChart.swift in Sources */,
 				B21652B0CD195D615A00F798 /* CutProjection.swift in Sources */,
 				E97D783DBD98C650C3BE36BA /* CutProjectionChartContent.swift in Sources */,
