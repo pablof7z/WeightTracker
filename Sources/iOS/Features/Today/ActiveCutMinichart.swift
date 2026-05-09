@@ -91,7 +91,8 @@ struct ActiveCutMinichart: View {
                                 .foregroundStyle(.tertiary)
                         }
 
-                    // Gradient fill under actual data — rendered before the lines so they sit on top
+                    // Gradient fill under actual data — rendered before the lines so they sit on top.
+                    // Apple Health-style: saturated blue at the top of the area, fading to transparent at the bottom.
                     ForEach(inCutReadings, id: \.id) { r in
                         AreaMark(
                             x: .value("Date", r.date),
@@ -101,8 +102,9 @@ struct ActiveCutMinichart: View {
                         .foregroundStyle(
                             LinearGradient(
                                 stops: [
-                                    .init(color: Color(red: 0.55, green: 0.82, blue: 1.0).opacity(0.30), location: 0),
-                                    .init(color: Color(red: 0.0, green: 0.05, blue: 0.50).opacity(0.90), location: 1)
+                                    .init(color: Color.blue.opacity(0.38), location: 0.0),
+                                    .init(color: Color.blue.opacity(0.18), location: 0.45),
+                                    .init(color: Color.blue.opacity(0.0),  location: 1.0)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -238,7 +240,8 @@ struct ActiveCutMinichart: View {
                 .chartYScale(domain: yMin...yMax)
                 .chartXAxis(.hidden)
                 .chartYAxis(.hidden)
-                .frame(height: 200)
+                .frame(height: 320)
+                .padding(.horizontal, 4)
 
                 // Date labels in a safe gutter below the chart — never overlapping data
                 HStack {
