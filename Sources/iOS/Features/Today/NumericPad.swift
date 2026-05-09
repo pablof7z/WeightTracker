@@ -4,6 +4,7 @@ import Combine
 struct NumericPad: View {
     @Binding var value: Double
     let unitSymbol: String
+    var subtitle: String? = nil
     var tapStep: Double = 0.1
     var longPressStep: Double = 1.0
     var controlsVisible: Bool = true
@@ -11,38 +12,42 @@ struct NumericPad: View {
     var onUnitTap: (() -> Void)? = nil
 
     var body: some View {
-        VStack(spacing: 12) {
-            Button {
-                onValueTap?()
-            } label: {
-                Text(formatted)
-                    .font(.system(size: 96, weight: .black, design: .default))
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-                    .foregroundStyle(.primary)
-            }
-            .buttonStyle(.plain)
-            .disabled(onValueTap == nil)
-            .accessibilityLabel(onValueTap != nil ? "Current weight \(formatted) \(unitSymbol). Tap to edit." : "Current weight \(formatted) \(unitSymbol).")
-
-            Button {
-                onUnitTap?()
-            } label: {
-                HStack(spacing: 4) {
-                    Text(unitSymbol)
-                        .font(.title3.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    if onUnitTap != nil {
-                        Image(systemName: "arrow.left.arrow.right")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
+        VStack(spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Button {
+                    onValueTap?()
+                } label: {
+                    Text(formatted)
+                        .font(.system(size: 96, weight: .black, design: .default))
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                        .foregroundStyle(.primary)
                 }
+                .buttonStyle(.plain)
+                .disabled(onValueTap == nil)
+                .accessibilityLabel(onValueTap != nil ? "Current weight \(formatted) \(unitSymbol). Tap to edit." : "Current weight \(formatted) \(unitSymbol).")
+
+                Button {
+                    onUnitTap?()
+                } label: {
+                    Text(unitSymbol)
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(onUnitTap == nil)
+                .accessibilityLabel(onUnitTap != nil ? "Current unit \(unitSymbol). Tap to switch unit." : "Current unit \(unitSymbol).")
             }
-            .buttonStyle(.plain)
-            .disabled(onUnitTap == nil)
-            .accessibilityLabel(onUnitTap != nil ? "Current unit \(unitSymbol). Tap to switch unit." : "Current unit \(unitSymbol).")
+
+            if let subtitle, !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .accessibilityLabel(subtitle)
+            }
 
             if controlsVisible {
                 LiquidGlassContainer(spacing: 28) {
@@ -60,7 +65,7 @@ struct NumericPad: View {
                         }
                     }
                 }
-                .padding(.top, 8)
+                .padding(.top, 14)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }

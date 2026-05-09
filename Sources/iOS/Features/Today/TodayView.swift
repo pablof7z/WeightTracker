@@ -23,6 +23,13 @@ struct TodayView: View {
     private var bodyUnit: BodyUnit { BodyUnit(rawValue: bodyUnitRaw) ?? .inches }
     private var showWeightControls: Bool { !viewModel.hasEntry || weightInputActive }
 
+    /// Subtitle showing the 7-day EMA in the active display unit, or "—" when not enough history.
+    private var emaSubtitle: String {
+        guard let kg = viewModel.ema7Kg else { return "7-day avg —" }
+        let display = UnitConvert.displayWeight(kg: kg, in: weightUnit)
+        return String(format: "7-day avg %.1f %@", display, weightUnit.symbol)
+    }
+
     private var canGoForward: Bool {
         Calendar.current.startOfDay(for: viewModel.date) < Calendar.current.startOfDay(for: Date())
     }
@@ -45,6 +52,7 @@ struct TodayView: View {
                             }
                         ),
                         unitSymbol: weightUnit.symbol,
+                        subtitle: emaSubtitle,
                         controlsVisible: showWeightControls,
                         onValueTap: viewModel.hasEntry ? { revealWeightControls() } : nil,
                         onUnitTap: toggleUnit

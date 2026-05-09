@@ -18,6 +18,9 @@ final class TodayViewModel: ObservableObject {
     @Published var activeCut: ActiveCut?
     @Published var inCutReadings: [Reading] = []
     @Published var projection: CutProjectionResult?
+    /// 7-day EMA of weight in kg, computed over the most recent ≤7 readings on or before
+    /// the currently-selected date. `nil` when fewer than 2 readings are available.
+    @Published var ema7Kg: Double?
 
     struct SavedConfirmation: Identifiable, Equatable {
         let id = UUID()
@@ -39,6 +42,8 @@ final class TodayViewModel: ObservableObject {
         if let earliest = allReadings.first {
             self.minDate = min(self.minDate, Reading.dayStart(of: earliest.date))
         }
+
+        self.ema7Kg = Self.computeEMA7Kg(readings: allReadings, asOf: day)
 
         let cut = ActiveCutStore.load()
         self.activeCut = cut
@@ -153,5 +158,25 @@ final class TodayViewModel: ObservableObject {
             clusterNote: clusterNote,
             clusterType: active?.classification
         )
+
+        // Refresh the EMA to reflect the just-saved reading.
+        self.ema7Kg = Self.computeEMA7Kg(readings: services.repository.allReadings(), asOf: day)
+    }
+
+    /// 7-day EMA over the most recent ≤7 readings whose date is ≤ `asOf`.
+    /// Smoothing factor α = 2/(N+1) with N=7 → α = 0.25. Uses kg (storage unit);
+    /// the view converts to display units. Returns nil when fewer than 2 readings exist.
+    static func computeEMA7Kg(readings: [Reading], asOf day: Date) -> Double? {
+        let eligible = readings
+            .filter { $0.date <= day }
+            .sorted { $0.date < $1.date }
+        let window = eligible.suffix(7)
+        guard window.count >= 2 else { return nil }
+        let alpha = 0.25 // 2 / (7 + 1)
+        var ema = window.first!.weightKg
+        for r in window.dropFirst() {
+            ema = alpha * r.weightKg + (1.0 - alpha) * ema
+        }
+        return ema
     }
 }
