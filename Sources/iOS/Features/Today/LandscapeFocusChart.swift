@@ -209,14 +209,14 @@ struct LandscapeFocusChart: View {
                 )
                 .interpolationMethod(.monotone)
                 .lineStyle(StrokeStyle(lineWidth: 2.5))
-                .foregroundStyle(Color.black)
+                .foregroundStyle(Color.primary)
 
                 PointMark(
                     x: .value("Date", r.date),
                     y: .value("Weight", display(r.weightKg))
                 )
                 .symbolSize(18)
-                .foregroundStyle(Color.black)
+                .foregroundStyle(Color.primary)
             }
 
             if !projection.isTargetReached {
@@ -320,7 +320,7 @@ struct LandscapeFocusChart: View {
                 )
                 .symbolSize(80)
                 .symbol(.circle)
-                .foregroundStyle(.black)
+                .foregroundStyle(.primary)
             }
         }
         .chartXScale(domain: xDomain)
@@ -353,9 +353,9 @@ struct LandscapeFocusChart: View {
                         .fill(
                             LinearGradient(
                                 stops: [
-                                    .init(color: .black.opacity(0.55), location: 0.0),
-                                    .init(color: .black.opacity(0.18), location: 0.40),
-                                    .init(color: .black.opacity(0.0),  location: 1.0),
+                                    .init(color: .primary.opacity(0.55), location: 0.0),
+                                    .init(color: .primary.opacity(0.18), location: 0.40),
+                                    .init(color: .primary.opacity(0.0),  location: 1.0),
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -397,7 +397,7 @@ struct LandscapeFocusChart: View {
 
     private func selectionPill(date: Date, kg: Double) -> some View {
         HStack(spacing: 8) {
-            Circle().fill(Color.black).frame(width: 8, height: 8)
+            Circle().fill(Color.primary).frame(width: 8, height: 8)
             Text(Self.pillFmt.string(from: date))
                 .font(.caption.weight(.semibold))
             Text("·")
