@@ -133,14 +133,14 @@ struct CutDeficitWidget: View {
         return "\(str) kcal"
     }
 
-    /// `≈ 450 kcal/day` for deficit; `≈ +120 kcal/day surplus` for surplus.
-    /// Round to nearest 50. We display surplus inline so the column reads as
-    /// a single thought without forcing the caption to carry the sign.
+    /// `≈ 487 kcal/day` for deficit; `≈ +124 kcal/day surplus` for surplus.
+    /// Exact integer kcal/day, no rounding. We display surplus inline so the
+    /// column reads as a single thought without forcing the caption to carry
+    /// the sign.
     private func formatDailyRate(_ kcal: Double) -> String {
-        let rounded = (kcal / 50.0).rounded() * 50.0
-        let magnitude = Int(abs(rounded))
+        let magnitude = Int(abs(kcal).rounded())
         let mag = Self.groupedFmt.string(from: NSNumber(value: magnitude)) ?? "\(magnitude)"
-        if rounded < 0 {
+        if kcal < 0 {
             return "≈ +\(mag) kcal/day surplus"
         }
         return "≈ \(mag) kcal/day"
