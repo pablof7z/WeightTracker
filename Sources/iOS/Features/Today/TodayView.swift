@@ -54,7 +54,6 @@ struct TodayView: View {
                         unitSymbol: weightUnit.symbol,
                         subtitle: emaSubtitle,
                         controlsVisible: showWeightControls,
-                        onValueTap: viewModel.hasEntry ? { revealWeightControls() } : nil,
                         onUnitTap: toggleUnit
                     )
                     .animation(.easeInOut(duration: 0.18), value: showWeightControls)
@@ -385,13 +384,6 @@ struct TodayView: View {
         let kg = UnitConvert.storeWeight(viewModel.displayValue, from: weightUnit)
         viewModel.displayValue = (UnitConvert.displayWeight(kg: kg, in: next) * 10.0).rounded() / 10.0
         weightUnitRaw = next.rawValue
-    }
-
-    private func revealWeightControls() {
-        guard viewModel.hasEntry else { return }
-        withAnimation(.easeInOut(duration: 0.18)) {
-            weightInputActive = true
-        }
     }
 
     private func startVoiceCheckIn() {

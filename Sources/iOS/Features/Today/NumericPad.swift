@@ -8,14 +8,13 @@ struct NumericPad: View {
     var tapStep: Double = 0.1
     var longPressStep: Double = 1.0
     var controlsVisible: Bool = true
-    var onValueTap: (() -> Void)? = nil
     var onUnitTap: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Button {
-                    onValueTap?()
+                    onUnitTap?()
                 } label: {
                     Text(formatted)
                         .font(.system(size: 96, weight: .black, design: .rounded))
@@ -25,8 +24,8 @@ struct NumericPad: View {
                         .foregroundStyle(.primary)
                 }
                 .buttonStyle(.plain)
-                .disabled(onValueTap == nil)
-                .accessibilityLabel(onValueTap != nil ? "Current weight \(formatted) \(unitSymbol). Tap to edit." : "Current weight \(formatted) \(unitSymbol).")
+                .disabled(onUnitTap == nil)
+                .accessibilityLabel(onUnitTap != nil ? "Current weight \(formatted) \(unitSymbol). Tap to switch unit." : "Current weight \(formatted) \(unitSymbol).")
 
                 Button {
                     onUnitTap?()

@@ -92,7 +92,7 @@ struct ActiveCutMinichart: View {
                         }
 
                     // Gradient fill under actual data — rendered before the lines so they sit on top.
-                    // Apple Health-style: saturated blue at the top of the area, fading to transparent at the bottom.
+                    // Apple Health-style: saturated black at the top of the area, fading to fully transparent at the bottom.
                     ForEach(inCutReadings, id: \.id) { r in
                         AreaMark(
                             x: .value("Date", r.date),
@@ -101,10 +101,9 @@ struct ActiveCutMinichart: View {
                         .interpolationMethod(.monotone)
                         .foregroundStyle(
                             LinearGradient(
-                                stops: [
-                                    .init(color: Color.blue.opacity(0.38), location: 0.0),
-                                    .init(color: Color.blue.opacity(0.18), location: 0.45),
-                                    .init(color: Color.blue.opacity(0.0),  location: 1.0)
+                                colors: [
+                                    Color.black.opacity(0.45),
+                                    Color.black.opacity(0.0)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -121,14 +120,14 @@ struct ActiveCutMinichart: View {
                         )
                         .interpolationMethod(.monotone)
                         .lineStyle(StrokeStyle(lineWidth: 2))
-                        .foregroundStyle(Color.blue)
+                        .foregroundStyle(Color.black)
 
                         PointMark(
                             x: .value("Date", r.date),
                             y: .value("Weight", display(r.weightKg))
                         )
                         .symbolSize(12)
-                        .foregroundStyle(Color.blue)
+                        .foregroundStyle(Color.black)
                     }
 
                     if !projection.isTargetReached {
