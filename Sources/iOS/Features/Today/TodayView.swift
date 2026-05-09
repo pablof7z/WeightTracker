@@ -10,6 +10,12 @@ struct TodayView: View {
     @AppStorage(AppPrefKey.bodyUnit) private var bodyUnitRaw: String = BodyUnit.inches.rawValue
     @AppStorage(AppPrefKey.elevenLabsSTTModel) private var sttModel: String = AppConstants.defaultElevenLabsSTTModel
 
+    /// `.compact` vertical size class on iPhone == landscape. Drives the
+    /// portrait/landscape body swap on the Today tab. We allow the actual
+    /// rotation to happen by widening `AppOrientation.shared.supportedMask`
+    /// in `.onAppear` (and reverting it in `.onDisappear`).
+    @Environment(\.verticalSizeClass) private var vSizeClass
+
     @State private var didLoad = false
     @State private var showDatePicker = false
     @State private var showVoiceCheckIn = false
@@ -18,6 +24,8 @@ struct TodayView: View {
     @State private var swipeAccum: CGFloat = 0
     @State private var dismissTask: Task<Void, Never>?
     @State private var weightInputActive = false
+
+    private var isLandscape: Bool { vSizeClass == .compact }
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var bodyUnit: BodyUnit { BodyUnit(rawValue: bodyUnitRaw) ?? .inches }
@@ -39,7 +47,75 @@ struct TodayView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            Group {
+                if isLandscape {
+                    landscapeContent
+                        .toolbar(.hidden, for: .tabBar)
+                        .toolbar(.hidden, for: .navigationBar)
+                        .statusBarHidden(true)
+                        .ignoresSafeArea()
+                } else {
+                    portraitContent
+                }
+            }
+            .onAppear {
+                if !didLoad {
+                    viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
+                    weightInputActive = false
+                    reloadTodayCoachNote()
+                    didLoad = true
+                }
+                // Allow rotation while the user is on Today; revert on
+                // disappear (e.g. tab switch) so other tabs stay
+                // portrait-locked.
+                AppOrientation.shared.set(.allButUpsideDown)
+            }
+            .onDisappear {
+                AppOrientation.shared.set(.portrait)
+            }
+            .onChange(of: weightUnitRaw) { _, _ in
+                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
+                weightInputActive = false
+                reloadTodayCoachNote()
+            }
+            .onChange(of: viewModel.lastSaved) { _, newValue in
+                dismissTask?.cancel()
+                guard newValue != nil else { return }
+                dismissTask = Task {
+                    try? await Task.sleep(for: .seconds(6))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        viewModel.lastSaved = nil
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var landscapeContent: some View {
+        if let active = viewModel.activeCut, let projection = viewModel.projection {
+            LandscapeFocusChart(
+                active: active,
+                inCutReadings: viewModel.inCutReadings,
+                projection: projection,
+                unit: weightUnit
+            )
+        } else {
+            // No active cut yet — fall back to a minimal hint instead of
+            // showing the portrait UI sideways.
+            ZStack {
+                Color(.systemBackground).ignoresSafeArea()
+                Text("Start a cut to see the focus chart")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var portraitContent: some View {
+        VStack(spacing: 0) {
                 VStack(spacing: 0) {
                     NumericPad(
                         value: Binding(
@@ -221,31 +297,6 @@ struct TodayView: View {
                 WeightLogView()
                     .environmentObject(services)
             }
-            .onAppear {
-                if !didLoad {
-                    viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
-                    weightInputActive = false
-                    reloadTodayCoachNote()
-                    didLoad = true
-                }
-            }
-            .onChange(of: weightUnitRaw) { _, _ in
-                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
-                weightInputActive = false
-                reloadTodayCoachNote()
-            }
-            .onChange(of: viewModel.lastSaved) { _, newValue in
-                dismissTask?.cancel()
-                guard newValue != nil else { return }
-                dismissTask = Task {
-                    try? await Task.sleep(for: .seconds(6))
-                    guard !Task.isCancelled else { return }
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        viewModel.lastSaved = nil
-                    }
-                }
-            }
-        }
     }
 
     // MARK: - Title

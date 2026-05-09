@@ -58,6 +58,8 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         NSHealthShareUsageDescription: "WeightTracker reads your body mass, sleep, and daily activity from Apple Health to keep your trends up to date."
         NSHealthUpdateUsageDescription: "WeightTracker writes weights you log here back to Apple Health so all your apps stay in sync."
         NSMicrophoneUsageDescription: "WeightTracker records voice check-ins so the cut coach can save notes and transcribe them with your ElevenLabs key."

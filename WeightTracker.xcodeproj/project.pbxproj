@@ -215,6 +215,7 @@
 		E455B2D98C0FFED47B47ABB2 /* CutsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82656A20FFD2B09430FD206 /* CutsViewModel.swift */; };
 		E5E9D97815DA7FDBFA85F0EB /* MealScheduleSetupSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFD60E9177B1702E349EAA8 /* MealScheduleSetupSheet.swift */; };
 		E6B2E4798AB24D2B91C241BC /* MealEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B187FFED59F23F9C836D4460 /* MealEvent.swift */; };
+		E768474BF748D309D55EF947 /* LandscapeFocusChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 913998D2719855E2DC7B986D /* LandscapeFocusChart.swift */; };
 		E8446BEA35BB803C9F9158EF /* AppOrientation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE170F2902723E3601CB9AD1 /* AppOrientation.swift */; };
 		E88B0B4292E155914476E1DF /* TodayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB81FF4D99BC5DECAAFF13D /* TodayViewModel.swift */; };
 		E8ACA6A45CC5938D41A24FC0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B67C0FF305F635FE93305906 /* PrivacyInfo.xcprivacy */; };
@@ -377,6 +378,7 @@
 		8B20A53684278FADEF750FB2 /* DisplaySettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplaySettingsSection.swift; sourceTree = "<group>"; };
 		8CEDE8B0626C999299D33081 /* CoachConversationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachConversationSheet.swift; sourceTree = "<group>"; };
 		909870B2DE84677F69CAF9CE /* CoachHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachHistoryView.swift; sourceTree = "<group>"; };
+		913998D2719855E2DC7B986D /* LandscapeFocusChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LandscapeFocusChart.swift; sourceTree = "<group>"; };
 		9195D1CB66BB1F0ECEC35628 /* HistoricalCutDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalCutDetector.swift; sourceTree = "<group>"; };
 		919E9FA191CCBC10E0E5C9ED /* EraSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EraSummary.swift; sourceTree = "<group>"; };
 		931640299175194B18A7044D /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
@@ -687,6 +689,7 @@
 				BDE678CB61C4C50F510F4FD9 /* ConfirmationCard.swift */,
 				2FBDAE013B33AE9B7726F5C5 /* CutProjectionChartContent.swift */,
 				ED2C1CB0F4BF104B7D9054D5 /* FullscreenChart.swift */,
+				913998D2719855E2DC7B986D /* LandscapeFocusChart.swift */,
 				4832A1F4D7B8D91BBF8F3AAE /* MealAgendaPage.swift */,
 				ABFD60E9177B1702E349EAA8 /* MealScheduleSetupSheet.swift */,
 				41A6CA8A241A74E61AAB2518 /* NumericPad.swift */,
@@ -1189,6 +1192,7 @@
 				A46D2DFFD61436D65D03B5A8 /* ImportCSVSheet.swift in Sources */,
 				54F1B3C4F99A35AE427C60CD /* KnownSigner.swift in Sources */,
 				3BEF3233B9ED0F2E46AAEBD0 /* LLMSettingsView.swift in Sources */,
+				E768474BF748D309D55EF947 /* LandscapeFocusChart.swift in Sources */,
 				1CE12B2CEA376FF6E19D7AD5 /* LiquidGlass.swift in Sources */,
 				2A552A3A4ACDEFFC08A87BE8 /* MacroCard.swift in Sources */,
 				71ADA161616BD411B6512ACE /* MacroCopy.swift in Sources */,
