@@ -29,9 +29,38 @@ public enum CutDeficitEstimator {
 
     // MARK: - Constants
 
-    /// Energy density per pound of body-weight change. Defensibly conservative;
-    /// see the research note. Tune here, not at the call sites.
-    public static let kcalPerLbBodyWeight: Double = 3000
+    /// Phase-aware energy density (kcal per pound of body-weight change). The
+    /// composition of "1 lb off the scale" changes with cut phase: week 1 is
+    /// dominated by glycogen + bound water (~3 g water per g glycogen), low
+    /// energy density; weeks 2-4 ramp through transitional loss; week 5+ is
+    /// the steady-state mixed-tissue (~75% fat, 25% lean) phase. See
+    /// /tmp/cut-tracker-deficit-research-physics.md (Hall 2011 measured ~2,200
+    /// kcal/lb at week 4, plateauing around 3,000-3,500 by week 6+).
+    ///
+    /// We apply these *segmentally*: weight delta within each phase is
+    /// multiplied by that phase's k, then summed.
+    public enum CutPhase: Sendable {
+        /// Days 0-7. Mostly water + glycogen. Very low energy density.
+        case water
+        /// Days 8-28. Transitional. Half the steady-state value.
+        case transition
+        /// Days 29+. Mixed-tissue steady state. Defensibly conservative.
+        case steadyState
+
+        public static func phase(forDay day: Int) -> CutPhase {
+            if day < 8 { return .water }
+            if day < 29 { return .transition }
+            return .steadyState
+        }
+
+        public var kcalPerLb: Double {
+            switch self {
+            case .water:       return 1500
+            case .transition:  return 2500
+            case .steadyState: return 3000
+            }
+        }
+    }
 
     /// Hacker's Diet style smoothing factor. α = 0.10 means the latest reading
     /// contributes 10%, the prior trend 90%.
@@ -100,25 +129,25 @@ public enum CutDeficitEstimator {
             calendar: calendar
         )
 
-        // Look up trend at cut start and today. Both keys are start-of-day.
-        let trendAtCutStart = trend[cutStartDay]
-        let trendToday = trend[today]
-
-        // --- Cumulative deficit -------------------------------------------------
-        // No calibration gating: show the number from day 0 if we have anchor +
-        // current-day trend points. Early-cut numbers will reflect water/glycogen
-        // flux — that's a known accuracy tradeoff the user explicitly accepted.
-        let cumulativeKcal: Double? = {
-            guard let start = trendAtCutStart, let now = trendToday else { return nil }
-            // start − now in kg; positive when weight has dropped.
-            let deltaLb = UnitConvert.kgToLb(start - now)
-            return deltaLb * kcalPerLbBodyWeight
-        }()
+        // --- Cumulative deficit (segmented across cut phases) -------------------
+        // Weight that came off in week 1 is mostly water/glycogen (~1500 kcal/lb);
+        // weeks 2-4 are transitional (~2500); week 5+ is steady-state mixed
+        // tissue (~3000). We bucket the weight delta into those segments and
+        // multiply each by its phase's k, then sum.
+        let cumulativeKcal: Double? = segmentedCumulative(
+            trend: trend,
+            cutStartDay: cutStartDay,
+            today: today,
+            daysSinceStart: daysSinceStart,
+            calendar: calendar
+        )
         let cumulativeState: CalibrationState = (cumulativeKcal == nil) ? .noActiveCut : .active
 
         // --- Daily rate ---------------------------------------------------------
         // Use up to 14 trailing days of trend; if we have fewer than 14 days
         // since cut start, fall back to whatever we have (minimum 2 points).
+        // The slope is multiplied by the *current* phase's k — this is the rate
+        // moving forward, not a phase-segmented historical average.
         let dailyKcal: Double? = {
             let windowDays = max(2, min(dailyRateWindowDays, daysSinceStart + 1))
             var series: [(dayIndex: Double, kg: Double)] = []
@@ -131,7 +160,8 @@ public enum CutDeficitEstimator {
             let slopeKgPerDay = olsSlope(series)
             // Negative slope (weight dropping) → positive deficit.
             let slopeLbPerDay = UnitConvert.kgToLb(slopeKgPerDay)
-            return -slopeLbPerDay * kcalPerLbBodyWeight
+            let currentPhase = CutPhase.phase(forDay: daysSinceStart)
+            return -slopeLbPerDay * currentPhase.kcalPerLb
         }()
         let dailyRateState: CalibrationState = (dailyKcal == nil) ? .noActiveCut : .active
 
@@ -142,6 +172,57 @@ public enum CutDeficitEstimator {
             dailyRateState: dailyRateState,
             daysSinceCutStart: daysSinceStart
         )
+    }
+
+    // MARK: - Segmented cumulative
+
+    /// Sum the weight delta within each cut phase × that phase's kcal/lb.
+    /// Phase boundaries: day 7 (water → transition), day 28 (transition → steady).
+    /// Each phase boundary samples the EWMA trend at that calendar day; if the
+    /// boundary is in the future relative to `today`, that segment is empty.
+    private static func segmentedCumulative(
+        trend: [Date: Double],
+        cutStartDay: Date,
+        today: Date,
+        daysSinceStart: Int,
+        calendar: Calendar
+    ) -> Double? {
+        guard let trendAtCutStart = trend[cutStartDay], let trendToday = trend[today] else {
+            return nil
+        }
+
+        // Boundaries: day-7 end of "water" phase, day-28 end of "transition" phase.
+        let day7End = calendar.date(byAdding: .day, value: 7, to: cutStartDay)!
+        let day28End = calendar.date(byAdding: .day, value: 28, to: cutStartDay)!
+
+        // Helper: trend at a phase boundary, clamped to today if the boundary is in
+        // the future. Falls back to the nearest available trend point.
+        func trendAt(_ day: Date) -> Double {
+            let target = min(day, today)
+            return trend[calendar.startOfDay(for: target)] ?? trendToday
+        }
+
+        var totalKcal = 0.0
+
+        // Phase 1: water (cutStart → min(day7, today))
+        let phase1End = trendAt(day7End)
+        let phase1DeltaLb = UnitConvert.kgToLb(trendAtCutStart - phase1End)
+        totalKcal += phase1DeltaLb * CutPhase.water.kcalPerLb
+
+        // Phase 2: transition (day7 → min(day28, today)). Empty if cut hasn't reached day 7 yet.
+        if daysSinceStart > 7 {
+            let phase2End = trendAt(day28End)
+            let phase2DeltaLb = UnitConvert.kgToLb(phase1End - phase2End)
+            totalKcal += phase2DeltaLb * CutPhase.transition.kcalPerLb
+
+            // Phase 3: steady state (day28 → today). Empty if cut hasn't reached day 28 yet.
+            if daysSinceStart > 28 {
+                let phase3DeltaLb = UnitConvert.kgToLb(phase2End - trendToday)
+                totalKcal += phase3DeltaLb * CutPhase.steadyState.kcalPerLb
+            }
+        }
+
+        return totalKcal
     }
 
     // MARK: - EWMA trend construction

@@ -165,12 +165,12 @@ struct CutDeficitExplainerSheet: View {
                         body: "We fit a straight line to the smoothed weight trend over the last 14 days (or fewer, if the cut just started) and convert the slope to kcal/day. Two weeks is the shortest window where day-to-day water swings stop dominating the signal — early-cut numbers will be noisier."
                     )
                     section(
-                        title: "Energy density",
-                        body: "We use 3,000 kcal per lb of body-weight change — a mix of fat and lean tissue, not pure fat. Real metabolism varies ±20%."
+                        title: "Energy density (phase-aware)",
+                        body: "A pound off the scale isn't always a pound of fat. Week 1 is mostly water + glycogen (~1,500 kcal/lb). Weeks 2–4 are transitional (~2,500 kcal/lb). From week 5+ you're in steady-state mixed-tissue loss (~3,000 kcal/lb). We multiply each phase's weight delta by its own number, then sum — so the cumulative total respects when the weight came off."
                     )
                     section(
-                        title: "Early-cut accuracy",
-                        body: "In the first week, the scale drops mostly from glycogen and water — energy density there is much lower than 3,000 kcal/lb, so the cumulative number can read high. We show it anyway; just take the early days with a grain of salt."
+                        title: "What's not modeled",
+                        body: "We don't account for adaptive thermogenesis (your BMR drops 90–180 kcal/day after weeks of restriction beyond what mass-loss alone predicts), or for individual body composition. Real metabolism varies ±20% from these averages."
                     )
                     Text("Estimated from weight trend. Not based on logged intake.")
                         .font(.footnote)
