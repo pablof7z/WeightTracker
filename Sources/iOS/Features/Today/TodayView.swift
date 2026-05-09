@@ -86,9 +86,11 @@ struct TodayView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                .padding(.bottom, 16)
 
-                Spacer(minLength: 16)
-
+                // No Spacer here — the chart claims the dead area below the cut
+                // strip with its own `maxHeight: .infinity` and bleeds behind the
+                // tab bar via `.ignoresSafeArea(.container, edges: .bottom)`.
                 if let active = viewModel.activeCut, let projection = viewModel.projection {
                     if let todayCoachNote {
                         VStack(alignment: .leading, spacing: 6) {

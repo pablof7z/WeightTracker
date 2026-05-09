@@ -57,7 +57,15 @@ struct ActiveCutMinichart: View {
         }
         return w
     }
-    private var yMin: Double { (visibleWeightsKg.min().map { display($0) } ?? 0) - 1.5 }
+    /// Lower-bounds the chart well below the data so the gradient under the AreaMark
+    /// has real vertical distance to fade across — otherwise Swift Charts maps the
+    /// gradient to the AreaMark's tight bounding box and the fade looks uniformly grey.
+    private var yMin: Double {
+        let lo = visibleWeightsKg.min().map { display($0) } ?? 0
+        let hi = visibleWeightsKg.max().map { display($0) } ?? 100
+        let range = max(hi - lo, 1.0)
+        return lo - max(1.5, range * 0.15)
+    }
     private var yMax: Double { (visibleWeightsKg.max().map { display($0) } ?? 100) + 1.5 }
 
     /// Where the avg line would be at anchorDate if it had been descending at its implied slope
@@ -81,168 +89,8 @@ struct ActiveCutMinichart: View {
             showFullscreen = true
         } label: {
             VStack(spacing: 0) {
-                Chart {
-                    RuleMark(y: .value("Target", display(active.targetWeightKg)))
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 6]))
-                        .foregroundStyle(.secondary.opacity(0.25))
-                        .annotation(position: .trailing, alignment: .leading, spacing: 4) {
-                            Text("Target")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(.tertiary)
-                        }
-
-                    // Gradient fill under actual data — rendered before the lines so they sit on top.
-                    // Apple Health-style: saturated black at the top of the area, fading to fully transparent at the bottom.
-                    ForEach(inCutReadings, id: \.id) { r in
-                        AreaMark(
-                            x: .value("Date", r.date),
-                            y: .value("Weight", display(r.weightKg))
-                        )
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [
-                                    Color.black.opacity(0.45),
-                                    Color.black.opacity(0.0)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                    }
-
-                    // Actual data line + dots
-                    ForEach(inCutReadings, id: \.id) { r in
-                        LineMark(
-                            x: .value("Date", r.date),
-                            y: .value("Weight", display(r.weightKg)),
-                            series: .value("series", "actual")
-                        )
-                        .interpolationMethod(.monotone)
-                        .lineStyle(StrokeStyle(lineWidth: 2))
-                        .foregroundStyle(Color.black)
-
-                        PointMark(
-                            x: .value("Date", r.date),
-                            y: .value("Weight", display(r.weightKg))
-                        )
-                        .symbolSize(12)
-                        .foregroundStyle(Color.black)
-                    }
-
-                    if !projection.isTargetReached {
-                        // Best: dashed green, day 0 → cut end
-                        if let bestEnd = projection.bestEndKg {
-                            LineMark(
-                                x: .value("Date", active.startDate),
-                                y: .value("Weight", display(active.startWeightKg)),
-                                series: .value("series", "best")
-                            )
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                            .foregroundStyle(Self.bestColor)
-                            .interpolationMethod(.linear)
-
-                            LineMark(
-                                x: .value("Date", projection.targetEndDate),
-                                y: .value("Weight", display(bestEnd)),
-                                series: .value("series", "best")
-                            )
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                            .foregroundStyle(Self.bestColor)
-                            .interpolationMethod(.linear)
-                        }
-
-                        // Worst: dashed red, day 0 → cut end
-                        if let worstEnd = projection.worstEndKg {
-                            LineMark(
-                                x: .value("Date", active.startDate),
-                                y: .value("Weight", display(active.startWeightKg)),
-                                series: .value("series", "worst")
-                            )
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                            .foregroundStyle(Self.worstColor)
-                            .interpolationMethod(.linear)
-
-                            LineMark(
-                                x: .value("Date", projection.targetEndDate),
-                                y: .value("Weight", display(worstEnd)),
-                                series: .value("series", "worst")
-                            )
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                            .foregroundStyle(Self.worstColor)
-                            .interpolationMethod(.linear)
-                        }
-
-                        // Avg: dashed black, day 0 → implied-avg-at-today → wiggly future.
-                        // Historical segment uses the implied slope so best < avg < worst always.
-                        LineMark(
-                            x: .value("Date", active.startDate),
-                            y: .value("Weight", display(active.startWeightKg)),
-                            series: .value("series", "avg")
-                        )
-                        .interpolationMethod(.linear)
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                        .foregroundStyle(Self.avgColor)
-
-                        LineMark(
-                            x: .value("Date", projection.anchorDate),
-                            y: .value("Weight", display(impliedAvgAtAnchorKg)),
-                            series: .value("series", "avg")
-                        )
-                        .interpolationMethod(.linear)
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                        .foregroundStyle(Self.avgColor)
-
-                        ForEach(Array(projection.avgPath.enumerated()), id: \.offset) { _, point in
-                            LineMark(
-                                x: .value("Date", point.0),
-                                y: .value("Weight", display(point.1 + avgPathShift)),
-                                series: .value("series", "avg")
-                            )
-                            .interpolationMethod(.linear)
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                            .foregroundStyle(Self.avgColor)
-                        }
-                    }
-
-                    // Today anchor: hollow circle marks current position
-                    PointMark(
-                        x: .value("Date", projection.anchorDate),
-                        y: .value("Weight", display(projection.anchorKg))
-                    )
-                    .symbolSize(110)
-                    .symbol(.circle)
-                    .foregroundStyle(Color(.systemBackground))
-
-                    PointMark(
-                        x: .value("Date", projection.anchorDate),
-                        y: .value("Weight", display(projection.anchorKg))
-                    )
-                    .symbolSize(110)
-                    .symbol(.circle.strokeBorder(lineWidth: 2.5))
-                    .foregroundStyle(Self.avgColor)
-
-                    if projection.isTargetReached {
-                        PointMark(
-                            x: .value("Date", projection.anchorDate),
-                            y: .value("Weight", display(projection.anchorKg))
-                        )
-                        .symbolSize(0)
-                        .annotation(position: .top, alignment: .center, spacing: 2) {
-                            Text("Target reached")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.green)
-                        }
-                    }
-                }
-                .chartXScale(domain: active.startDate...windowEnd)
-                .chartYScale(domain: yMin...yMax)
-                .chartXAxis(.hidden)
-                .chartYAxis(.hidden)
-                .frame(height: 320)
-                .padding(.horizontal, 4)
-
-                // Date labels in a safe gutter below the chart — never overlapping data
+                // Date labels in a safe gutter ABOVE the chart so they remain visible
+                // even when the chart bleeds behind the tab bar.
                 HStack {
                     Text(Self.dateFmt.string(from: active.startDate))
                     Spacer()
@@ -251,8 +99,12 @@ struct ActiveCutMinichart: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 16)
-                .padding(.top, 2)
-                .padding(.bottom, 8)
+                .padding(.bottom, 4)
+
+                chartBody
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, 4)
+                    .ignoresSafeArea(.container, edges: .bottom)
             }
         }
         .buttonStyle(.plain)
@@ -266,6 +118,206 @@ struct ActiveCutMinichart: View {
                 targetWeightKg: active.targetWeightKg
             )
         }
+    }
+
+    /// Chart body extracted so the parent button can size it with `maxHeight: .infinity`
+    /// instead of a fixed 320pt frame, letting the chart fill the dead area below
+    /// the cut progress strip and bleed behind the tab bar.
+    ///
+    /// The under-line gradient fill is drawn via `.chartBackground` rather than an
+    /// `AreaMark` + `LinearGradient` because Swift Charts maps the AreaMark's
+    /// gradient to its tight data hull — when readings hug the top of the plot,
+    /// the gradient compresses into a few points of vertical space and reads as
+    /// a near-uniform grey block. Tracing the data to a `Path` and filling a
+    /// `Rectangle` clipped to that path lets the gradient span the full plot
+    /// rect, so the fade is always visible.
+    @ViewBuilder
+    private var chartBody: some View {
+        Chart {
+            RuleMark(y: .value("Target", display(active.targetWeightKg)))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 6]))
+                .foregroundStyle(.secondary.opacity(0.25))
+                .annotation(position: .trailing, alignment: .leading, spacing: 4) {
+                    Text("Target")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                }
+
+            // Actual data line + dots
+            ForEach(inCutReadings, id: \.id) { r in
+                LineMark(
+                    x: .value("Date", r.date),
+                    y: .value("Weight", display(r.weightKg)),
+                    series: .value("series", "actual")
+                )
+                .interpolationMethod(.monotone)
+                .lineStyle(StrokeStyle(lineWidth: 2))
+                .foregroundStyle(Color.black)
+
+                PointMark(
+                    x: .value("Date", r.date),
+                    y: .value("Weight", display(r.weightKg))
+                )
+                .symbolSize(12)
+                .foregroundStyle(Color.black)
+            }
+
+            if !projection.isTargetReached {
+                // Best: dashed green, day 0 → cut end
+                if let bestEnd = projection.bestEndKg {
+                    LineMark(
+                        x: .value("Date", active.startDate),
+                        y: .value("Weight", display(active.startWeightKg)),
+                        series: .value("series", "best")
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .foregroundStyle(Self.bestColor)
+                    .interpolationMethod(.linear)
+
+                    LineMark(
+                        x: .value("Date", projection.targetEndDate),
+                        y: .value("Weight", display(bestEnd)),
+                        series: .value("series", "best")
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .foregroundStyle(Self.bestColor)
+                    .interpolationMethod(.linear)
+                }
+
+                // Worst: dashed red, day 0 → cut end
+                if let worstEnd = projection.worstEndKg {
+                    LineMark(
+                        x: .value("Date", active.startDate),
+                        y: .value("Weight", display(active.startWeightKg)),
+                        series: .value("series", "worst")
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .foregroundStyle(Self.worstColor)
+                    .interpolationMethod(.linear)
+
+                    LineMark(
+                        x: .value("Date", projection.targetEndDate),
+                        y: .value("Weight", display(worstEnd)),
+                        series: .value("series", "worst")
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .foregroundStyle(Self.worstColor)
+                    .interpolationMethod(.linear)
+                }
+
+                // Avg: dashed black, day 0 → implied-avg-at-today → wiggly future.
+                // Historical segment uses the implied slope so best < avg < worst always.
+                LineMark(
+                    x: .value("Date", active.startDate),
+                    y: .value("Weight", display(active.startWeightKg)),
+                    series: .value("series", "avg")
+                )
+                .interpolationMethod(.linear)
+                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                .foregroundStyle(Self.avgColor)
+
+                LineMark(
+                    x: .value("Date", projection.anchorDate),
+                    y: .value("Weight", display(impliedAvgAtAnchorKg)),
+                    series: .value("series", "avg")
+                )
+                .interpolationMethod(.linear)
+                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                .foregroundStyle(Self.avgColor)
+
+                ForEach(Array(projection.avgPath.enumerated()), id: \.offset) { _, point in
+                    LineMark(
+                        x: .value("Date", point.0),
+                        y: .value("Weight", display(point.1 + avgPathShift)),
+                        series: .value("series", "avg")
+                    )
+                    .interpolationMethod(.linear)
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .foregroundStyle(Self.avgColor)
+                }
+            }
+
+            // Today anchor: hollow circle marks current position
+            PointMark(
+                x: .value("Date", projection.anchorDate),
+                y: .value("Weight", display(projection.anchorKg))
+            )
+            .symbolSize(110)
+            .symbol(.circle)
+            .foregroundStyle(Color(.systemBackground))
+
+            PointMark(
+                x: .value("Date", projection.anchorDate),
+                y: .value("Weight", display(projection.anchorKg))
+            )
+            .symbolSize(110)
+            .symbol(.circle.strokeBorder(lineWidth: 2.5))
+            .foregroundStyle(Self.avgColor)
+
+            if projection.isTargetReached {
+                PointMark(
+                    x: .value("Date", projection.anchorDate),
+                    y: .value("Weight", display(projection.anchorKg))
+                )
+                .symbolSize(0)
+                .annotation(position: .top, alignment: .center, spacing: 2) {
+                    Text("Target reached")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.green)
+                }
+            }
+        }
+        .chartXScale(domain: active.startDate...windowEnd)
+        .chartYScale(domain: yMin...yMax)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartBackground { proxy in
+            GeometryReader { geo in
+                if let plotFrame = proxy.plotFrame.map({ geo[$0] }) {
+                    areaFillPath(in: plotFrame, proxy: proxy)
+                        .fill(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .black.opacity(0.55), location: 0.0),
+                                    .init(color: .black.opacity(0.18), location: 0.40),
+                                    .init(color: .black.opacity(0.0),  location: 1.0),
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                }
+            }
+        }
+    }
+
+    /// Builds a closed `Path` that follows the actual readings across the plot
+    /// rect and closes down to its bottom edge — the shape that the gradient
+    /// fills. Coordinates are in the GeometryReader's local space, with the
+    /// plot rect already offset.
+    private func areaFillPath(in plotFrame: CGRect, proxy: ChartProxy) -> Path {
+        var path = Path()
+        guard !inCutReadings.isEmpty else { return path }
+
+        let bottomY = plotFrame.maxY
+        let leftX = plotFrame.minX
+
+        // Start at the bottom-left of the plot under the first reading's x.
+        let firstX = (proxy.position(forX: inCutReadings.first!.date) ?? 0) + leftX
+        path.move(to: CGPoint(x: firstX, y: bottomY))
+
+        // Trace up to each reading, then across.
+        for r in inCutReadings {
+            let px = (proxy.position(forX: r.date) ?? 0) + leftX
+            let py = (proxy.position(forY: display(r.weightKg)) ?? 0) + plotFrame.minY
+            path.addLine(to: CGPoint(x: px, y: py))
+        }
+
+        // Close back down to the bottom edge under the last reading.
+        let lastX = (proxy.position(forX: inCutReadings.last!.date) ?? 0) + leftX
+        path.addLine(to: CGPoint(x: lastX, y: bottomY))
+        path.closeSubpath()
+        return path
     }
 
     private func buildSeries() -> [FullscreenChartView.Series] {
