@@ -18,7 +18,7 @@ struct NumericPad: View {
                     onValueTap?()
                 } label: {
                     Text(formatted)
-                        .font(.system(size: 96, weight: .black, design: .default))
+                        .font(.system(size: 96, weight: .black, design: .rounded))
                         .monospacedDigit()
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
@@ -32,7 +32,7 @@ struct NumericPad: View {
                     onUnitTap?()
                 } label: {
                     Text(unitSymbol)
-                        .font(.title2.weight(.semibold))
+                        .font(.system(.title2, design: .rounded).weight(.bold))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
@@ -42,7 +42,7 @@ struct NumericPad: View {
 
             if let subtitle, !subtitle.isEmpty {
                 Text(subtitle)
-                    .font(.subheadline)
+                    .font(.system(.subheadline, design: .rounded))
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
                     .lineLimit(1)
