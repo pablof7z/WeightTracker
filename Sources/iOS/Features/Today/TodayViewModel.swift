@@ -17,6 +17,9 @@ final class TodayViewModel: ObservableObject {
     /// Loaded snapshot of active cut (if any) — used by Today screen for header + minichart.
     @Published var activeCut: ActiveCut?
     @Published var inCutReadings: [Reading] = []
+    /// Full history snapshot loaded alongside `inCutReadings`. The forecast
+    /// widget uses this so the EWMA seed window can include pre-cut days.
+    @Published var allReadings: [Reading] = []
     @Published var projection: CutProjectionResult?
     /// 7-day EMA of weight in kg, computed over the most recent ≤7 readings on or before
     /// the currently-selected date. `nil` when fewer than 2 readings are available.
@@ -26,6 +29,13 @@ final class TodayViewModel: ObservableObject {
     /// EWMA weight trend. See `CutDeficitEstimator` for the math. `nil` when
     /// no active cut.
     @Published var deficit: CutDeficitEstimator.Result?
+
+    /// Forward-projected weight for the *default* (time-of-day) horizon. The
+    /// widget recomputes per-horizon on tap, but the VM uses this field as a
+    /// "should we even render the widget?" signal — `nil` means hide it
+    /// (cut not started, <14 days of data, band too wide, etc.).
+    /// See `CutWeightProjector` for the math.
+    @Published var forecast: CutWeightProjector.Result?
 
     struct SavedConfirmation: Identifiable, Equatable {
         let id = UUID()
@@ -44,6 +54,7 @@ final class TodayViewModel: ObservableObject {
         self.date = day
 
         let allReadings = repository.allReadings()
+        self.allReadings = allReadings
         if let earliest = allReadings.first {
             self.minDate = min(self.minDate, Reading.dayStart(of: earliest.date))
         }
@@ -78,6 +89,11 @@ final class TodayViewModel: ObservableObject {
             readings: allReadings,
             asOf: Date()
         )
+
+        // Forward weight projection (default time-of-day horizon). Same "asOf
+        // is today" rule: the forecast looks forward from now, not from the
+        // browsed date.
+        self.forecast = Self.computeDefaultForecast(activeCut: cut, readings: allReadings)
 
         if let existing = repository.reading(on: day) {
             let display = UnitConvert.displayWeight(kg: existing.weightKg, in: unit)
@@ -175,12 +191,15 @@ final class TodayViewModel: ObservableObject {
 
         // Refresh the EMA and deficit estimate to reflect the just-saved reading.
         let refreshed = services.repository.allReadings()
+        self.allReadings = refreshed
         self.ema7Kg = Self.computeEMA7Kg(readings: refreshed, asOf: day)
+        let refreshedCut = ActiveCutStore.load()
         self.deficit = CutDeficitEstimator.estimate(
-            activeCut: ActiveCutStore.load(),
+            activeCut: refreshedCut,
             readings: refreshed,
             asOf: Date()
         )
+        self.forecast = Self.computeDefaultForecast(activeCut: refreshedCut, readings: refreshed)
 
         // Trigger a proactive coach run on weigh-in days so the coach can
         // comment on the new data and post an observation to the thread.
@@ -192,6 +211,22 @@ final class TodayViewModel: ObservableObject {
                 )
             }
         }
+    }
+
+    /// Compute the projection for the time-of-day-determined default horizon.
+    /// Returned value is used only as a "show / hide the widget" signal; the
+    /// widget itself recomputes per the user's currently-selected horizon.
+    static func computeDefaultForecast(activeCut: ActiveCut?, readings: [Reading]) -> CutWeightProjector.Result? {
+        guard let cut = activeCut else { return nil }
+        let hour = Calendar.current.component(.hour, from: Date())
+        let horizon = WeightForecastWidget.Horizon.defaultForHour(hour)
+        let days = horizon.horizonDays(activeCut: cut, asOf: Date(), calendar: .current)
+        return CutWeightProjector.project(
+            activeCut: cut,
+            readings: readings,
+            horizonDays: days,
+            asOf: Date()
+        )
     }
 
     /// 7-day EMA over the most recent ≤7 readings whose date is ≤ `asOf`.

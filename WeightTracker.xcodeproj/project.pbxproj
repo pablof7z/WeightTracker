@@ -31,6 +31,7 @@
 		20231178BB04FED8B18F3270 /* ICloudSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC5302916DBFE5717B94CE9 /* ICloudSettingsSection.swift */; };
 		204C7D805BA6F49BF1B4FFCE /* MealScheduleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E0529A4F99F52F1DE61BD9A /* MealScheduleStore.swift */; };
 		20A9AA7D728673EBEB9684D5 /* DeleteRangeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B5DFE75A4F90C056C4A41A0 /* DeleteRangeSheet.swift */; };
+		20BE0173A3C300DE548ED3FF /* WeightForecastWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE9B6C5A175B5E919C3F27D /* WeightForecastWidget.swift */; };
 		22075804F805319A506DF8CC /* CoachNostrAgentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3049F74BF6724D7C0E030BB /* CoachNostrAgentService.swift */; };
 		23B6338B3ACDD4D11BCB2F25 /* DataSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1C3A773A1E53D2B4DDE18C /* DataSettingsView.swift */; };
 		24E7ECBF20D5B3742AF0C8A9 /* MealAgendaPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4832A1F4D7B8D91BBF8F3AAE /* MealAgendaPage.swift */; };
@@ -123,6 +124,7 @@
 		7E81D27D9ADA7665A15F9FB1 /* ActiveCutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB0F89A626C378086B6F440 /* ActiveCutStore.swift */; };
 		7EFB776B17C45415280C82CD /* ModelContainerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */; };
 		806CB6242B728C7E831F17AE /* MacroDeviation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58B7674AA262925D88A163EF /* MacroDeviation.swift */; };
+		807B2CD9C2AECD3C8EA6C824 /* CutWeightProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E4CCD14F15F28C12A5D385 /* CutWeightProjector.swift */; };
 		821CBEA2D3D11BE12E5ADCAE /* MealPlanCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7DBCBE20A965FB3478BBACA /* MealPlanCard.swift */; };
 		84B7850DD4FD9C092044B160 /* BackgroundTaskRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8885B77FE02003877B5CDD /* BackgroundTaskRegistration.swift */; };
 		87B14631C17F8F7DE308CCE6 /* VoiceNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1218EC80DEA54E365D98B7A6 /* VoiceNotesView.swift */; };
@@ -213,6 +215,7 @@
 		DC635217767E7DC1B0035169 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */; };
 		DD26112DCB99E574187D5B08 /* ActivityHealthKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E88F08E4DB02DC8CA983C57 /* ActivityHealthKit.swift */; };
 		DEED1B89C600F02B59D536F7 /* SwipeUpHint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C112D4C96E7B922089108B /* SwipeUpHint.swift */; };
+		DF0BF8AE988F9579459CC3D0 /* CutWeightProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E4CCD14F15F28C12A5D385 /* CutWeightProjector.swift */; };
 		DF10DCA71078F78E2414031F /* DailyActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037FF73300D51D36C446BB8F /* DailyActivity.swift */; };
 		E10678AE7CC49328B437A67A /* MealSlotDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3846A0CDC32DFE86DDE6C0C3 /* MealSlotDetailView.swift */; };
 		E218D4AD7FDFEC8013F9C86D /* CoachConversationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC259444FFC3E43C23A7FC4 /* CoachConversationController.swift */; };
@@ -402,6 +405,7 @@
 		9F611866610500F01E5CD0B2 /* UsageCostSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageCostSettingsView.swift; sourceTree = "<group>"; };
 		A013A3A83DCE30F8E2AD1690 /* VoiceCaptureKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = VoiceCaptureKit; path = ../VoiceCaptureKit; sourceTree = SOURCE_ROOT; };
 		A097238E63F35469E137EA10 /* SleepOverlayLegend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepOverlayLegend.swift; sourceTree = "<group>"; };
+		A1E4CCD14F15F28C12A5D385 /* CutWeightProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutWeightProjector.swift; sourceTree = "<group>"; };
 		A37B127E6EE9B1EB1EA9081E /* CoachProposalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProposalSheet.swift; sourceTree = "<group>"; };
 		A3FF7D09556CD601F143D999 /* TrendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsViewModel.swift; sourceTree = "<group>"; };
 		A5C3AD389F5EBF5644F1E5F1 /* SleepCorrelation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCorrelation.swift; sourceTree = "<group>"; };
@@ -463,6 +467,7 @@
 		F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriftEstimator.swift; sourceTree = "<group>"; };
 		F98BC89699A1171F520CA694 /* CostLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CostLedger.swift; sourceTree = "<group>"; };
 		FA19B51973F7C1686F33E286 /* MacroUntrackedRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroUntrackedRange.swift; sourceTree = "<group>"; };
+		FAE9B6C5A175B5E919C3F27D /* WeightForecastWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightForecastWidget.swift; sourceTree = "<group>"; };
 		FB1CA5833F194B00D42438EC /* OnboardingCut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCut.swift; sourceTree = "<group>"; };
 		FD57DBFB48B45BB66ED3DB29 /* NostrRelay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrRelay.swift; sourceTree = "<group>"; };
 		FDC259444FFC3E43C23A7FC4 /* CoachConversationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachConversationController.swift; sourceTree = "<group>"; };
@@ -711,6 +716,7 @@
 				73296E72BEA0DDAAD178193F /* TodayPager.swift */,
 				BBC72524D70DFFE6A05C1D9B /* TodayView.swift */,
 				3EB81FF4D99BC5DECAAFF13D /* TodayViewModel.swift */,
+				FAE9B6C5A175B5E919C3F27D /* WeightForecastWidget.swift */,
 				71DF41B2426749CFCA395111 /* WeightLogView.swift */,
 			);
 			path = Today;
@@ -818,6 +824,7 @@
 				2EC2DA3E91617DE7CF26B785 /* CutCoachEngine.swift */,
 				D9EEA446F2994EFAD89C07ED /* CutDeficitEstimator.swift */,
 				3D3AF9863398574702E18EF5 /* CutProjection.swift */,
+				A1E4CCD14F15F28C12A5D385 /* CutWeightProjector.swift */,
 				1265E087B394472E2B78669D /* CyclePhaseAnalyzer.swift */,
 				F7EC6277FB3987915EDFF55E /* DriftEstimator.swift */,
 				919E9FA191CCBC10E0E5C9ED /* EraSummary.swift */,
@@ -1079,6 +1086,7 @@
 				BD2C84DC930B633A54E72E0B /* CutCoachEngine.swift in Sources */,
 				A28CA3A6426E1B93FD4CC095 /* CutDeficitEstimator.swift in Sources */,
 				678751A0DEE01572B8A5FF80 /* CutProjection.swift in Sources */,
+				DF0BF8AE988F9579459CC3D0 /* CutWeightProjector.swift in Sources */,
 				FB6CFDB312BE6F415D9F9311 /* CycleHealthKit.swift in Sources */,
 				A369E787CCB378E9D110CE6F /* CyclePhaseAnalyzer.swift in Sources */,
 				DF10DCA71078F78E2414031F /* DailyActivity.swift in Sources */,
@@ -1181,6 +1189,7 @@
 				5178402B720BD8ADEA206581 /* CutInlineChart.swift in Sources */,
 				B21652B0CD195D615A00F798 /* CutProjection.swift in Sources */,
 				E97D783DBD98C650C3BE36BA /* CutProjectionChartContent.swift in Sources */,
+				807B2CD9C2AECD3C8EA6C824 /* CutWeightProjector.swift in Sources */,
 				4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */,
 				E455B2D98C0FFED47B47ABB2 /* CutsViewModel.swift in Sources */,
 				AA4064CA0771644D3A0F8665 /* CycleHealthKit.swift in Sources */,
@@ -1303,6 +1312,7 @@
 				87B14631C17F8F7DE308CCE6 /* VoiceNotesView.swift in Sources */,
 				082D53237284CB188EF3CAE6 /* VoiceRecordingDraftStore.swift in Sources */,
 				ECAE9FDC40F11D3C3C4D53D7 /* WeightChart.swift in Sources */,
+				20BE0173A3C300DE548ED3FF /* WeightForecastWidget.swift in Sources */,
 				5689EB0BDB95E2442C864B9B /* WeightLogView.swift in Sources */,
 				AEE776CD1B8FC79E0377D2C6 /* WeightTrackerApp.swift in Sources */,
 				2E8E0FC1C032557EF6F8F585 /* WipeAllSheet.swift in Sources */,

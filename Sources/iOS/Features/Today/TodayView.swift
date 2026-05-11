@@ -205,6 +205,15 @@ struct TodayView: View {
                             .padding(.bottom, 12)
                     }
 
+                    if viewModel.forecast != nil {
+                        WeightForecastWidget(
+                            readings: viewModel.allReadings,
+                            activeCut: active,
+                            weightUnit: weightUnit
+                        )
+                        .padding(.bottom, 12)
+                    }
+
                     ActiveCutMinichart(
                         active: active,
                         inCutReadings: viewModel.inCutReadings,
