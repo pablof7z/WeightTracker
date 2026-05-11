@@ -376,9 +376,26 @@ final class CoachAgentSession: ObservableObject {
 
     private static let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        // Use local-timezone ISO8601 so day-keyed dates (stored as local
+        // midnight) round-trip to the same calendar day the user sees. The
+        // default `.iso8601` emits UTC, which for users east of UTC shifts
+        // dates back a day and causes the coach to mis-attribute step counts
+        // (e.g. reporting today's partial steps as "yesterday").
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer()
+            try container.encode(CoachDateEncoding.iso8601Local.string(from: date))
+        }
         encoder.outputFormatting = [.sortedKeys]
         return encoder
+    }()
+}
+
+enum CoachDateEncoding {
+    static let iso8601Local: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        f.timeZone = .current
+        return f
     }()
 }
 

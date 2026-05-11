@@ -69,7 +69,14 @@ struct CoachAgentToolDispatcher {
 
     private static let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        // Match `CoachAgentSession.encoder`: emit ISO8601 with the user's
+        // local timezone offset so day-keyed dates land on the same calendar
+        // day the user sees in the app. UTC encoding shifts records back a
+        // day for users east of UTC.
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer()
+            try container.encode(CoachDateEncoding.iso8601Local.string(from: date))
+        }
         encoder.outputFormatting = [.sortedKeys]
         return encoder
     }()
