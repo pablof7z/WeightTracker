@@ -14,6 +14,8 @@ packages:
   secp256k1:
     url: https://github.com/GigaBitcoin/secp256k1.swift
     from: 0.18.0
+  VoiceCaptureKit:
+    path: ../VoiceCaptureKit
 
 settings:
   base:
@@ -26,7 +28,7 @@ settings:
     SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
     TARGETED_DEVICE_FAMILY: "1"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "202605062100"
+    CURRENT_PROJECT_VERSION: "202605111030"
 
 targets:
   WeightTracker:
@@ -101,6 +103,8 @@ targets:
         embed: true
       - package: secp256k1
         product: P256K
+      - package: VoiceCaptureKit
+        product: VoiceCaptureKit
 
   WeightTrackerWatch Watch App:
     type: application

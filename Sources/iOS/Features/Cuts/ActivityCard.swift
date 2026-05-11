@@ -8,6 +8,15 @@ extension Notification.Name {
     static let activityTargetDidChange = Notification.Name("activityTargetDidChange")
 }
 
+/// One slot in the 7-day adherence strip. Carries enough context to drive
+/// both the bar colour and the day-detail sheet.
+private struct ActivityDaySlot: Identifiable {
+    let id: Date
+    let date: Date
+    let activity: DailyActivity?
+    let targetMet: Bool
+}
+
 /// Glance card shown on the Cuts tab. Renders the user's current step target
 /// alongside today's progress and a 7-day adherence strip. The card is
 /// global — it isn't scoped to a particular cut — so it doesn't take a
@@ -22,6 +31,7 @@ struct ActivityCard: View {
     @State private var todaySteps: Int?
     @State private var lastSevenDays: [DailyActivity] = []
     @State private var showingTargetSheet: Bool = false
+    @State private var selectedDaySlot: ActivityDaySlot? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -50,6 +60,9 @@ struct ActivityCard: View {
                 stepTarget = newTarget
                 NotificationCenter.default.post(name: .activityTargetDidChange, object: nil)
             }
+        }
+        .sheet(item: $selectedDaySlot) { slot in
+            DayActivitySheet(slot: slot, stepTarget: stepTarget)
         }
         .onAppear { reload() }
         .onReceive(NotificationCenter.default.publisher(for: .mealScheduleDidChange)) { _ in
@@ -97,41 +110,50 @@ struct ActivityCard: View {
             Text("7-day avg: \(Self.numberFormatter.string(from: NSNumber(value: sevenDayAverage)) ?? "\(sevenDayAverage)") steps")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Text("Tap a bar for details")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
     }
 
     private var sevenDayBars: some View {
         // Always render seven slots so the strip width is stable even when
-        // history is sparse. Missing days render as the dim "below target"
-        // colour.
-        let metByDay = adherenceByDay
+        // history is sparse. Missing days render as the dim "below target" colour.
+        let slots = daySlots
         return HStack(spacing: 4) {
-            ForEach(0..<7, id: \.self) { idx in
+            ForEach(slots) { slot in
                 Capsule()
-                    .fill(metByDay[idx] ? Color.accentColor : Color.secondary.opacity(0.3))
+                    .fill(slot.targetMet ? Color.accentColor : Color.secondary.opacity(0.3))
                     .frame(maxWidth: .infinity)
                     .frame(height: 18)
-                    .accessibilityLabel(metByDay[idx] ? "Day \(idx + 1): target met" : "Day \(idx + 1): below target")
+                    .accessibilityLabel(slot.targetMet ? "Target met" : "Below target")
+                    .contentShape(Rectangle())
+                    .onTapGesture { selectedDaySlot = slot }
             }
         }
     }
 
     // MARK: - Computed
 
-    /// Maps the seven oldest-to-newest slots in the recent window to a
-    /// "target met" boolean. Days with no record default to `false`.
-    private var adherenceByDay: [Bool] {
+    /// Seven oldest-to-newest day slots for the adherence strip.
+    private var daySlots: [ActivityDaySlot] {
         let cal = Calendar.current
         let today = Reading.dayStart(of: Date())
-        // Oldest-first: idx 0 = 6 days ago, idx 6 = today
+        // idx 0 = 6 days ago, idx 6 = today
         let dayKeys: [Date] = (0..<7).reversed().compactMap { offset in
             cal.date(byAdding: .day, value: -offset, to: today)
         }
-        let stepsByDay: [Date: Int] = Dictionary(
-            uniqueKeysWithValues: lastSevenDays.map { ($0.day, $0.steps) }
+        let activityByDay: [Date: DailyActivity] = Dictionary(
+            uniqueKeysWithValues: lastSevenDays.map { ($0.day, $0) }
         )
         return dayKeys.map { key in
-            (stepsByDay[key] ?? 0) >= stepTarget
+            let activity = activityByDay[key]
+            return ActivityDaySlot(
+                id: key,
+                date: key,
+                activity: activity,
+                targetMet: (activity?.steps ?? 0) >= stepTarget
+            )
         }
     }
 
@@ -175,6 +197,103 @@ struct ActivityCard: View {
         f.groupingSeparator = ","
         return f
     }()
+}
+
+// MARK: - Day activity detail sheet
+
+private struct DayActivitySheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let slot: ActivityDaySlot
+    let stepTarget: Int
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .full
+        f.timeStyle = .none
+        return f
+    }()
+
+    private static let numberFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.groupingSeparator = ","
+        return f
+    }()
+
+    private func fmt(_ n: Int) -> String {
+        Self.numberFormatter.string(from: NSNumber(value: n)) ?? "\(n)"
+    }
+
+    private func fmt(_ d: Double) -> String {
+        Self.numberFormatter.string(from: NSNumber(value: Int(d.rounded()))) ?? "\(Int(d.rounded()))"
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Steps") {
+                    if let activity = slot.activity, activity.steps > 0 {
+                        HStack {
+                            Text("Steps")
+                            Spacer()
+                            Text(fmt(activity.steps))
+                                .foregroundStyle(.primary)
+                        }
+                        HStack {
+                            Text("Target")
+                            Spacer()
+                            Text(fmt(stepTarget))
+                                .foregroundStyle(.secondary)
+                        }
+                        HStack {
+                            Text("Goal")
+                            Spacer()
+                            Label(
+                                slot.targetMet ? "Met" : "Not met",
+                                systemImage: slot.targetMet ? "checkmark.circle.fill" : "xmark.circle.fill"
+                            )
+                            .foregroundStyle(slot.targetMet ? Color.accentColor : .secondary)
+                            .labelStyle(.titleAndIcon)
+                        }
+                    } else {
+                        Text("No step data for this day")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                let hasEnergy = slot.activity?.activeEnergyKcal != nil
+                let hasExercise = slot.activity?.exerciseMinutes != nil
+                if hasEnergy || hasExercise {
+                    Section("Activity") {
+                        if let kcal = slot.activity?.activeEnergyKcal {
+                            HStack {
+                                Text("Active Energy")
+                                Spacer()
+                                Text("\(fmt(kcal)) kcal")
+                                    .foregroundStyle(.primary)
+                            }
+                        }
+                        if let mins = slot.activity?.exerciseMinutes {
+                            HStack {
+                                Text("Exercise Time")
+                                Spacer()
+                                Text("\(mins) min")
+                                    .foregroundStyle(.primary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle(Self.dateFormatter.string(from: slot.date))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Step target sheet

@@ -65,6 +65,7 @@
 		43B283054884E8D66F36E505 /* CoachOpenRouterClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A9930AC1805F79B7C4D773A /* CoachOpenRouterClient.swift */; };
 		44B8E41121A80FC1223F41BC /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931640299175194B18A7044D /* TrendsView.swift */; };
 		475E09F6DCC5FDF8F773CE18 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88663F7427B9D9226727C273 /* AppPreferences.swift */; };
+		487C045E04FDF15166E8445F /* VoiceCaptureKit in Frameworks */ = {isa = PBXBuildFile; productRef = A89CCCA2ED7D43164BEDA9B2 /* VoiceCaptureKit */; };
 		48E1DC17A28FF38435D6078E /* Nip44Crypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = A737DF7B04DFB0A7CA8A418C /* Nip44Crypto.swift */; };
 		48E93E160BB323D49A35F6A0 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */; };
 		4A1D4A0A86447FAA5874E617 /* DataSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96478037D9871087CA7134DE /* DataSettingsSection.swift */; };
@@ -73,6 +74,7 @@
 		4BC4B2390D10CCED65428367 /* CutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D7278094BFFC6DD7B42A10 /* CutsView.swift */; };
 		4C8AD4070A912E9F24545358 /* EraSummaryTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490D47FB0B7A1C43B497D81B /* EraSummaryTable.swift */; };
 		4D7380185FB3BF303834D70C /* ChartOverlayToggles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711BBC2A64EA99CFD26B6A30 /* ChartOverlayToggles.swift */; };
+		4DAB5054D8426C3F17E84E98 /* TodayPinnedNoteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C02AFEC8FF9E6831367F5963 /* TodayPinnedNoteStore.swift */; };
 		4E2A1630E5E317329729DA60 /* MacroHistorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29B8EDC2F540E89E7E50DD0D /* MacroHistorySheet.swift */; };
 		4F5791554F7A9CFB462B087B /* ScheduledNudgeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E694B725B40BC88E061AC83 /* ScheduledNudgeStore.swift */; };
 		4F95C0EBC67301B0E1D37A4E /* CoachCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 071124C19596D58BF2CCBADB /* CoachCard.swift */; };
@@ -396,6 +398,7 @@
 		9DFEF6CA2E061770A10293E0 /* ElevenLabsTTS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevenLabsTTS.swift; sourceTree = "<group>"; };
 		9EF4480F0F38B2A0B658D3E0 /* MealEventStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealEventStore.swift; sourceTree = "<group>"; };
 		9F611866610500F01E5CD0B2 /* UsageCostSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageCostSettingsView.swift; sourceTree = "<group>"; };
+		A013A3A83DCE30F8E2AD1690 /* VoiceCaptureKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = VoiceCaptureKit; path = ../VoiceCaptureKit; sourceTree = SOURCE_ROOT; };
 		A097238E63F35469E137EA10 /* SleepOverlayLegend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepOverlayLegend.swift; sourceTree = "<group>"; };
 		A37B127E6EE9B1EB1EA9081E /* CoachProposalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProposalSheet.swift; sourceTree = "<group>"; };
 		A3FF7D09556CD601F143D999 /* TrendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsViewModel.swift; sourceTree = "<group>"; };
@@ -425,6 +428,7 @@
 		BC29786B5FB91E692CEFBA16 /* CutInlineChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutInlineChart.swift; sourceTree = "<group>"; };
 		BDE678CB61C4C50F510F4FD9 /* ConfirmationCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationCard.swift; sourceTree = "<group>"; };
 		BE956A8881D2EC0C108E31A1 /* RemindersSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersSettingsView.swift; sourceTree = "<group>"; };
+		C02AFEC8FF9E6831367F5963 /* TodayPinnedNoteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayPinnedNoteStore.swift; sourceTree = "<group>"; };
 		C2123E9C82B2C7B0FE5ADE0A /* DriftBarChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriftBarChart.swift; sourceTree = "<group>"; };
 		C58D8AAC80C055C280257CBC /* GapAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GapAnalyzer.swift; sourceTree = "<group>"; };
 		C7F173B36708CA358984F10F /* SleepHealthKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepHealthKit.swift; sourceTree = "<group>"; };
@@ -469,6 +473,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9189F91A916D98DA3E330A4A /* P256K in Frameworks */,
+				487C045E04FDF15166E8445F /* VoiceCaptureKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -795,6 +800,14 @@
 			path = Coach;
 			sourceTree = "<group>";
 		};
+		A909670A00CF1E6F1C0FA8CA /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				A013A3A83DCE30F8E2AD1690 /* VoiceCaptureKit */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
 		C4E94B5803AD3DE479086F9F /* Analysis */ = {
 			isa = PBXGroup;
 			children = (
@@ -837,6 +850,7 @@
 				E980F8166EC2A761F7E4DEED /* MealCalculator.swift */,
 				770A8DC9999BEF20A1736C0C /* OpenRouterModelCatalog.swift */,
 				9A8D24E1EC41DDF0D475F66D /* ProviderError.swift */,
+				C02AFEC8FF9E6831367F5963 /* TodayPinnedNoteStore.swift */,
 				A9AA8C364F1BC83039B5B60C /* USDACredentialStore.swift */,
 			);
 			path = Services;
@@ -925,6 +939,7 @@
 		FED243C5175E11B864DBFFBC = {
 			isa = PBXGroup;
 			children = (
+				A909670A00CF1E6F1C0FA8CA /* Packages */,
 				45E109339BD01C7B99223A66 /* Resources */,
 				5707ACCC02CF1398FEF10D20 /* Sources */,
 				5D3E237724151859BEB62515 /* Products */,
@@ -969,6 +984,7 @@
 			name = WeightTracker;
 			packageProductDependencies = (
 				DF79B42F337EAEA655C5C8B9 /* P256K */,
+				A89CCCA2ED7D43164BEDA9B2 /* VoiceCaptureKit */,
 			);
 			productName = WeightTracker;
 			productReference = 45B3186F71A6123EE0DDF888 /* WeightTracker.app */;
@@ -1005,6 +1021,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				82F8F26D8BD09253D8459C10 /* XCRemoteSwiftPackageReference "secp256k1.swift" */,
+				690803DBA74E31F8681915A4 /* XCLocalSwiftPackageReference "../VoiceCaptureKit" */,
 			);
 			preferredProjectObjectVersion = 54;
 			projectDirPath = "";
@@ -1269,6 +1286,7 @@
 				DEED1B89C600F02B59D536F7 /* SwipeUpHint.swift in Sources */,
 				27168DB595057CCFB03C9A25 /* Theme.swift in Sources */,
 				0820172DFB75EE5816D3CCEB /* TodayPager.swift in Sources */,
+				4DAB5054D8426C3F17E84E98 /* TodayPinnedNoteStore.swift in Sources */,
 				9A6798B06B0147C50E3E1BF4 /* TodayView.swift in Sources */,
 				E88B0B4292E155914476E1DF /* TodayViewModel.swift in Sources */,
 				44B8E41121A80FC1223F41BC /* TrendsView.swift in Sources */,
@@ -1395,7 +1413,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 202605062100;
+				CURRENT_PROJECT_VERSION = 202605111030;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1467,7 +1485,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 202605062100;
+				CURRENT_PROJECT_VERSION = 202605111030;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1545,6 +1563,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		690803DBA74E31F8681915A4 /* XCLocalSwiftPackageReference "../VoiceCaptureKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../VoiceCaptureKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		82F8F26D8BD09253D8459C10 /* XCRemoteSwiftPackageReference "secp256k1.swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -1557,6 +1582,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A89CCCA2ED7D43164BEDA9B2 /* VoiceCaptureKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VoiceCaptureKit;
+		};
 		DF79B42F337EAEA655C5C8B9 /* P256K */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 82F8F26D8BD09253D8459C10 /* XCRemoteSwiftPackageReference "secp256k1.swift" */;

@@ -1,51 +1,44 @@
-import AVFoundation
 import Combine
 import Foundation
 import UIKit
 
-/// Drives the back-and-forth voice conversation between the user and the
-/// coach. Owns the STT pipeline, the OpenRouter turn invocation, the
-/// ElevenLabs TTS request, and the AVAudioPlayer that plays the response.
-///
-/// The view is intentionally dumb — it observes published state and forwards
-/// taps. All audio session juggling and message-history bookkeeping lives
-/// here so the SwiftUI body stays declarative.
+/// Drives a back-and-forth text conversation between the user and the coach.
+/// Voice input (STT) is optional — the user can dictate or type. Coach
+/// replies are always text; there is no TTS playback.
 @MainActor
 final class CoachConversationController: NSObject, ObservableObject {
     enum State: Equatable {
-        case recording
+        case composing
         case thinking
-        case speaking(text: String)
+        case replied(text: String)
         case failed(message: String)
     }
 
-    @Published private(set) var state: State = .recording
+    @Published private(set) var state: State = .composing
     @Published private(set) var transcript: String = ""
     @Published private(set) var capturedImage: UIImage? = nil
-    @Published private(set) var isPlayingAudio: Bool = false
-    @Published private(set) var audioFinished: Bool = false
-    @Published private(set) var audioProgress: Double = 0
-    @Published private(set) var audioDuration: TimeInterval = 0
+    @Published var inputText: String = ""
 
     let stt: ElevenLabsRealtimeSTT
     private let agentSession: CoachAgentSession
+    private let auditStore: CoachAuditStore?
     private let sttModel: String
-    private let voiceID: String
+    private let autoResetAfterReply: Bool
 
-    private var audioPlayer: AVAudioPlayer?
-    private var progressTimer: Timer?
     private var conversationMessages: [[String: Any]] = []
     private var hasStartedConversation: Bool = false
 
     init(
         agentSession: CoachAgentSession,
         sttModel: String,
-        voiceID: String,
+        auditStore: CoachAuditStore? = nil,
+        autoResetAfterReply: Bool = false,
         stt: ElevenLabsRealtimeSTT = ElevenLabsRealtimeSTT()
     ) {
         self.agentSession = agentSession
         self.sttModel = sttModel
-        self.voiceID = voiceID
+        self.auditStore = auditStore
+        self.autoResetAfterReply = autoResetAfterReply
         self.stt = stt
         super.init()
     }
@@ -62,8 +55,14 @@ final class CoachConversationController: NSObject, ObservableObject {
         }
     }
 
-    func pauseRecording() { stt.pause() }
-    func resumeRecording() { stt.resume() }
+    func stopRecording() async {
+        let text = await stt.stop()
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            inputText = trimmed
+        }
+        transcript = trimmed
+    }
 
     func setCapturedImage(_ image: UIImage?) {
         capturedImage = image
@@ -71,22 +70,30 @@ final class CoachConversationController: NSObject, ObservableObject {
 
     // MARK: - Send turn
 
-    /// Stop recording, transcribe, send to coach, get TTS, and play it back.
-    /// On error: surfaces a `.failed(...)` state with the message.
     func sendTurn() async {
-        let recordedText = await stt.stop()
-        let trimmedTranscript = recordedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        transcript = trimmedTranscript
+        if stt.isRecording || stt.isStarting {
+            let text = await stt.stop()
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { inputText = trimmed }
+        }
 
-        if trimmedTranscript.isEmpty && capturedImage == nil {
-            state = .failed(message: "Nothing to send. Tap Reply to try again.")
+        let textToSend = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let imageForTurn = capturedImage
+
+        guard !textToSend.isEmpty || imageForTurn != nil else {
+            state = .failed(message: "Nothing to send. Type a message or record your voice first.")
             return
         }
 
-        let imageForTurn = capturedImage
-        let messageText = trimmedTranscript.isEmpty
-            ? "(no spoken message — see attached photo)"
-            : trimmedTranscript
+        transcript = textToSend
+        inputText = ""
+
+        let messageText = textToSend.isEmpty
+            ? "(no text message — see attached photo)"
+            : textToSend
+
+        persistUserNote(text: textToSend.isEmpty ? "(photo sent)" : textToSend)
+
         let userMessage = buildUserMessage(text: messageText, image: imageForTurn)
 
         if !hasStartedConversation {
@@ -101,91 +108,72 @@ final class CoachConversationController: NSObject, ObservableObject {
             imageAttached: imageForTurn != nil
         )
         conversationMessages = turnResult.messages
+        capturedImage = nil
 
         guard let finalText = turnResult.finalText?.trimmingCharacters(in: .whitespacesAndNewlines),
               !finalText.isEmpty
         else {
-            state = .failed(message: "Coach didn't return a reply. Tap Reply to try again.")
+            state = .failed(message: "Coach didn't return a reply. Try again.")
             return
         }
 
-        do {
-            let audioData = try await ElevenLabsTTS.synthesize(text: finalText, voiceID: voiceID)
-            try playAudio(data: audioData)
-            state = .speaking(text: finalText)
-        } catch let providerError as ProviderError {
-            state = .failed(message: providerError.errorDescription ?? "TTS failed.")
-        } catch {
-            state = .failed(message: error.localizedDescription)
+        persistCoachNote(text: finalText)
+        if autoResetAfterReply {
+            state = .composing
+            inputText = ""
+            transcript = ""
+        } else {
+            state = .replied(text: finalText)
         }
     }
 
-    // MARK: - Playback controls
+    // MARK: - Continue conversation
 
-    func pausePlayback() {
-        audioPlayer?.pause()
-        isPlayingAudio = false
-        stopProgressTimer()
-    }
-
-    func resumePlayback() {
-        guard let audioPlayer else { return }
-        audioPlayer.play()
-        isPlayingAudio = true
-        startProgressTimer()
-    }
-
-    func togglePlayback() {
-        if isPlayingAudio { pausePlayback() } else { resumePlayback() }
-    }
-
-    func replayAudio() {
-        guard let audioPlayer else { return }
-        audioPlayer.currentTime = 0
-        audioPlayer.play()
-        isPlayingAudio = true
-        audioFinished = false
-        audioProgress = 0
-        startProgressTimer()
-    }
-
-    func skipPlayback() {
-        audioPlayer?.stop()
-        audioPlayer = nil
-        isPlayingAudio = false
-        audioFinished = true
-        audioProgress = 1
-        stopProgressTimer()
-    }
-
-    /// Move from speaking-mode back to recording-mode and immediately begin
-    /// listening again. The audio player is torn down; the conversation
-    /// history persists so the coach has full context.
-    func startReply() {
-        audioPlayer?.stop()
-        audioPlayer = nil
-        isPlayingAudio = false
-        audioFinished = false
-        audioProgress = 0
-        audioDuration = 0
-        stopProgressTimer()
-        capturedImage = nil
+    func startNextTurn() {
+        inputText = ""
         transcript = ""
-        state = .recording
-        Task { await self.startRecording() }
+        state = .composing
+        Task { await startRecording() }
+    }
+
+    func resetToComposing() {
+        state = .composing
     }
 
     // MARK: - Cleanup
 
     func teardown() {
         if stt.isRecording || stt.isStarting { stt.cancel() }
-        audioPlayer?.stop()
-        audioPlayer = nil
-        stopProgressTimer()
-        AudioSession.deactivate()
     }
 
     // MARK: - Private helpers
+
+    private func persistUserNote(text: String) {
+        guard let auditStore, !text.isEmpty else { return }
+        let cutStart = ActiveCutStore.load()?.startDate
+        auditStore.appendNote(
+            source: .user,
+            kind: .checkIn,
+            visibility: .userVisible,
+            cutStartDate: cutStart,
+            day: Date(),
+            text: text
+        )
+    }
+
+    private func persistCoachNote(text: String) {
+        guard let auditStore, !text.isEmpty else { return }
+        let cutStart = ActiveCutStore.load()?.startDate
+        auditStore.appendNote(
+            source: .agent,
+            kind: .observation,
+            visibility: .userVisible,
+            cutStartDate: cutStart,
+            day: Date(),
+            text: text
+        )
+        NotificationCenter.default.post(name: .coachProposalDidChange, object: nil)
+    }
 
     private func buildUserMessage(text: String, image: UIImage?) -> [String: Any] {
         guard let image else {
@@ -202,62 +190,5 @@ final class CoachConversationController: NSObject, ObservableObject {
                 ["type": "image_url", "image_url": ["url": dataURL]]
             ]
         ]
-    }
-
-    private func playAudio(data: Data) throws {
-        try AudioSession.configureForPlayback()
-        let player = try AVAudioPlayer(data: data)
-        player.delegate = self
-        player.prepareToPlay()
-        audioPlayer = player
-        audioDuration = player.duration
-        audioProgress = 0
-        audioFinished = false
-        if player.play() {
-            isPlayingAudio = true
-            startProgressTimer()
-        } else {
-            isPlayingAudio = false
-            throw ProviderError.audio("AVAudioPlayer refused to start playback.")
-        }
-    }
-
-    private func startProgressTimer() {
-        stopProgressTimer()
-        let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self, let player = self.audioPlayer else { return }
-                if player.duration > 0 {
-                    self.audioProgress = min(1, player.currentTime / player.duration)
-                }
-            }
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        progressTimer = timer
-    }
-
-    private func stopProgressTimer() {
-        progressTimer?.invalidate()
-        progressTimer = nil
-    }
-}
-
-extension CoachConversationController: AVAudioPlayerDelegate {
-    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        Task { @MainActor in
-            self.isPlayingAudio = false
-            self.audioFinished = true
-            self.audioProgress = 1
-            self.stopProgressTimer()
-        }
-    }
-
-    nonisolated func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
-        Task { @MainActor in
-            self.isPlayingAudio = false
-            self.audioFinished = true
-            self.stopProgressTimer()
-            self.state = .failed(message: error?.localizedDescription ?? "Playback decode error.")
-        }
     }
 }

@@ -4,7 +4,6 @@ import SwiftData
 struct TodayView: View {
     @EnvironmentObject var services: AppServices
     @StateObject private var viewModel = TodayViewModel()
-    @StateObject private var stt = ElevenLabsRealtimeSTT()
 
     @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
     @AppStorage(AppPrefKey.bodyUnit) private var bodyUnitRaw: String = BodyUnit.inches.rawValue
@@ -18,9 +17,9 @@ struct TodayView: View {
 
     @State private var didLoad = false
     @State private var showDatePicker = false
-    @State private var showVoiceCheckIn = false
     @State private var showWeightLog = false
-    @State private var todayCoachNote: CoachNote?
+    @State private var showCoachConversation = false
+    @ObservedObject private var pinnedNoteStore = TodayPinnedNoteStore.shared
     @State private var swipeAccum: CGFloat = 0
     @State private var dismissTask: Task<Void, Never>?
     @State private var weightInputActive = false
@@ -62,7 +61,6 @@ struct TodayView: View {
                 if !didLoad {
                     viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
                     weightInputActive = false
-                    reloadTodayCoachNote()
                     didLoad = true
                 }
                 // Allow rotation while the user is on Today; revert on
@@ -76,7 +74,6 @@ struct TodayView: View {
             .onChange(of: weightUnitRaw) { _, _ in
                 viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
                 weightInputActive = false
-                reloadTodayCoachNote()
             }
             .onChange(of: viewModel.lastSaved) { _, newValue in
                 dismissTask?.cancel()
@@ -168,21 +165,35 @@ struct TodayView: View {
                 // strip with its own `maxHeight: .infinity` and bleeds behind the
                 // tab bar via `.ignoresSafeArea(.container, edges: .bottom)`.
                 if let active = viewModel.activeCut, let projection = viewModel.projection {
-                    if let todayCoachNote {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Today note")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            Text(todayCoachNote.text)
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
-                                .lineLimit(3)
+                    if let pinnedNote = pinnedNoteStore.pinnedNote {
+                        HStack(alignment: .top, spacing: 10) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Coach")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Text(pinnedNote.text)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.primary)
+                            }
+                            Spacer(minLength: 0)
+                            Button {
+                                withAnimation(.easeOut(duration: 0.2)) {
+                                    pinnedNoteStore.dismiss()
+                                }
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .padding(6)
+                            }
+                            .accessibilityLabel("Dismiss coach note")
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                         .glass(in: RoundedRectangle(cornerRadius: 12))
                         .padding(.horizontal)
                         .padding(.bottom, 12)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
                     cutProgressStrip(active: active, projection: projection)
@@ -282,18 +293,13 @@ struct TodayView: View {
                 }
                 .presentationDetents([.medium, .large])
             }
-            .sheet(isPresented: $showVoiceCheckIn, onDismiss: {
-                if stt.isRecording || stt.isStarting {
-                    stt.cancel()
-                }
-            }) {
-                VoiceCheckInSheet(
-                    stt: stt,
-                    onFinish: finishVoiceCheckIn,
-                    onPause: { stt.pause() },
-                    onResume: { stt.resume() }
+            .sheet(isPresented: $showCoachConversation) {
+                CoachConversationSheet(
+                    agentSession: services.coachAgent,
+                    sttModel: sttModel,
+                    auditStore: services.coachAuditStore
                 )
-                .presentationDetents([.height(320), .medium])
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showWeightLog, onDismiss: {
@@ -433,7 +439,6 @@ struct TodayView: View {
             viewModel.lastSaved = nil
             weightInputActive = false
             viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
-            reloadTodayCoachNote()
         }
     }
 
@@ -445,45 +450,7 @@ struct TodayView: View {
     }
 
     private func startVoiceCheckIn() {
-        showVoiceCheckIn = true
-        Task { @MainActor in
-            do {
-                try await stt.start(modelID: sttModel)
-            } catch {
-                stt.recordStartFailure(error)
-            }
-        }
-    }
-
-    private func finishVoiceCheckIn() {
-        Task { @MainActor in
-            let recordingID = stt.currentRecordingID
-            let transcript = await stt.stop()
-            showVoiceCheckIn = false
-
-            if services.coachAuditStore.appendNote(
-                source: .user,
-                kind: .checkIn,
-                visibility: .userVisible,
-                cutStartDate: ActiveCutStore.load()?.startDate,
-                day: Date(),
-                text: transcript,
-                audioDraftID: recordingID
-            ) != nil {
-                await services.coachAgent.run(transcript: transcript, trigger: .voiceCheckIn)
-                reloadTodayCoachNote()
-            }
-        }
-    }
-
-    private func reloadTodayCoachNote() {
-        let day = Reading.dayStart(of: viewModel.date)
-        todayCoachNote = services.coachAuditStore
-            .recentNotes(limit: 20, userVisibleOnly: true)
-            .first { note in
-                guard let noteDay = note.day else { return false }
-                return Reading.dayStart(of: noteDay) == day
-            }
+        showCoachConversation = true
     }
 
 }

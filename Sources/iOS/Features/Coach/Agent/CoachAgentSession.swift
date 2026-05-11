@@ -36,7 +36,8 @@ final class CoachAgentSession: ObservableObject {
         maxTurns: Int = 8,
         activeCutProvider: @escaping () -> ActiveCut? = { ActiveCutStore.load() },
         onMutation: (() -> Void)? = nil,
-        recordMemory: ((String) throws -> CoachAgentMemory)? = nil
+        recordMemory: ((String) throws -> CoachAgentMemory)? = nil,
+        pinTodayNote: ((String) -> Void)? = nil
     ) {
         self.client = client
         self.auditStore = auditStore
@@ -57,7 +58,8 @@ final class CoachAgentSession: ObservableObject {
             scheduledNudgeStore: scheduledNudgeStore,
             activeCutProvider: activeCutProvider,
             onMutation: onMutation,
-            recordMemory: recordMemory
+            recordMemory: recordMemory,
+            pinTodayNote: pinTodayNote
         )
     }
 
@@ -236,10 +238,41 @@ final class CoachAgentSession: ObservableObject {
         var messages = inputMessages
         messages.append(userMessage)
 
+        let startedAt = Date()
         let visionModel = UserDefaults.standard.string(forKey: AppPrefKey.coachVisionModel)
             ?? AppConstants.defaultCoachVisionModel
         let modelOverride = imageAttached ? visionModel : model
+
+        let contextData = (try? JSONSerialization.data(withJSONObject: messages)) ?? Data()
+        let contextFingerprint = Self.fingerprint(contextData)
+        let cutStartDate = ActiveCutStore.load()?.startDate
+
+        let userInputText: String?
+        if let text = userMessage["content"] as? String {
+            userInputText = text
+        } else if let parts = userMessage["content"] as? [[String: Any]],
+                  let textPart = parts.first(where: { $0["type"] as? String == "text" }),
+                  let text = textPart["text"] as? String {
+            userInputText = text
+        } else {
+            userInputText = nil
+        }
+
+        let runID = (try? await auditStore.beginRun(CoachAgentRunAuditRecord(
+            trigger: .conversation,
+            status: .started,
+            cutStartDate: cutStartDate,
+            startedAt: startedAt,
+            modelID: modelOverride,
+            promptVersion: CoachAgentPrompt.version,
+            toolSchemaVersion: CoachTool.schemaVersion,
+            contextFingerprint: contextFingerprint,
+            contextSnapshotJSON: nil,
+            userInputText: userInputText
+        ))) ?? UUID()
+
         var lastText: String?
+        var toolCallCount = 0
 
         for _ in 0..<maxTurns {
             let response: CoachToolCallResponse
@@ -251,28 +284,50 @@ final class CoachAgentSession: ObservableObject {
                     feature: "coach.conversation.turn"
                 )
             } catch {
+                try? await auditStore.finishRun(CoachAgentRunCompletionAuditRecord(
+                    runID: runID,
+                    status: .failed,
+                    completedAt: Date(),
+                    finalResponseJSON: nil,
+                    errorMessage: error.localizedDescription
+                ))
                 return (messages, nil)
             }
 
             guard let assistant = try? JSONSerialization.jsonObject(with: response.assistantMessageJSON) as? [String: Any] else {
+                try? await auditStore.finishRun(CoachAgentRunCompletionAuditRecord(
+                    runID: runID,
+                    status: .failed,
+                    completedAt: Date(),
+                    finalResponseJSON: nil,
+                    errorMessage: "Assistant message was not a JSON object"
+                ))
                 return (messages, nil)
             }
             messages.append(assistant)
 
             if response.toolCalls.isEmpty {
                 lastText = assistant["content"] as? String
+                try? await auditStore.finishRun(CoachAgentRunCompletionAuditRecord(
+                    runID: runID,
+                    status: .succeeded,
+                    completedAt: Date(),
+                    finalResponseJSON: response.assistantMessageJSON,
+                    errorMessage: nil
+                ))
                 return (messages, lastText)
             }
 
-            for (index, toolCall) in response.toolCalls.enumerated() {
+            for toolCall in response.toolCalls {
+                toolCallCount += 1
                 let resultData: Data
                 do {
                     resultData = try await dispatcher.dispatch(
                         name: toolCall.name,
                         argsJSON: toolCall.arguments,
-                        runID: UUID(),
+                        runID: runID,
                         providerCallID: toolCall.id,
-                        sequence: index
+                        sequence: toolCallCount
                     )
                 } catch let dispatchError as CoachToolDispatchError {
                     resultData = encodeError(dispatchError.message)
@@ -287,6 +342,13 @@ final class CoachAgentSession: ObservableObject {
             }
         }
 
+        try? await auditStore.finishRun(CoachAgentRunCompletionAuditRecord(
+            runID: runID,
+            status: .succeeded,
+            completedAt: Date(),
+            finalResponseJSON: nil,
+            errorMessage: "tool turn cap reached"
+        ))
         return (messages, lastText)
     }
 
@@ -310,8 +372,9 @@ final class CoachAgentSession: ObservableObject {
             return
         }
 
-        // Persist the coach's final reply as a userVisible note so the
-        // Daily Briefing can surface it as an observation card.
+        // Persist the coach's final reply as an audit-only note.
+        // Replies are surfaced via the thread view where they are appended
+        // explicitly; we do NOT auto-pin them to the Today view.
         if let data = finalResponseJSON,
            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let text = obj["content"] as? String,
@@ -320,7 +383,7 @@ final class CoachAgentSession: ObservableObject {
                 runID: runID,
                 source: "agent",
                 kind: "observation",
-                visibility: "userVisible",
+                visibility: "auditOnly",
                 cutStartDate: cutStartDate,
                 day: nil,
                 text: text.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -400,7 +463,7 @@ enum CoachDateEncoding {
 }
 
 private enum CoachAgentPrompt {
-    static let version = "coach-agent-v6"
+    static let version = "coach-agent-v7"
 
     static func systemMessage(
         snapshotJSON: Data,
@@ -474,11 +537,12 @@ private enum CoachAgentPrompt {
         ## Tool policy
 
         - Read before mutating when state is ambiguous.
-        - Safe mutation tools: `append_coach_note`, `record_memory`, `replace_current_macro_plan`, `log_macro_deviation`, `mark_untracked_range`, `replace_current_meal_schedule`, `log_meal_event`, `set_step_target`, `schedule_nudge`, `cancel_nudge`, `schedule_diet_break`, `schedule_refeed`.
+        - Safe mutation tools: `append_coach_note`, `record_memory`, `replace_current_macro_plan`, `log_macro_deviation`, `mark_untracked_range`, `replace_current_meal_schedule`, `log_meal_event`, `set_step_target`, `schedule_nudge`, `cancel_nudge`, `schedule_diet_break`, `schedule_refeed`, `pin_today_note`.
         - Pure-compute tools (no side effects): `calculate_meal`, `propose_meal_plan`.
         - Two-turn rule: for meal schedule changes and kcal changes, propose in natural language first. Execute the mutation only after the user explicitly accepts. Never rewrite a plan on a single ambiguous message.
         - Use `record_memory` only for stable facts: food dislikes, dietary constraints, lifestyle patterns, long-arc goals. Precede every `record_memory` call with "I am going to remember that you …" in your reply.
         - Use `append_coach_note` for all interventions, plan reasons, and user pushback. This is the audit trail.
+        - Use `pin_today_note` at most once per session, only when you have a specific, actionable focus for the day — e.g. after a weigh-in that reveals a clear trend, or after the user asks for a daily focus. Never pin generic motivational text.
 
         Current data snapshot:
         \(snapshot)

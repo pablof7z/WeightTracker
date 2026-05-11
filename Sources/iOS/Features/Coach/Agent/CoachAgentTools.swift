@@ -65,7 +65,7 @@ private struct CoachToolEnvelope: Encodable {
 }
 
 enum CoachTool: String, CaseIterable, Sendable {
-    static let schemaVersion = "coach-tools-v5"
+    static let schemaVersion = "coach-tools-v6"
 
     case getCoachSnapshot = "get_coach_snapshot"
     case listMacroPlanPeriods = "list_macro_plan_periods"
@@ -86,6 +86,7 @@ enum CoachTool: String, CaseIterable, Sendable {
     case scheduleDietBreak = "schedule_diet_break"
     case scheduleRefeed = "schedule_refeed"
     case proposeMealPlan = "propose_meal_plan"
+    case pinTodayNote = "pin_today_note"
 
     static var json: Data {
         let envelopes = allCases.map { CoachToolEnvelope(function: $0.definition) }
@@ -383,6 +384,17 @@ enum CoachTool: String, CaseIterable, Sendable {
                     required: ["mealName", "targetKcal", "targetProteinG"]
                 )
             )
+        case .pinTodayNote:
+            return .init(
+                name: rawValue,
+                description: "Pin a focused message to the user's Today view. The user sees it immediately and can dismiss it. Use for daily-focus messages like 'Today, prioritize hitting your protein target' or 'Rest day — keep calories at maintenance.' Overwrites any previous pinned note. Use sparingly — at most once per session, only when you have something genuinely actionable to surface.",
+                parameters: .object(
+                    properties: [
+                        "text": .string(description: "The message to pin. 1–200 characters. Actionable, specific, present-tense.")
+                    ],
+                    required: ["text"]
+                )
+            )
         }
     }
 }
@@ -412,6 +424,10 @@ struct AppendCoachNoteArgs: Decodable {
 }
 
 struct RecordMemoryArgs: Decodable {
+    var text: String
+}
+
+struct PinTodayNoteArgs: Decodable {
     var text: String
 }
 

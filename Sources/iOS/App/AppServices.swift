@@ -84,6 +84,9 @@ final class AppServices: ObservableObject {
             model: coachModel,
             recordMemory: { text in
                 try nostrAgent.recordMemory(text: text)
+            },
+            pinTodayNote: { text in
+                TodayPinnedNoteStore.shared.pin(text: text)
             }
         )
         self.coachAgent = agent
@@ -113,6 +116,31 @@ final class AppServices: ObservableObject {
         await feedback.start(appName: "WeightTracker")
         coachNostrAgent.start()
         await scheduledNudgeStore.syncToNotificationCenter()
+        scheduleEveningReviewIfNeeded()
+    }
+
+    /// Schedule tonight's 9pm coach review nudge if an active cut is running
+    /// and we haven't already done so today.
+    private func scheduleEveningReviewIfNeeded() {
+        guard ActiveCutStore.load() != nil else { return }
+        let cal = Calendar.current
+        let key = "coach.eveningReviewScheduledDay"
+        let today = cal.startOfDay(for: Date())
+        let lastScheduled = UserDefaults.standard.object(forKey: key) as? Date
+        guard lastScheduled.map({ cal.startOfDay(for: $0) != today }) ?? true else { return }
+
+        // Build a 9pm fire time for tonight.
+        guard let ninepm = cal.date(bySettingHour: 21, minute: 0, second: 0, of: Date()) else { return }
+        guard ninepm > Date() else { return }
+
+        scheduledNudgeStore.schedule(
+            message: "How did today go? Coach is ready to review.",
+            triggerType: .timeOfDay,
+            triggerParams: "{\"hour\":21,\"minute\":0}",
+            expiresAt: cal.date(byAdding: .hour, value: 3, to: ninepm)
+        )
+        Task { await scheduledNudgeStore.syncToNotificationCenter() }
+        UserDefaults.standard.set(Date(), forKey: key)
     }
 
     var cycleStarts: [Date] {

@@ -30,6 +30,7 @@ struct CoachAgentToolDispatcher {
     let activeCutProvider: () -> ActiveCut?
     let onMutation: (() -> Void)?
     let recordMemory: ((String) throws -> CoachAgentMemory)?
+    let pinTodayNote: ((String) -> Void)?
     let nowProvider: () -> Date
     let calendar: Calendar
 
@@ -46,6 +47,7 @@ struct CoachAgentToolDispatcher {
         activeCutProvider: @escaping () -> ActiveCut? = { ActiveCutStore.load() },
         onMutation: (() -> Void)? = nil,
         recordMemory: ((String) throws -> CoachAgentMemory)? = nil,
+        pinTodayNote: ((String) -> Void)? = nil,
         nowProvider: @escaping () -> Date = Date.init,
         calendar: Calendar = .current
     ) {
@@ -61,6 +63,7 @@ struct CoachAgentToolDispatcher {
         self.activeCutProvider = activeCutProvider
         self.onMutation = onMutation
         self.recordMemory = recordMemory
+        self.pinTodayNote = pinTodayNote
         self.nowProvider = nowProvider
         self.calendar = calendar
     }
@@ -354,6 +357,9 @@ struct CoachAgentToolDispatcher {
         case .proposeMealPlan:
             let args = try decode(argsJSON, as: ProposeMealPlanArgs.self)
             return try await proposeMealPlan(args)
+        case .pinTodayNote:
+            let args = try decode(argsJSON, as: PinTodayNoteArgs.self)
+            return try executePinTodayNote(args)
         }
     }
 
@@ -457,6 +463,19 @@ struct CoachAgentToolDispatcher {
             beforeJSON: nil,
             afterJSON: resultData
         )
+    }
+
+    private func executePinTodayNote(_ args: PinTodayNoteArgs) throws -> DispatchExecutionResult {
+        let text = args.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            throw CoachToolDispatchError.invalidArgs("pin_today_note.text cannot be empty")
+        }
+        guard text.count <= 200 else {
+            throw CoachToolDispatchError.invalidArgs("pin_today_note.text must be 200 characters or fewer")
+        }
+        pinTodayNote?(text)
+        let result = try encode(["status": "pinned", "text": text])
+        return DispatchExecutionResult(data: result, targetEntity: "today_pinned_note", targetID: nil, beforeJSON: nil, afterJSON: result)
     }
 
     private func replaceCurrentMacroPlan(_ args: ReplaceCurrentMacroPlanArgs) throws -> DispatchExecutionResult {

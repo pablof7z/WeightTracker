@@ -1,45 +1,48 @@
 import SwiftUI
 import UIKit
 
-/// Adaptive sheet that hosts an end-to-end voice conversation with the coach.
-/// Recording → Thinking → Speaking → Reply → Recording … the conversation
-/// history is preserved across turns so the model has full context.
+/// Text-first conversation sheet. Voice input is optional — users can dictate
+/// or type. Coach replies always appear as text; there is no TTS playback.
 struct CoachConversationSheet: View {
     @StateObject private var controller: CoachConversationController
     @State private var showCamera: Bool = false
     @Environment(\.dismiss) private var dismiss
 
-    @Namespace private var sheetNamespace
-
-    init(agentSession: CoachAgentSession, sttModel: String, voiceID: String) {
+    init(agentSession: CoachAgentSession, sttModel: String, auditStore: CoachAuditStore? = nil) {
         _controller = StateObject(wrappedValue: CoachConversationController(
             agentSession: agentSession,
             sttModel: sttModel,
-            voiceID: voiceID
+            auditStore: auditStore,
+            autoResetAfterReply: false
         ))
     }
 
     var body: some View {
-        ZStack {
-            background
+        NavigationStack {
+            ZStack {
+                Color(.systemGroupedBackground).ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                topBar
-                Spacer(minLength: 0)
-                content
-                    .frame(maxWidth: .infinity)
-                Spacer(minLength: 0)
-                bottomBar
+                VStack(spacing: 0) {
+                    content
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    Divider()
+                    inputBar
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color(.systemBackground))
+                }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            Task { await controller.startRecording() }
-        }
-        .onDisappear {
-            controller.teardown()
+            .navigationTitle("Coach")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    cameraButton
+                }
+            }
         }
         .fullScreenCover(isPresented: $showCamera) {
             CameraCaptureView(
@@ -51,176 +54,50 @@ struct CoachConversationSheet: View {
             )
             .ignoresSafeArea()
         }
+        .onDisappear { controller.teardown() }
     }
 
-    // MARK: - Background
-
-    @ViewBuilder
-    private var background: some View {
-        switch controller.state {
-        case .recording, .failed:
-            ConversationWaveBackground(level: controller.stt.level)
-                .opacity(controller.stt.isPaused ? 0.5 : 1)
-                .animation(.easeInOut(duration: 0.18), value: controller.stt.isPaused)
-                .allowsHitTesting(false)
-        case .thinking:
-            LinearGradient(
-                colors: [Color(.systemBackground), Color.accentColor.opacity(0.18)],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        case .speaking:
-            LinearGradient(
-                colors: [Color.black.opacity(0.92), Color.accentColor.opacity(0.35)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-        }
-    }
-
-    // MARK: - Top bar
-
-    private var topBar: some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .semibold))
-                    .padding(10)
-                    .glass(in: Circle())
-            }
-            .accessibilityLabel("Close coach conversation")
-
-            Spacer()
-
-            if isRecordingMode {
-                cameraButton
-            }
-        }
-    }
-
-    private var isRecordingMode: Bool {
-        if case .recording = controller.state { return true }
-        if case .failed = controller.state { return true }
-        return false
-    }
-
-    @ViewBuilder
-    private var cameraButton: some View {
-        Button {
-            showCamera = true
-        } label: {
-            ZStack(alignment: .bottomTrailing) {
-                Group {
-                    if let img = controller.capturedImage {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 44, height: 44)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1.5)
-                            )
-                    } else {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                            .frame(width: 44, height: 44)
-                            .glass(in: RoundedRectangle(cornerRadius: 10))
-                    }
-                }
-                if controller.capturedImage != nil {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.green)
-                        .background(Circle().fill(Color(.systemBackground)))
-                        .offset(x: 4, y: 4)
-                }
-            }
-        }
-        .accessibilityLabel(controller.capturedImage == nil ? "Take a photo" : "Replace photo")
-    }
-
-    // MARK: - Content (state-dependent center stack)
+    // MARK: - Content
 
     @ViewBuilder
     private var content: some View {
         switch controller.state {
-        case .recording:
-            recordingContent
+        case .composing:
+            composingContent
         case .thinking:
             thinkingContent
-        case .speaking(let text):
-            speakingContent(text: text)
+        case .replied(let text):
+            repliedContent(text: text)
         case .failed(let message):
             failedContent(message: message)
         }
     }
 
-    @ViewBuilder
-    private var recordingContent: some View {
-        VStack(spacing: 18) {
-            LiquidGlassContainer(spacing: 24) {
-                Image(systemName: controller.stt.isPaused ? "pause.fill" : "mic.fill")
-                    .font(.system(size: 38, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .padding(28)
-                    .glass(in: Circle(), tint: controller.stt.isPaused ? .orange : .accentColor)
-                    .contentTransition(.symbolEffect(.replace))
+    private var composingContent: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Image(systemName: "bubble.left.and.bubble.right")
+                .font(.system(size: 40))
+                .foregroundStyle(.secondary)
+            Text("Ask the coach anything")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Text("Type below or tap the mic to speak")
+                .font(.subheadline)
+                .foregroundStyle(.tertiary)
+            if controller.capturedImage != nil {
+                photoAttachmentBadge
             }
-
-            Text(transcriptDisplayText)
-                .font(.body)
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(.center)
-                .lineLimit(6)
-                .padding(.horizontal, 12)
-
-            if let error = controller.stt.errorMessage, !error.isEmpty {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(3)
-                    .padding(.horizontal, 12)
-            }
-
-            if let img = controller.capturedImage {
-                HStack(spacing: 8) {
-                    Image(uiImage: img)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 36, height: 36)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                    Text("Photo attached")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Button {
-                        controller.setCapturedImage(nil)
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(8)
-                .glass(in: Capsule())
-            }
+            Spacer()
         }
-    }
-
-    private var transcriptDisplayText: String {
-        if !controller.stt.transcript.isEmpty { return controller.stt.transcript }
-        if controller.stt.isStarting { return "Starting…" }
-        if controller.stt.isPaused { return "Paused" }
-        return "Listening — speak when ready"
+        .padding()
     }
 
     private var thinkingContent: some View {
         VStack(spacing: 16) {
+            Spacer()
             ProgressView()
                 .scaleEffect(1.4)
-                .padding(.bottom, 6)
             Text("Coach is thinking…")
                 .font(.headline)
                 .foregroundStyle(.primary)
@@ -230,94 +107,47 @@ struct CoachConversationSheet: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
+                    .padding(.horizontal, 24)
+            }
+            Spacer()
+        }
+    }
+
+    private func repliedContent(text: String) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if !controller.transcript.isEmpty {
+                    HStack {
+                        Spacer()
+                        Text(controller.transcript)
+                            .font(.subheadline)
+                            .padding(12)
+                            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16))
+                            .foregroundStyle(.white)
+                    }
                     .padding(.horizontal, 16)
-            }
-        }
-    }
-
-    private func speakingContent(text: String) -> some View {
-        VStack(spacing: 18) {
-            ScrollView {
-                Text(text)
-                    .font(.system(size: 17))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(18)
-            }
-            .frame(maxHeight: 280)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.06))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
-                    )
-            )
-            .padding(.horizontal, 4)
-
-            playbackControls
-        }
-    }
-
-    private var playbackControls: some View {
-        VStack(spacing: 12) {
-            // Progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.18))
-                        .frame(height: 4)
-                    Capsule()
-                        .fill(Color.accentColor)
-                        .frame(width: max(0, geo.size.width * controller.audioProgress), height: 4)
                 }
+
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "brain.head.profile")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                    ProposalCard.markdownText(text)
+                        .font(.body)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(14)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 16)
             }
-            .frame(height: 4)
-
-            HStack(spacing: 20) {
-                Button {
-                    controller.replayAudio()
-                } label: {
-                    Image(systemName: "gobackward")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(12)
-                        .background(Circle().fill(Color.white.opacity(0.12)))
-                }
-                .accessibilityLabel("Replay coach response")
-
-                Button {
-                    controller.togglePlayback()
-                } label: {
-                    Image(systemName: controller.isPlayingAudio ? "pause.fill" : "play.fill")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 64, height: 64)
-                        .background(Circle().fill(Color.accentColor))
-                }
-                .accessibilityLabel(controller.isPlayingAudio ? "Pause coach" : "Play coach")
-                .disabled(controller.audioFinished)
-                .opacity(controller.audioFinished ? 0.4 : 1)
-
-                Button {
-                    controller.skipPlayback()
-                } label: {
-                    Image(systemName: "forward.end.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(12)
-                        .background(Circle().fill(Color.white.opacity(0.12)))
-                }
-                .accessibilityLabel("Skip to end")
-                .disabled(controller.audioFinished)
-                .opacity(controller.audioFinished ? 0.4 : 1)
-            }
+            .padding(.vertical, 16)
         }
     }
 
     private func failedContent(message: String) -> some View {
         VStack(spacing: 14) {
+            Spacer()
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 38))
                 .foregroundStyle(.orange)
@@ -325,148 +155,169 @@ struct CoachConversationSheet: View {
                 .font(.body)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 24)
+            Button("Try again") {
+                controller.resetToComposing()
+            }
+            .buttonStyle(.borderedProminent)
+            Spacer()
         }
     }
 
-    // MARK: - Bottom bar (CTA)
+    // MARK: - Input bar
 
     @ViewBuilder
-    private var bottomBar: some View {
+    private var inputBar: some View {
         switch controller.state {
-        case .recording:
-            recordingBottomBar
+        case .composing, .failed:
+            composingInputBar
         case .thinking:
             EmptyView()
-        case .speaking:
-            speakingBottomBar
-        case .failed:
-            failedBottomBar
+        case .replied:
+            continueInputBar
         }
     }
 
-    private var recordingBottomBar: some View {
-        VStack(spacing: 10) {
-            Button {
-                Task { await controller.sendTurn() }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "paperplane.fill")
-                    Text("Send")
-                        .font(.headline)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(sendButtonEnabled ? Color.accentColor : Color.gray.opacity(0.4))
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-            .disabled(!sendButtonEnabled)
+    private var composingInputBar: some View {
+        HStack(spacing: 10) {
+            micButton
+            TextField("Message coach…", text: $controller.inputText, axis: .vertical)
+                .font(.body)
+                .lineLimit(1...5)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+                .onSubmit { sendIfReady() }
 
-            Text("Tap mic when you're done · or tap Send")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            sendButton
         }
     }
 
-    private var sendButtonEnabled: Bool {
-        let hasTranscript = !controller.stt.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let hasImage = controller.capturedImage != nil
-        return (hasTranscript || hasImage)
-            && !controller.stt.isStarting
+    private var continueInputBar: some View {
+        HStack(spacing: 10) {
+            micButton
+            TextField("Reply…", text: $controller.inputText, axis: .vertical)
+                .font(.body)
+                .lineLimit(1...5)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+                .onSubmit { sendIfReady() }
+            sendButton
+        }
     }
 
-    private var speakingBottomBar: some View {
+    private var micButton: some View {
         Button {
-            controller.startReply()
+            Task { await handleMicTap() }
         } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "mic.fill")
-                Text("Reply")
-                    .font(.headline)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(controller.audioFinished ? Color.accentColor : Color.white.opacity(0.18))
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            Image(systemName: micIcon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(controller.stt.isRecording ? Color.accentColor : Color.secondary)
+                .frame(width: 36, height: 36)
+                .background(
+                    Circle().fill(controller.stt.isRecording
+                        ? Color.accentColor.opacity(0.15)
+                        : Color(.secondarySystemGroupedBackground))
+                )
+                .animation(.easeInOut(duration: 0.1), value: controller.stt.isRecording)
         }
-        .disabled(!controller.audioFinished)
-        .opacity(controller.audioFinished ? 1 : 0.7)
+        .accessibilityLabel(controller.stt.isRecording ? "Stop recording" : "Start recording")
     }
 
-    private var failedBottomBar: some View {
-        VStack(spacing: 10) {
-            Button {
-                Task {
-                    await controller.startRecording()
+    private var micIcon: String {
+        if controller.stt.isStarting { return "ellipsis" }
+        if controller.stt.isRecording { return "stop.fill" }
+        return "mic.fill"
+    }
+
+    private var sendButton: some View {
+        Button {
+            sendIfReady()
+        } label: {
+            Image(systemName: "arrow.up.circle.fill")
+                .font(.system(size: 30))
+                .foregroundStyle(canSend ? Color.accentColor : Color.secondary.opacity(0.4))
+        }
+        .disabled(!canSend)
+        .accessibilityLabel("Send message")
+    }
+
+    private var canSend: Bool {
+        let hasText = !controller.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasImage = controller.capturedImage != nil
+        let notThinking: Bool
+        if case .thinking = controller.state { notThinking = false } else { notThinking = true }
+        return (hasText || hasImage || controller.stt.isRecording) && notThinking
+    }
+
+    private func sendIfReady() {
+        guard canSend else { return }
+        Task { await controller.sendTurn() }
+    }
+
+    private func handleMicTap() async {
+        if controller.stt.isRecording || controller.stt.isStarting {
+            await controller.stopRecording()
+        } else {
+            await controller.startRecording()
+        }
+    }
+
+    // MARK: - Camera
+
+    @ViewBuilder
+    private var cameraButton: some View {
+        Button {
+            showCamera = true
+        } label: {
+            ZStack(alignment: .bottomTrailing) {
+                if let img = controller.capturedImage {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 32, height: 32)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(Color.secondary.opacity(0.4), lineWidth: 1)
+                        )
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.green)
+                        .background(Circle().fill(Color(.systemBackground)))
+                        .offset(x: 3, y: 3)
+                } else {
+                    Image(systemName: "camera")
+                        .font(.system(size: 18))
+                        .foregroundStyle(.secondary)
                 }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Try again")
-                        .font(.headline)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.accentColor)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
             }
+        }
+        .accessibilityLabel(controller.capturedImage == nil ? "Attach photo" : "Replace photo")
+    }
+
+    private var photoAttachmentBadge: some View {
+        HStack(spacing: 8) {
+            if let img = controller.capturedImage {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 40, height: 40)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            Text("Photo attached")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
             Button {
-                dismiss()
+                controller.setCapturedImage(nil)
             } label: {
-                Text("Dismiss")
-                    .font(.subheadline.weight(.medium))
+                Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.secondary)
             }
         }
+        .padding(8)
+        .background(Color(.secondarySystemGroupedBackground), in: Capsule())
     }
 }
 
-// MARK: - Wave background (kept private to avoid clashing with VoiceCheckInSheet)
-
-private struct ConversationWaveBackground: View {
-    var level: Float
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let driven = max(0, min(1, Double(level)))
-            Canvas { context, size in
-                let baseY = size.height / 2
-                let idleAmp: CGFloat = 8
-                let liveAmp = CGFloat(driven) * size.height * 0.42
-                let amp = idleAmp + liveAmp
-                let layers: [(speed: Double, freq: Double, offset: Double, scale: CGFloat, opacity: Double)] = [
-                    (1.7, 1.4, 0.0, 1.00, 0.55),
-                    (1.1, 2.2, 1.3, 0.62, 0.32),
-                    (0.6, 3.0, 2.6, 0.38, 0.18)
-                ]
-                for layer in layers {
-                    var path = Path()
-                    let steps = max(60, Int(size.width / 3))
-                    for i in 0...steps {
-                        let progress = Double(i) / Double(steps)
-                        let x = CGFloat(progress) * size.width
-                        let envelope = sin(progress * .pi)
-                        let y = baseY + sin(progress * .pi * 2 * layer.freq + t * layer.speed + layer.offset)
-                            * Double(amp * layer.scale) * envelope
-                        let point = CGPoint(x: x, y: CGFloat(y))
-                        if i == 0 {
-                            path.move(to: point)
-                        } else {
-                            path.addLine(to: point)
-                        }
-                    }
-                    context.stroke(
-                        path,
-                        with: .color(Color.accentColor.opacity(layer.opacity)),
-                        style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
-                    )
-                }
-            }
-        }
-        .ignoresSafeArea()
-    }
-}

@@ -13,6 +13,7 @@ enum CoachAgentRunTrigger: String, Codable, CaseIterable, Sendable {
     case macroUntrackedChanged
     case voiceCheckIn
     case nostrConversation
+    case conversation
     case toolMutationFollowup
     case manual
 }

@@ -181,6 +181,17 @@ final class TodayViewModel: ObservableObject {
             readings: refreshed,
             asOf: Date()
         )
+
+        // Trigger a proactive coach run on weigh-in days so the coach can
+        // comment on the new data and post an observation to the thread.
+        if Calendar.current.isDateInToday(day), ActiveCutStore.load() != nil {
+            Task { [services] in
+                await services.coachAgent.run(
+                    transcript: "User just logged today's weight.",
+                    trigger: .weightSaved
+                )
+            }
+        }
     }
 
     /// 7-day EMA over the most recent ≤7 readings whose date is ≤ `asOf`.
