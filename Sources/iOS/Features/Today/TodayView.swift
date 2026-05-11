@@ -17,7 +17,7 @@ struct TodayView: View {
 
     @State private var didLoad = false
     @State private var showDatePicker = false
-    @State private var showWeightLog = false
+    @State private var showSettings = false
     @State private var showCoachConversation = false
     @ObservedObject private var pinnedNoteStore = TodayPinnedNoteStore.shared
     @State private var swipeAccum: CGFloat = 0
@@ -235,27 +235,13 @@ struct TodayView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Selected date \(titleText). Tap to pick a date.")
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        if canGoBack { goBack() }
-                    } label: { Image(systemName: "chevron.left") }
-                    .disabled(!canGoBack)
-                    .accessibilityLabel("Previous day")
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showWeightLog = true
-                    } label: {
-                        Image(systemName: "list.bullet")
-                    }
-                    .accessibilityLabel("Weight log")
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        if canGoForward { goForward() }
-                    } label: { Image(systemName: "chevron.right") }
-                    .disabled(!canGoForward)
-                    .accessibilityLabel("Next day")
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("Settings")
                 }
                 if !Calendar.current.isDateInToday(viewModel.date) {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -294,19 +280,13 @@ struct TodayView: View {
                 .presentationDetents([.medium, .large])
             }
             .sheet(isPresented: $showCoachConversation) {
-                CoachConversationSheet(
-                    agentSession: services.coachAgent,
-                    sttModel: sttModel,
-                    auditStore: services.coachAuditStore
-                )
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-            }
-            .sheet(isPresented: $showWeightLog, onDismiss: {
-                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
-            }) {
-                WeightLogView()
+                TodayCoachSheet(sttModel: sttModel)
                     .environmentObject(services)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
             }
     }
 

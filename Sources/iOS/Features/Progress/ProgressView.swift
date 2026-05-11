@@ -20,6 +20,7 @@ struct ProgressTabView: View {
     // Trends state
     @StateObject private var trendsViewModel = TrendsViewModel()
     @State private var selectedGap: Gap?
+    @State private var showWeightLog = false
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
 
@@ -35,6 +36,23 @@ struct ProgressTabView: View {
                 .padding(.bottom, 24)
             }
             .navigationTitle("Progress")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showWeightLog = true
+                    } label: {
+                        Image(systemName: "list.bullet")
+                    }
+                    .accessibilityLabel("Weight log")
+                }
+            }
+            .sheet(isPresented: $showWeightLog, onDismiss: {
+                chartViewModel.reload(from: services.repository)
+                trendsViewModel.reload(repository: services.repository)
+            }) {
+                WeightLogView()
+                    .environmentObject(services)
+            }
             .onAppear {
                 chartViewModel.reload(from: services.repository)
                 trendsViewModel.reload(repository: services.repository)

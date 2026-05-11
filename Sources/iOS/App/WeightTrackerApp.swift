@@ -92,9 +92,6 @@ struct MainTabView: View {
             CoachTabView()
                 .tag(3)
                 .tabItem { Label("Coach", systemImage: "brain.head.profile") }
-            SettingsView()
-                .tag(4)
-                .tabItem { Label("Settings", systemImage: "gearshape") }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openCutsTab)) { _ in
             selection = 2
