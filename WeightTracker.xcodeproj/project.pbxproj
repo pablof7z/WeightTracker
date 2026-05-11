@@ -114,6 +114,7 @@
 		7174988F0A334956A81DFE19 /* StartCutMacrosDisclosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 204B7A82FA57F7D1AC2E2BBF /* StartCutMacrosDisclosure.swift */; };
 		71876BE884FE0B368234EFB2 /* MealSchedulePeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5114D5AFBE9A610273533C95 /* MealSchedulePeriod.swift */; };
 		71ADA161616BD411B6512ACE /* MacroCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB98B24C1D7B40BA0241A18 /* MacroCopy.swift */; };
+		7395C27D679D9C7186A456FB /* TodayCoachSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56ED7B7551ED9D8C20772FD2 /* TodayCoachSheet.swift */; };
 		73AC4A3FA34AF883151C780A /* MacroEnums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761EF586BFAF023230053680 /* MacroEnums.swift */; };
 		740F8851D0A0D41562200DCD /* LiquidGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F63296C48489DEFE67600DE /* LiquidGlass.swift */; };
 		75F537DAE83FA43529B0F866 /* WeightTrackerWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DF32432F839E099D4B007C11 /* WeightTrackerWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -339,6 +340,7 @@
 		5114D5AFBE9A610273533C95 /* MealSchedulePeriod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealSchedulePeriod.swift; sourceTree = "<group>"; };
 		52BBD06B7D5B4CDF8ACCE11F /* WatchEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchEntryView.swift; sourceTree = "<group>"; };
 		53677FD938441B60268BC6E1 /* EditMacrosSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditMacrosSheet.swift; sourceTree = "<group>"; };
+		56ED7B7551ED9D8C20772FD2 /* TodayCoachSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayCoachSheet.swift; sourceTree = "<group>"; };
 		5813F2E2F81D2BCB4075507E /* ProviderLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderLogoView.swift; sourceTree = "<group>"; };
 		58B7674AA262925D88A163EF /* MacroDeviation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroDeviation.swift; sourceTree = "<group>"; };
 		58E9FC5FE25950AA95ADEDC8 /* MacroDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroDefaults.swift; sourceTree = "<group>"; };
@@ -486,6 +488,7 @@
 				07C61BC0542EB501CA42CD23 /* CameraCaptureView.swift */,
 				FDC259444FFC3E43C23A7FC4 /* CoachConversationController.swift */,
 				8CEDE8B0626C999299D33081 /* CoachConversationSheet.swift */,
+				56ED7B7551ED9D8C20772FD2 /* TodayCoachSheet.swift */,
 			);
 			path = Conversation;
 			sourceTree = "<group>";
@@ -1285,6 +1288,7 @@
 				EF01604FFE43A55AE432891D /* StartCutSheet.swift in Sources */,
 				DEED1B89C600F02B59D536F7 /* SwipeUpHint.swift in Sources */,
 				27168DB595057CCFB03C9A25 /* Theme.swift in Sources */,
+				7395C27D679D9C7186A456FB /* TodayCoachSheet.swift in Sources */,
 				0820172DFB75EE5816D3CCEB /* TodayPager.swift in Sources */,
 				4DAB5054D8426C3F17E84E98 /* TodayPinnedNoteStore.swift in Sources */,
 				9A6798B06B0147C50E3E1BF4 /* TodayView.swift in Sources */,
@@ -1413,7 +1417,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 202605111030;
+				CURRENT_PROJECT_VERSION = 202605111930;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1485,7 +1489,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 202605111030;
+				CURRENT_PROJECT_VERSION = 202605111930;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_NS_ASSERTIONS = NO;
