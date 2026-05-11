@@ -454,7 +454,7 @@ final class CoachAgentSession: ObservableObject {
 }
 
 enum CoachDateEncoding {
-    static let iso8601Local: ISO8601DateFormatter = {
+    nonisolated(unsafe) static let iso8601Local: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         f.timeZone = .current

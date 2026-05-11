@@ -537,6 +537,7 @@ private extension CoachRun {
         case .macroDeviationChanged: return "Food adherence changed"
         case .macroUntrackedChanged: return "Untracked range changed"
         case .voiceCheckIn: return "Voice check-in"
+        case .conversation: return "In-app chat"
         case .nostrConversation: return "Nostr conversation"
         case .toolMutationFollowup: return "Tool mutation follow-up"
         case .manual: return "Manual refresh"

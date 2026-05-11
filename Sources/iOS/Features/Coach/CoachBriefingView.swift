@@ -302,7 +302,7 @@ struct CoachBriefingView: View {
 
 // MARK: - Note bubble
 
-private struct NoteBubble: View {
+struct NoteBubble: View {
     let note: CoachNote
 
     var body: some View {
@@ -364,7 +364,7 @@ private struct NoteBubble: View {
 
 // MARK: - Proposal thread card
 
-private struct ProposalThreadCard: View {
+struct ProposalThreadCard: View {
     @EnvironmentObject private var services: AppServices
     let proposal: CoachProposal
     let onUpdate: () -> Void

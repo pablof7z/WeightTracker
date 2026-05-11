@@ -309,6 +309,7 @@ extension CoachRunTrigger {
         case .macroDeviationChanged: "Macro Deviation"
         case .macroUntrackedChanged: "Untracked Range"
         case .voiceCheckIn: "Voice Check-in"
+        case .conversation: "In-App Chat"
         case .nostrConversation: "Conversation"
         case .toolMutationFollowup: "Tool Followup"
         case .manual: "Manual"
