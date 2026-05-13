@@ -8,7 +8,12 @@ import Foundation
 ///
 /// Math (see `/tmp/projected-weight-math-brainstorm.md`):
 ///
-///   W_today  = trend[asOf]   (EWMA trend, α = 0.10)
+///   W_today  = 7-reading EMA at asOf (α = 0.25 over the most recent ≤7 raw
+///              readings — matches the "7-day avg" subtitle on the Today
+///              screen, so the projection visibly anchors on a number the
+///              user already trusts). The longer-window α=0.10 EWMA that
+///              powers the deficit estimator lags ~3–5 lb during active
+///              loss; anchoring there made 30-day projections feel too high.
 ///   r_obs    = OLS slope of trailing 14 days of trend (kg/day; +ve when gaining)
 ///   r_ss     = -r_obs · (current_phase_kcal_per_lb / steady_state_kcal_per_lb)
 ///              — i.e. "kg lost per day, positive when losing". The phase
@@ -98,16 +103,17 @@ public enum CutWeightProjector {
         let cutEndDay = calendar.startOfDay(for: cut.targetEndDate)
         guard cutEndDay > today else { return nil }
 
-        // Build the same EWMA trend the deficit estimator uses. Reusing the
-        // exact helper keeps the projector and the deficit widget perfectly
-        // consistent — same α, same seeding, same daily interpolation.
+        // Build the same EWMA trend the deficit estimator uses. We use it for
+        // the *slope* only — anchoring at trend[today] makes 30-day projections
+        // feel too high during active loss because the α=0.10 EWMA lags. For
+        // the anchor we use the short-window 7-reading EMA below.
         let trend = CutDeficitEstimator.buildEwmaTrend(
             readings: readings,
             cutStart: cutStartDay,
             asOf: today,
             calendar: calendar
         )
-        guard let wTodayKg = trend[today] else { return nil }
+        guard let wTodayKg = sevenReadingEMA(readings: readings, asOf: today) else { return nil }
 
         // Build the trailing-14-day series in kg, indexed by day.
         let windowDays = min(CutDeficitEstimator.dailyRateWindowDays, daysSinceStart + 1)
@@ -169,6 +175,26 @@ public enum CutWeightProjector {
             isFlat: isFlat,
             projectionAtGoalKg: projectionAtGoalKg
         )
+    }
+
+    // MARK: - Anchor (7-reading EMA, matches Today's "7-day avg" subtitle)
+
+    /// EMA over the most recent ≤7 raw readings whose date is ≤ `asOf`, with
+    /// α = 2/(N+1) = 0.25 (N=7). Matches `TodayViewModel.computeEMA7Kg` exactly
+    /// so the projection anchors on the number the user already sees on screen.
+    /// Returns nil when fewer than 2 readings exist.
+    private static func sevenReadingEMA(readings: [Reading], asOf day: Date) -> Double? {
+        let eligible = readings
+            .filter { $0.date <= day }
+            .sorted { $0.date < $1.date }
+        let window = eligible.suffix(7)
+        guard window.count >= 2 else { return nil }
+        let alpha = 0.25
+        var ema = window.first!.weightKg
+        for r in window.dropFirst() {
+            ema = alpha * r.weightKg + (1.0 - alpha) * ema
+        }
+        return ema
     }
 
     // MARK: - OLS with standard error
