@@ -17,6 +17,24 @@ struct LandscapeFocusChart: View {
     let inCutReadings: [Reading]
     let projection: CutProjectionResult
     let unit: WeightUnit
+    let milestones: [Milestone]
+    let allReadings: [Reading]
+
+    init(
+        active: ActiveCut,
+        inCutReadings: [Reading],
+        projection: CutProjectionResult,
+        unit: WeightUnit,
+        milestones: [Milestone] = [],
+        allReadings: [Reading] = []
+    ) {
+        self.active = active
+        self.inCutReadings = inCutReadings
+        self.projection = projection
+        self.unit = unit
+        self.milestones = milestones
+        self.allReadings = allReadings.isEmpty ? inCutReadings : allReadings
+    }
 
     enum Window: String, CaseIterable, Identifiable {
         case all = "All"
@@ -51,9 +69,43 @@ struct LandscapeFocusChart: View {
     private var fullStart: Date { active.startDate }
     private var fullEnd: Date {
         // Show readings through projection-anchor + 14 days, capped at the
-        // cut target end date. Same windowing as the minichart.
+        // cut target end date. Same windowing as the minichart, but
+        // extended to include the furthest upcoming milestone so a trip in
+        // 6 weeks still appears on the .all window.
         let twoWeeksOut = projection.anchorDate.addingTimeInterval(14 * Self.secondsPerDay)
-        return min(active.targetEndDate, twoWeeksOut)
+        let furthestMilestone = upcomingMilestones.map(\.date).max()
+        let baseEnd = max(twoWeeksOut, furthestMilestone ?? twoWeeksOut)
+        return min(active.targetEndDate, baseEnd)
+    }
+
+    /// Upcoming milestones inside this cut window, sorted oldest-first.
+    private var upcomingMilestones: [Milestone] {
+        let today = Calendar.current.startOfDay(for: Date())
+        return milestones
+            .filter { $0.date >= today && $0.date <= active.targetEndDate }
+            .sorted { $0.date < $1.date }
+    }
+
+    /// Same projection lookup as the minichart — kept private to each view
+    /// rather than shared via a free function, because Charts views compose
+    /// best when their data is local. Computational cost is small (one OLS
+    /// per milestone) and only runs when milestones exist.
+    private var milestonePoints: [(milestone: Milestone, projectedKg: Double)] {
+        let cal = Calendar.current
+        let now = Date()
+        let today = cal.startOfDay(for: now)
+        return upcomingMilestones.compactMap { m in
+            let days = max(1, cal.dateComponents([.day], from: today, to: m.date).day ?? 1)
+            guard let result = CutWeightProjector.project(
+                activeCut: active,
+                readings: allReadings,
+                horizonDays: days,
+                asOf: now
+            ), !result.isFlat else {
+                return nil
+            }
+            return (m, result.projectedKg)
+        }
     }
 
     private var xDomain: ClosedRange<Date> {
@@ -94,6 +146,11 @@ struct LandscapeFocusChart: View {
         }
         if let worstEnd = projection.worstEndKg, domain.contains(projection.targetEndDate) {
             w.append(worstEnd)
+        }
+        // Include milestone projections that fall within the current window
+        // so their dots aren't clipped by the y-axis.
+        for entry in milestonePoints where domain.contains(entry.milestone.date) {
+            w.append(entry.projectedKg)
         }
         // Defensive fallback when the window contains nothing
         if w.isEmpty {
@@ -307,6 +364,31 @@ struct LandscapeFocusChart: View {
             .symbolSize(140)
             .symbol(.circle.strokeBorder(lineWidth: 2.5))
             .foregroundStyle(Self.avgColor)
+
+            // Milestone dots with floating name labels (landscape variant).
+            // Larger dots and labels than the minichart to fit the bigger
+            // canvas; still capped at 1-line.
+            ForEach(milestonePoints, id: \.milestone.id) { entry in
+                PointMark(
+                    x: .value("Milestone Date", entry.milestone.date),
+                    y: .value("Milestone Weight", display(entry.projectedKg))
+                )
+                .symbolSize(110)
+                .symbol(.circle)
+                .foregroundStyle(Color.accentColor)
+                .annotation(position: .top, alignment: .center, spacing: 4) {
+                    Text(entry.milestone.name)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(Color(.systemBackground).opacity(0.85))
+                        )
+                        .lineLimit(1)
+                }
+            }
 
             // Selection rule + dot
             if let sel = selectedDate, let near = nearestReading(to: sel) {

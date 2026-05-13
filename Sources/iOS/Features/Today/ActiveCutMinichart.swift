@@ -11,8 +11,29 @@ struct ActiveCutMinichart: View {
     let inCutReadings: [Reading]
     let projection: CutProjectionResult
     let unit: WeightUnit
+    let milestones: [Milestone]
+    let allReadings: [Reading]
 
     @State private var showFullscreen = false
+
+    init(
+        active: ActiveCut,
+        inCutReadings: [Reading],
+        projection: CutProjectionResult,
+        unit: WeightUnit,
+        milestones: [Milestone] = [],
+        allReadings: [Reading] = []
+    ) {
+        self.active = active
+        self.inCutReadings = inCutReadings
+        self.projection = projection
+        self.unit = unit
+        self.milestones = milestones
+        // `allReadings` (history including pre-cut) feeds the milestone
+        // projector, which needs the full series for its EWMA seed. Caller
+        // can omit it for back-compat — projector will skip milestones.
+        self.allReadings = allReadings.isEmpty ? inCutReadings : allReadings
+    }
 
     private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
@@ -32,7 +53,42 @@ struct ActiveCutMinichart: View {
 
     private var windowEnd: Date {
         let fourteenDaysOut = projection.anchorDate.addingTimeInterval(14 * Self.secondsPerDay)
-        return min(active.targetEndDate, fourteenDaysOut)
+        // Extend the visible window to include the furthest upcoming
+        // milestone so its dot doesn't fall off the right edge. Capped at
+        // the cut's target end date — we never project past the cut.
+        let furthestMilestone = upcomingMilestones.map(\.date).max()
+        let baseEnd = max(fourteenDaysOut, furthestMilestone ?? fourteenDaysOut)
+        return min(active.targetEndDate, baseEnd)
+    }
+
+    /// Upcoming milestones inside this cut window, sorted oldest-first.
+    private var upcomingMilestones: [Milestone] {
+        let today = Calendar.current.startOfDay(for: Date())
+        return milestones
+            .filter { $0.date >= today && $0.date <= active.targetEndDate }
+            .sorted { $0.date < $1.date }
+    }
+
+    /// Projected kg at each upcoming milestone; `nil` entries are dropped so
+    /// the chart skips milestones whose projection is unavailable (too few
+    /// readings, band too wide). The projector reuses the same EWMA seed
+    /// and trend as the rest of the system — milestones share the truth.
+    private var milestonePoints: [(milestone: Milestone, projectedKg: Double)] {
+        let cal = Calendar.current
+        let now = Date()
+        let today = cal.startOfDay(for: now)
+        return upcomingMilestones.compactMap { m in
+            let days = max(1, cal.dateComponents([.day], from: today, to: m.date).day ?? 1)
+            guard let result = CutWeightProjector.project(
+                activeCut: active,
+                readings: allReadings,
+                horizonDays: days,
+                asOf: now
+            ), !result.isFlat else {
+                return nil
+            }
+            return (m, result.projectedKg)
+        }
     }
 
     private func interp(from a: (Date, Double), to b: (Date, Double), at t: Date) -> Double {
@@ -55,6 +111,10 @@ struct ActiveCutMinichart: View {
             w.append(interp(from: (active.startDate, active.startWeightKg),
                             to: (projection.targetEndDate, worstEnd), at: windowEnd))
         }
+        // Include milestone projections so the y-axis autoscale doesn't
+        // clip them — a milestone weight below the current data range
+        // would otherwise sit off-screen.
+        w.append(contentsOf: milestonePoints.map(\.projectedKg))
         return w
     }
     /// Lower-bounds the chart well below the data so the gradient under the AreaMark
@@ -264,6 +324,32 @@ struct ActiveCutMinichart: View {
                     Text("Target reached")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.green)
+                }
+            }
+
+            // Milestone dots with floating name labels. Each dot anchors at
+            // the milestone's date + projected weight; the annotation floats
+            // above with the milestone name to motivate the user — "this is
+            // where you'll be by your trip".
+            ForEach(milestonePoints, id: \.milestone.id) { entry in
+                PointMark(
+                    x: .value("Milestone Date", entry.milestone.date),
+                    y: .value("Milestone Weight", display(entry.projectedKg))
+                )
+                .symbolSize(70)
+                .symbol(.circle)
+                .foregroundStyle(Color.accentColor)
+                .annotation(position: .top, alignment: .center, spacing: 3) {
+                    Text(entry.milestone.name)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(
+                            Capsule()
+                                .fill(Color(.systemBackground).opacity(0.85))
+                        )
+                        .lineLimit(1)
                 }
             }
         }

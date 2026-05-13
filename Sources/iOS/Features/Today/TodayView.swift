@@ -99,7 +99,9 @@ struct TodayView: View {
                 active: active,
                 inCutReadings: viewModel.inCutReadings,
                 projection: projection,
-                unit: weightUnit
+                unit: weightUnit,
+                milestones: viewModel.milestones,
+                allReadings: viewModel.allReadings
             )
         } else {
             // No active cut yet — fall back to a minimal hint instead of
@@ -222,7 +224,9 @@ struct TodayView: View {
                         active: active,
                         inCutReadings: viewModel.inCutReadings,
                         projection: projection,
-                        unit: weightUnit
+                        unit: weightUnit,
+                        milestones: viewModel.milestones,
+                        allReadings: viewModel.allReadings
                     )
                     .transition(.opacity)
                 }
@@ -406,9 +410,10 @@ struct TodayView: View {
     // MARK: - Milestone markers
 
     /// One marker per milestone group, positioned along the bar by
-    /// `(milestone.date − today) / (cutEnd − today)`. Markers within ~12pt
-    /// of each other are merged into a single marker with a `+N` badge and
-    /// a shared popover.
+    /// `(milestone.date − today) / (cutEnd − today)`. Markers within ~50pt
+    /// of each other are merged into a single label with a `+N` badge — the
+    /// wider threshold accounts for the text-label width (~40pt for "172 lbs"
+    /// versus the original 14pt flag).
     @ViewBuilder
     private func milestoneMarkers(active: ActiveCut, projection: CutProjectionResult, barWidth: CGFloat) -> some View {
         if !viewModel.milestones.isEmpty, barWidth > 0 {
@@ -421,14 +426,22 @@ struct TodayView: View {
                         readings: viewModel.allReadings,
                         weightUnit: weightUnit
                     )
-                    .offset(x: group.x - 4, y: -10)  // 8pt-wide flag, 10pt above the 3pt bar
+                    // Center the label on its anchor x and lift it above the
+                    // 3pt bar. Estimated label half-width is ~22pt for
+                    // "172 lbs" — close enough to center the popover anchor.
+                    .offset(x: group.x - 22, y: -22)
                 }
             }
-            .frame(width: barWidth, alignment: .topLeading)
+            .frame(width: barWidth, height: 1, alignment: .topLeading)
             .allowsHitTesting(true)
         }
     }
 
+    /// Cluster upcoming milestones into bar groups. Computes projected weight
+    /// at the anchor (nearest) milestone date so the marker can render a
+    /// weight number inline; groups whose projection is unavailable still
+    /// appear in the result (the marker renders nothing — bar markers only
+    /// motivate when the number is shown).
     private func makeMilestoneGroups(active: ActiveCut, barWidth: CGFloat) -> [MilestoneGroup] {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
@@ -446,8 +459,9 @@ struct TodayView: View {
                 return (m, clamped * barWidth)
             }
 
-        // Cluster adjacent markers within 12pt of each other.
-        let threshold: CGFloat = 12
+        // Cluster adjacent markers within ~50pt of each other — sized for
+        // the text label width (~40pt) plus a small gap.
+        let threshold: CGFloat = 50
         var groups: [MilestoneGroup] = []
         for entry in positioned {
             if var last = groups.last, abs(entry.x - last.x) <= threshold {
@@ -456,10 +470,25 @@ struct TodayView: View {
                 last.x = (last.x + entry.x) / 2
                 groups[groups.count - 1] = last
             } else {
-                groups.append(MilestoneGroup(milestones: [entry.milestone], x: entry.x))
+                groups.append(MilestoneGroup(milestones: [entry.milestone], x: entry.x, projectedKg: nil))
             }
         }
-        return groups
+
+        // Resolve the projected kg for each group's anchor (nearest) milestone.
+        return groups.map { group in
+            var g = group
+            let anchor = g.milestones.min(by: { $0.date < $1.date }) ?? g.milestones[0]
+            let days = max(1, cal.dateComponents([.day], from: today, to: anchor.date).day ?? 1)
+            if let result = CutWeightProjector.project(
+                activeCut: active,
+                readings: viewModel.allReadings,
+                horizonDays: days,
+                asOf: Date()
+            ), !result.isFlat {
+                g.projectedKg = result.projectedKg
+            }
+            return g
+        }
     }
 
     // MARK: - Date navigation
@@ -515,21 +544,27 @@ struct TodayView: View {
 
 // MARK: - Milestone markers (data + view)
 
-/// One or more milestones rendered as a single flag on the cut progress bar.
-/// `x` is the marker's horizontal pixel offset along the bar.
+/// One or more milestones rendered as a single label on the cut progress bar.
+/// `x` is the marker's horizontal pixel offset along the bar. `projectedKg`
+/// is the forecast at the nearest (anchor) milestone's date — `nil` means we
+/// skip rendering: a bar marker only motivates when we can show a number.
 struct MilestoneGroup: Identifiable {
     var milestones: [Milestone]
     var x: CGFloat
+    var projectedKg: Double?
     var id: String {
         milestones.map(\.id.uuidString).sorted().joined(separator: "|")
     }
 }
 
-/// Small flag above the cut-progress bar with a tap-callout showing name,
-/// date, and the projected weight at that day. On iPhone portrait the
-/// callout slides up as a sheet; on iPad / landscape SwiftUI's `.popover`
-/// modifier renders it inline. `+N` badge appears when multiple milestones
-/// share the same spot on the bar.
+/// Inline text label above the cut-progress bar showing the projected weight
+/// at the milestone date. Tap → callout with the full name + date for every
+/// milestone in the group. Motivational framing: the user sees the goal
+/// weight they'll likely hit by their trip / wedding / shoot.
+///
+/// On iPhone portrait the callout slides up as a sheet; on iPad / landscape
+/// SwiftUI's `.popover` adapts automatically. A `+N` badge marks groups with
+/// multiple milestones (when two events land within ~50pt of each other).
 private struct MilestoneMarker: View {
     let group: MilestoneGroup
     let active: ActiveCut
@@ -544,41 +579,67 @@ private struct MilestoneMarker: View {
         return f
     }()
 
+    private static let shortDateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f
+    }()
+
+    /// Anchor milestone for the headline label (nearest in the group).
+    private var anchor: Milestone { group.milestones.sorted(by: { $0.date < $1.date }).first ?? group.milestones[0] }
+
+    /// Headline text, e.g. "172 lbs". Whole pounds keep the label tight on
+    /// the bar; full precision lives in the callout.
+    private var headline: String? {
+        guard let kg = group.projectedKg else { return nil }
+        let raw = UnitConvert.displayWeight(kg: kg, in: weightUnit)
+        return String(format: "%.0f %@", raw.rounded(), weightUnit.symbol)
+    }
+
     var body: some View {
-        Button {
-            showCallout = true
-        } label: {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: "flag.fill")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 14, height: 14)
-                    .contentShape(Rectangle())
-                if group.milestones.count > 1 {
-                    Text("+\(group.milestones.count - 1)")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 3)
-                        .padding(.vertical, 1)
-                        .background(Capsule().fill(Color.accentColor))
-                        .offset(x: 6, y: -4)
+        if let headline {
+            Button {
+                showCallout = true
+            } label: {
+                HStack(spacing: 3) {
+                    Text(headline)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .monospacedDigit()
+                    if group.milestones.count > 1 {
+                        Text("+\(group.milestones.count - 1)")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 3)
+                            .padding(.vertical, 1)
+                            .background(Capsule().fill(Color.accentColor))
+                    }
                 }
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(
+                    Capsule()
+                        .fill(Color.accentColor.opacity(0.15))
+                        .overlay(Capsule().stroke(Color.accentColor.opacity(0.5), lineWidth: 0.5))
+                )
+                .contentShape(Capsule())
             }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(accessibilityLabel)
-        // `.popover` adapts automatically: popover on iPad/landscape (regular
-        // size class) and sheet on iPhone portrait (compact size class).
-        .popover(isPresented: $showCallout, attachmentAnchor: .point(.center), arrowEdge: .top) {
-            calloutBody
-                .padding(16)
-                .frame(maxWidth: 280)
+            .buttonStyle(.plain)
+            .accessibilityLabel(accessibilityLabel)
+            // `.popover` adapts automatically: popover on iPad/landscape
+            // (regular size class) and sheet on iPhone portrait (compact).
+            .popover(isPresented: $showCallout, attachmentAnchor: .point(.center), arrowEdge: .top) {
+                calloutBody
+                    .padding(16)
+                    .frame(maxWidth: 280)
+            }
         }
     }
 
     private var accessibilityLabel: String {
         let names = group.milestones.map(\.name).joined(separator: ", ")
-        return "Milestone: \(names). Tap for details."
+        let kgStr = headline ?? ""
+        return "Projected \(kgStr) at milestone \(names). Tap for details."
     }
 
     @ViewBuilder
