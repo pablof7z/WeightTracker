@@ -24,6 +24,7 @@ final class AppServices: ObservableObject {
     let coachProposalStore: CoachProposalStore
     let scheduledNudgeStore: ScheduledNudgeStore
     let mealCalculator: MealCalculator
+    let milestoneStore: MilestoneStore
     let coachAgent: CoachAgentSession
     let coachNostrAgent: CoachNostrAgentService
     let feedback: FeedbackService
@@ -59,6 +60,8 @@ final class AppServices: ObservableObject {
         self.coachProposalStore = CoachProposalStore(container: container)
         let nudgeStore = ScheduledNudgeStore(container: container)
         self.scheduledNudgeStore = nudgeStore
+        let milestones = MilestoneStore(container: container)
+        self.milestoneStore = milestones
 
         let nostrAgent = CoachNostrAgentService()
         self.coachNostrAgent = nostrAgent
@@ -81,6 +84,7 @@ final class AppServices: ObservableObject {
             auditStore: auditStore,
             mealCalculator: calculator,
             scheduledNudgeStore: nudgeStore,
+            milestoneStore: milestones,
             model: coachModel,
             recordMemory: { text in
                 try nostrAgent.recordMemory(text: text)

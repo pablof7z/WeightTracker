@@ -27,6 +27,7 @@ struct CoachAgentToolDispatcher {
     let auditStore: CoachAgentAuditStore
     let mealCalculator: MealCalculator
     let scheduledNudgeStore: ScheduledNudgeStore?
+    let milestoneStore: MilestoneStore?
     let activeCutProvider: () -> ActiveCut?
     let onMutation: (() -> Void)?
     let recordMemory: ((String) throws -> CoachAgentMemory)?
@@ -44,6 +45,7 @@ struct CoachAgentToolDispatcher {
         auditStore: CoachAgentAuditStore,
         mealCalculator: MealCalculator,
         scheduledNudgeStore: ScheduledNudgeStore? = nil,
+        milestoneStore: MilestoneStore? = nil,
         activeCutProvider: @escaping () -> ActiveCut? = { ActiveCutStore.load() },
         onMutation: (() -> Void)? = nil,
         recordMemory: ((String) throws -> CoachAgentMemory)? = nil,
@@ -60,6 +62,7 @@ struct CoachAgentToolDispatcher {
         self.auditStore = auditStore
         self.mealCalculator = mealCalculator
         self.scheduledNudgeStore = scheduledNudgeStore
+        self.milestoneStore = milestoneStore
         self.activeCutProvider = activeCutProvider
         self.onMutation = onMutation
         self.recordMemory = recordMemory
@@ -360,7 +363,109 @@ struct CoachAgentToolDispatcher {
         case .pinTodayNote:
             let args = try decode(argsJSON, as: PinTodayNoteArgs.self)
             return try executePinTodayNote(args)
+        case .setMilestone:
+            let args = try decode(argsJSON, as: SetMilestoneArgs.self)
+            return try setMilestone(args)
+        case .listMilestones:
+            return .read(try encode(listMilestones()))
+        case .deleteMilestone:
+            let args = try decode(argsJSON, as: DeleteMilestoneArgs.self)
+            return try deleteMilestone(args)
         }
+    }
+
+    // MARK: - Milestone tools
+
+    private func setMilestone(_ args: SetMilestoneArgs) throws -> DispatchExecutionResult {
+        guard let store = milestoneStore else {
+            throw CoachToolDispatchError.missingContext("Milestone storage is unavailable")
+        }
+        let trimmedName = args.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            throw CoachToolDispatchError.invalidArgs("set_milestone.name cannot be empty")
+        }
+        guard trimmedName.count <= 40 else {
+            throw CoachToolDispatchError.invalidArgs("set_milestone.name must be 40 characters or fewer")
+        }
+
+        let day = try parseDay(args.date)
+        let today = Reading.dayStart(of: nowProvider())
+        guard day >= today else {
+            throw CoachToolDispatchError.invalidArgs("set_milestone.date cannot be in the past")
+        }
+
+        // Reject milestones beyond the active cut window (target end + 7d).
+        // No active cut → reject; milestones are tied to the current cut.
+        guard let cut = activeCutProvider() else {
+            throw CoachToolDispatchError.missingContext("No active cut — milestones require an active cut")
+        }
+        let cutEnd = Reading.dayStart(of: cut.targetEndDate)
+        let latestAllowed = calendar.date(byAdding: .day, value: 7, to: cutEnd) ?? cutEnd
+        guard day <= latestAllowed else {
+            throw CoachToolDispatchError.invalidArgs("set_milestone.date is more than 7 days past the cut end")
+        }
+
+        let milestone: Milestone
+        do {
+            milestone = try store.add(name: trimmedName, date: day, now: nowProvider())
+        } catch MilestoneStoreError.emptyName {
+            throw CoachToolDispatchError.invalidArgs("set_milestone.name cannot be empty")
+        } catch {
+            throw CoachToolDispatchError.mutationFailed("Could not save milestone: \(error.localizedDescription)")
+        }
+        onMutation?()
+
+        let after = CoachMilestoneDTO(milestone)
+        let result = CoachMilestoneMutationResult(milestone: after)
+        return try DispatchExecutionResult(
+            data: encode(result),
+            targetEntity: "milestone",
+            targetID: milestone.id,
+            beforeJSON: nil,
+            afterJSON: encodeOptional(after)
+        )
+    }
+
+    private func listMilestones() throws -> CoachMilestoneListResult {
+        guard let store = milestoneStore else {
+            return CoachMilestoneListResult(milestones: [])
+        }
+        let today = Reading.dayStart(of: nowProvider())
+        let rows = store.upcoming(from: today, calendar: calendar)
+        return CoachMilestoneListResult(milestones: rows.map(CoachMilestoneDTO.init))
+    }
+
+    private func deleteMilestone(_ args: DeleteMilestoneArgs) throws -> DispatchExecutionResult {
+        guard let store = milestoneStore else {
+            throw CoachToolDispatchError.missingContext("Milestone storage is unavailable")
+        }
+        let trimmedId = trimmedOptional(args.id)
+        let trimmedMatch = trimmedOptional(args.nameMatch)
+        guard trimmedId != nil || trimmedMatch != nil else {
+            throw CoachToolDispatchError.invalidArgs("delete_milestone requires either id or nameMatch")
+        }
+
+        var deletedCount = 0
+        if let raw = trimmedId {
+            guard let uuid = UUID(uuidString: raw) else {
+                throw CoachToolDispatchError.invalidArgs("delete_milestone.id must be a UUID, got '\(raw)'")
+            }
+            if store.delete(id: uuid) { deletedCount += 1 }
+        }
+        if let needle = trimmedMatch {
+            deletedCount += store.delete(byNameMatching: needle)
+        }
+        onMutation?()
+
+        let result = CoachMilestoneDeleteResult(deletedCount: deletedCount)
+        let resultData = try encode(result)
+        return DispatchExecutionResult(
+            data: resultData,
+            targetEntity: "milestone",
+            targetID: nil,
+            beforeJSON: nil,
+            afterJSON: resultData
+        )
     }
 
     private func listMacroPlanPeriods(_ args: CoachCutScopedArgs) throws -> CoachPlanPeriodsResult {

@@ -49,6 +49,7 @@
 		2F864632C360E3B960F9C455 /* FullscreenChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2C1CB0F4BF104B7D9054D5 /* FullscreenChart.swift */; };
 		31C0FFCDE18E3F7192FD1FAD /* RemindersSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE956A8881D2EC0C108E31A1 /* RemindersSettingsView.swift */; };
 		342D86FF413E003D624EC15D /* ExportCSVSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E7D426EA7AB76BDF8D761F /* ExportCSVSheet.swift */; };
+		34496DBF25FA81D212BDCE09 /* MilestoneStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9407DB5591825C14EDA75BBF /* MilestoneStore.swift */; };
 		3630166751F8C3686872CD1D /* ModelContainerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */; };
 		374F1170508504B5EAB1B8BF /* MacroUntrackedRangeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F4681672989E29283A409E /* MacroUntrackedRangeStore.swift */; };
 		383CF9A879B8629EABBFDD07 /* GapAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58D8AAC80C055C280257CBC /* GapAnalyzer.swift */; };
@@ -120,6 +121,7 @@
 		740F8851D0A0D41562200DCD /* LiquidGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F63296C48489DEFE67600DE /* LiquidGlass.swift */; };
 		75F537DAE83FA43529B0F866 /* WeightTrackerWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DF32432F839E099D4B007C11 /* WeightTrackerWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7775F483858A5315155CF674 /* EditMacrosSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53677FD938441B60268BC6E1 /* EditMacrosSheet.swift */; };
+		790BEBB7711D12C5403E8197 /* Milestone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8FA5C68E523A88FC0956C1 /* Milestone.swift */; };
 		79D6933A50B52BC5127960E4 /* MealSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1114DF6EB32E7EF1A43003E9 /* MealSlot.swift */; };
 		7E81D27D9ADA7665A15F9FB1 /* ActiveCutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB0F89A626C378086B6F440 /* ActiveCutStore.swift */; };
 		7EFB776B17C45415280C82CD /* ModelContainerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */; };
@@ -140,6 +142,7 @@
 		941A34EBB3F1F2855C347EE5 /* MacroPlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18FE7AFB65F5EB5CB3429D8A /* MacroPlanStore.swift */; };
 		944C1B479BC590DEEDFEB7E4 /* DriftBarChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2123E9C82B2C7B0FE5ADE0A /* DriftBarChart.swift */; };
 		9568AD298484A5E5D9A7B3BD /* CSVUnitDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE77AF97769C30641AE800A6 /* CSVUnitDetector.swift */; };
+		960E0E2830E49A9AF6271A2C /* Milestone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8FA5C68E523A88FC0956C1 /* Milestone.swift */; };
 		961622A38F26B9FE661C9E45 /* ChartRangeButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBCAABC049FD2C91791E723 /* ChartRangeButtons.swift */; };
 		983507D20E6838AE3FEAB363 /* SleepNight.swift in Sources */ = {isa = PBXBuildFile; fileRef = A74A5961D6294D6263704636 /* SleepNight.swift */; };
 		98D7A494F3D05AF7681CFF43 /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323AA207967785DEB21CF800 /* Cluster.swift */; };
@@ -246,6 +249,7 @@
 		F770879A6E93960533B938ED /* MealPlanDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 304176BF620C6D39E1B8C9A5 /* MealPlanDetail.swift */; };
 		F7C2857DCB319163F8CDE5D1 /* VoiceCheckInSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DECFE5A896818BF7801C59E /* VoiceCheckInSheet.swift */; };
 		F85C6F5683BCB3B78EA9A63D /* CoachAudit.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64425FA13091AA162159347 /* CoachAudit.swift */; };
+		F8DE7743B35542FFF067A05C /* MilestoneStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9407DB5591825C14EDA75BBF /* MilestoneStore.swift */; };
 		F9840EC41412ADCF76F72B8E /* HealthSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B411796641B6CA76D1D8B6F9 /* HealthSettingsView.swift */; };
 		F9BF4E0347914791D7379A9A /* CoachProposal.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFD4B595DA45541A8BFD3FC5 /* CoachProposal.swift */; };
 		F9E33D66EB89B292EA64EBDE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2AADE6A603A3462CDA171429 /* Assets.xcassets */; };
@@ -305,6 +309,7 @@
 		1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelContainerFactory.swift; sourceTree = "<group>"; };
 		1BF10C121F3EC43B4356014E /* MacroPlanPeriod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroPlanPeriod.swift; sourceTree = "<group>"; };
 		1D23A0835AD55B705F61A44B /* WeightTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightTrackerApp.swift; sourceTree = "<group>"; };
+		1D8FA5C68E523A88FC0956C1 /* Milestone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Milestone.swift; sourceTree = "<group>"; };
 		1F6CF1F3F7DAEAFD4FB7A406 /* OnboardingImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingImport.swift; sourceTree = "<group>"; };
 		2019E2250330C0F991662E7C /* CoachNostrSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachNostrSettingsView.swift; sourceTree = "<group>"; };
 		2045667B5260509E1378BA58 /* NostrEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrEvent.swift; sourceTree = "<group>"; };
@@ -393,6 +398,7 @@
 		9195D1CB66BB1F0ECEC35628 /* HistoricalCutDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalCutDetector.swift; sourceTree = "<group>"; };
 		919E9FA191CCBC10E0E5C9ED /* EraSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EraSummary.swift; sourceTree = "<group>"; };
 		931640299175194B18A7044D /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		9407DB5591825C14EDA75BBF /* MilestoneStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilestoneStore.swift; sourceTree = "<group>"; };
 		95E7D426EA7AB76BDF8D761F /* ExportCSVSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportCSVSheet.swift; sourceTree = "<group>"; };
 		961E30BD0A86D4BCDEF5E26C /* RemindersSettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersSettingsSection.swift; sourceTree = "<group>"; };
 		96478037D9871087CA7134DE /* DataSettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSettingsSection.swift; sourceTree = "<group>"; };
@@ -587,6 +593,7 @@
 				B1F4681672989E29283A409E /* MacroUntrackedRangeStore.swift */,
 				9EF4480F0F38B2A0B658D3E0 /* MealEventStore.swift */,
 				2E0529A4F99F52F1DE61BD9A /* MealScheduleStore.swift */,
+				9407DB5591825C14EDA75BBF /* MilestoneStore.swift */,
 				1A2E467BF3B43B99826F987E /* ModelContainerFactory.swift */,
 				2A5688E1F47C7C58388DCB68 /* ReadingRepository.swift */,
 				6E694B725B40BC88E061AC83 /* ScheduledNudgeStore.swift */,
@@ -766,6 +773,7 @@
 				B187FFED59F23F9C836D4460 /* MealEvent.swift */,
 				5114D5AFBE9A610273533C95 /* MealSchedulePeriod.swift */,
 				1114DF6EB32E7EF1A43003E9 /* MealSlot.swift */,
+				1D8FA5C68E523A88FC0956C1 /* Milestone.swift */,
 				002B14864E7DD0FF715D2C3E /* Reading.swift */,
 				2887D0AEEDA020AC376DC7BB /* ReadingSource.swift */,
 				6F546060BE42C6E448017AE4 /* ScheduledNudge.swift */,
@@ -1110,6 +1118,8 @@
 				0C5E014AA8044A3F96A3B6B1 /* MealSchedulePeriod.swift in Sources */,
 				BB5F7A57DD08173533467558 /* MealScheduleStore.swift in Sources */,
 				5BB49C3F4553AEFE85811E3F /* MealSlot.swift in Sources */,
+				960E0E2830E49A9AF6271A2C /* Milestone.swift in Sources */,
+				34496DBF25FA81D212BDCE09 /* MilestoneStore.swift in Sources */,
 				3630166751F8C3686872CD1D /* ModelContainerFactory.swift in Sources */,
 				BCF29796A527562B26A3F075 /* NotificationPreferences.swift in Sources */,
 				DC635217767E7DC1B0035169 /* NotificationService.swift in Sources */,
@@ -1256,6 +1266,8 @@
 				204C7D805BA6F49BF1B4FFCE /* MealScheduleStore.swift in Sources */,
 				79D6933A50B52BC5127960E4 /* MealSlot.swift in Sources */,
 				E10678AE7CC49328B437A67A /* MealSlotDetailView.swift in Sources */,
+				790BEBB7711D12C5403E8197 /* Milestone.swift in Sources */,
+				F8DE7743B35542FFF067A05C /* MilestoneStore.swift in Sources */,
 				7EFB776B17C45415280C82CD /* ModelContainerFactory.swift in Sources */,
 				48E1DC17A28FF38435D6078E /* Nip44Crypto.swift in Sources */,
 				927168ADB3EB88DCDA89E07D /* Nip46Client.swift in Sources */,

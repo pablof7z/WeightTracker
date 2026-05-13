@@ -65,7 +65,7 @@ private struct CoachToolEnvelope: Encodable {
 }
 
 enum CoachTool: String, CaseIterable, Sendable {
-    static let schemaVersion = "coach-tools-v6"
+    static let schemaVersion = "coach-tools-v7"
 
     case getCoachSnapshot = "get_coach_snapshot"
     case listMacroPlanPeriods = "list_macro_plan_periods"
@@ -87,6 +87,9 @@ enum CoachTool: String, CaseIterable, Sendable {
     case scheduleRefeed = "schedule_refeed"
     case proposeMealPlan = "propose_meal_plan"
     case pinTodayNote = "pin_today_note"
+    case setMilestone = "set_milestone"
+    case listMilestones = "list_milestones"
+    case deleteMilestone = "delete_milestone"
 
     static var json: Data {
         let envelopes = allCases.map { CoachToolEnvelope(function: $0.definition) }
@@ -395,6 +398,35 @@ enum CoachTool: String, CaseIterable, Sendable {
                     required: ["text"]
                 )
             )
+        case .setMilestone:
+            return .init(
+                name: rawValue,
+                description: "Create a named milestone date that surfaces on the cut progress bar and in the weight forecast rotation. Use when the user mentions a future event (trip, wedding, vacation, photoshoot, etc.) whose date is within the current cut window. The agent should resolve relative phrasing (\"next Friday\", \"May 25\") to a concrete yyyy-MM-dd before calling.",
+                parameters: .object(
+                    properties: [
+                        "name": .string(description: "Short label shown to the user, 1–40 characters, e.g. \"Trip\" or \"Wedding\"."),
+                        "date": .string(description: "yyyy-MM-dd day of the event. Must be on or after today and within the active cut window (cut end + 7 days).")
+                    ],
+                    required: ["name", "date"]
+                )
+            )
+        case .listMilestones:
+            return .init(
+                name: rawValue,
+                description: "List all upcoming milestones (date on or after today), oldest first.",
+                parameters: .object(properties: [:])
+            )
+        case .deleteMilestone:
+            return .init(
+                name: rawValue,
+                description: "Delete one or more milestones. Pass either `id` (exact UUID match) or `nameMatch` (case-insensitive substring match across all milestones). At least one must be provided.",
+                parameters: .object(
+                    properties: [
+                        "id": .string(description: "UUID of the milestone to delete."),
+                        "nameMatch": .string(description: "Case-insensitive substring; deletes every milestone whose name contains this string.")
+                    ]
+                )
+            )
         }
     }
 }
@@ -534,6 +566,40 @@ struct ScheduleRefeedArgs: Decodable {
     var proteinG: Int?
     var fatG: Int?
     var note: String?
+}
+
+struct SetMilestoneArgs: Decodable {
+    var name: String
+    var date: String
+}
+
+struct DeleteMilestoneArgs: Decodable {
+    var id: String?
+    var nameMatch: String?
+}
+
+struct CoachMilestoneDTO: Codable, Equatable, Sendable {
+    var id: UUID
+    var name: String
+    var date: Date
+
+    init(_ milestone: Milestone) {
+        id = milestone.id
+        name = milestone.name
+        date = milestone.date
+    }
+}
+
+struct CoachMilestoneListResult: Codable, Equatable, Sendable {
+    var milestones: [CoachMilestoneDTO]
+}
+
+struct CoachMilestoneMutationResult: Codable, Equatable, Sendable {
+    var milestone: CoachMilestoneDTO
+}
+
+struct CoachMilestoneDeleteResult: Codable, Equatable, Sendable {
+    var deletedCount: Int
 }
 
 struct ProposeMealPlanArgs: Decodable {

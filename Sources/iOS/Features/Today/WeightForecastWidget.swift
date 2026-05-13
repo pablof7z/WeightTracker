@@ -12,48 +12,75 @@ import SwiftUI
 ///   - Stale data (>3 days): suffix " · stale" in tertiary color.
 ///   - Flat trend (|r| < 0.01 lb/day): "no change projected".
 ///   - Adaptive copy is "lite" per spec — no celebration, no loss framing.
+///
+/// Milestone horizons (e.g. "Trip · May 25") plug into the rotation when the
+/// user has scheduled any: hour bucket 12–17 (which would normally show 90d)
+/// renders the nearest upcoming milestone instead. Multiple milestones cycle
+/// with `dayOfYear % count`. Tap-cycle order becomes
+/// `[7d, 30d, milestones..., goalDate]`.
 struct WeightForecastWidget: View {
 
     let readings: [Reading]
     let activeCut: ActiveCut
     let weightUnit: WeightUnit
+    let milestones: [Milestone]
 
     @State private var horizonOverride: Horizon?
 
-    /// The four horizons we rotate through. Order is the tap-cycle order:
-    /// `.sevenDay` → `.thirtyDay` → `.ninetyDay` → `.cutGoalDate` → `.sevenDay` …
-    enum Horizon: Int, CaseIterable {
-        case sevenDay = 7
-        case thirtyDay = 30
-        case ninetyDay = 90
-        case cutGoalDate = -1   // sentinel; days are computed from the cut
+    init(
+        readings: [Reading],
+        activeCut: ActiveCut,
+        weightUnit: WeightUnit,
+        milestones: [Milestone] = []
+    ) {
+        self.readings = readings
+        self.activeCut = activeCut
+        self.weightUnit = weightUnit
+        self.milestones = milestones
+    }
 
-        var label: String {
-            switch self {
-            case .sevenDay: return "in 7 days"
-            case .thirtyDay: return "in 30 days"
-            case .ninetyDay: return "in 90 days"
-            case .cutGoalDate: return ""        // rendered as "on <date>" in body
-            }
-        }
+    /// Horizon variants. Tap order is fixed
+    /// `7d → 30d → milestones... → goalDate → 7d`. When the user has at
+    /// least one milestone the 90d slot is dropped (per spec); otherwise
+    /// it slots in between 30d and goalDate.
+    enum Horizon: Hashable {
+        case sevenDay
+        case thirtyDay
+        case ninetyDay
+        case milestone(Milestone)
+        case cutGoalDate
 
-        /// Pick a horizon deterministically from time-of-day. Opening at 8am
-        /// and 8pm yields different horizons; two opens within the same
-        /// 6-hour bucket yield the same horizon. This is the rotation
-        /// mechanism — there's no timer, no animation.
-        static func defaultForHour(_ hour: Int) -> Horizon {
+        /// Default horizon for the user's local hour. Four-hour-buckets, same
+        /// rotation idea as before. When the user has any milestones the
+        /// 12–17 bucket maps to the nearest one (rotated by day-of-year when
+        /// multiple exist) instead of 90d.
+        static func defaultForHour(_ hour: Int, milestones: [Milestone], calendar: Calendar = .current, today: Date = Date()) -> Horizon {
             switch hour {
             case 0...5: return .sevenDay
             case 6...11: return .thirtyDay
-            case 12...17: return .ninetyDay
+            case 12...17:
+                if let m = pickMilestone(milestones: milestones, calendar: calendar, today: today) {
+                    return .milestone(m)
+                }
+                return .ninetyDay
             default: return .cutGoalDate
             }
         }
 
-        func next() -> Horizon {
-            let all = Self.allCases
-            let idx = all.firstIndex(of: self) ?? 0
-            return all[(idx + 1) % all.count]
+        /// Deterministic milestone pick: nearest upcoming, but when multiple
+        /// exist rotate through them by `dayOfYear % count` so the user sees
+        /// a different one each day without animation.
+        static func pickMilestone(milestones: [Milestone], calendar: Calendar = .current, today: Date = Date()) -> Milestone? {
+            guard !milestones.isEmpty else { return nil }
+            let dayStart = calendar.startOfDay(for: today)
+            let upcoming = milestones
+                .filter { $0.date >= dayStart }
+                .sorted { $0.date < $1.date }
+            guard !upcoming.isEmpty else { return nil }
+            if upcoming.count == 1 { return upcoming[0] }
+            let dayOfYear = calendar.ordinality(of: .day, in: .year, for: dayStart) ?? 0
+            let idx = ((dayOfYear % upcoming.count) + upcoming.count) % upcoming.count
+            return upcoming[idx]
         }
 
         /// Days from `asOf` to the projected date.
@@ -62,12 +89,47 @@ struct WeightForecastWidget: View {
             case .sevenDay: return 7
             case .thirtyDay: return 30
             case .ninetyDay: return 90
+            case .milestone(let m):
+                let today = calendar.startOfDay(for: asOf)
+                let target = calendar.startOfDay(for: m.date)
+                return max(1, calendar.dateComponents([.day], from: today, to: target).day ?? 1)
             case .cutGoalDate:
                 let today = calendar.startOfDay(for: asOf)
                 let end = calendar.startOfDay(for: activeCut.targetEndDate)
                 return max(1, calendar.dateComponents([.day], from: today, to: end).day ?? 1)
             }
         }
+    }
+
+    // MARK: - Rotation
+
+    /// Build the tap-cycle order for the current widget state. When any
+    /// milestones exist the 90d slot is dropped (per spec).
+    private var rotation: [Horizon] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let upcoming = milestones
+            .filter { $0.date >= today }
+            .sorted { $0.date < $1.date }
+        var ordered: [Horizon] = [.sevenDay, .thirtyDay]
+        if upcoming.isEmpty {
+            ordered.append(.ninetyDay)
+        } else {
+            ordered.append(contentsOf: upcoming.map(Horizon.milestone))
+        }
+        ordered.append(.cutGoalDate)
+        return ordered
+    }
+
+    private func nextHorizon(after current: Horizon) -> Horizon {
+        let all = rotation
+        guard !all.isEmpty else { return current }
+        if let idx = all.firstIndex(of: current) {
+            return all[(idx + 1) % all.count]
+        }
+        // Override was set to a horizon that's no longer in the rotation
+        // (e.g. the milestone was deleted). Fall back to the first.
+        return all[0]
     }
 
     // MARK: - Date formatters
@@ -78,10 +140,36 @@ struct WeightForecastWidget: View {
         return f
     }()
 
+    private static let monthDayYearFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, yyyy"
+        return f
+    }()
+
+    private func milestoneDateString(_ date: Date) -> String {
+        let cal = Calendar.current
+        let nowYear = cal.component(.year, from: Date())
+        let dateYear = cal.component(.year, from: date)
+        return dateYear == nowYear
+            ? Self.monthDayFmt.string(from: date)
+            : Self.monthDayYearFmt.string(from: date)
+    }
+
+    /// "today" / "tomorrow" / "in N days" with correct pluralization. Used
+    /// only by the milestone caption.
+    private func relativeDayPhrase(daysAway: Int) -> String {
+        if daysAway <= 0 { return "today" }
+        if daysAway == 1 { return "tomorrow" }
+        return "in \(daysAway) days"
+    }
+
     // MARK: - Computed state
 
     private var horizon: Horizon {
-        horizonOverride ?? Horizon.defaultForHour(Calendar.current.component(.hour, from: Date()))
+        horizonOverride ?? Horizon.defaultForHour(
+            Calendar.current.component(.hour, from: Date()),
+            milestones: milestones
+        )
     }
 
     /// Project for the currently-selected horizon. Nil result means "hide";
@@ -166,13 +254,26 @@ struct WeightForecastWidget: View {
         return Text("\u{2248} \(valueStr) ") + Text(horizonPhrase)
     }
 
-    /// "in 30 days" or "on Aug 21" — the trailing phrase of the headline.
+    /// Trailing phrase of the headline:
+    ///   * `"in 30 days"` for fixed horizons
+    ///   * `"on Aug 21"` for goal-date or milestone horizons
     private var horizonPhrase: String {
         switch horizon {
         case .sevenDay, .thirtyDay, .ninetyDay:
-            return horizon.label
+            return horizonLabel
         case .cutGoalDate:
             return "on " + Self.monthDayFmt.string(from: activeCut.targetEndDate)
+        case .milestone(let m):
+            return "on " + milestoneDateString(m.date)
+        }
+    }
+
+    private var horizonLabel: String {
+        switch horizon {
+        case .sevenDay: return "in 7 days"
+        case .thirtyDay: return "in 30 days"
+        case .ninetyDay: return "in 90 days"
+        case .milestone, .cutGoalDate: return ""
         }
     }
 
@@ -180,8 +281,9 @@ struct WeightForecastWidget: View {
 
     /// Two pieces:
     ///   * band:   `171.0 – 173.2`   (skipped when flat)
-    ///   * anchor: `goal Aug 21` for non-goal horizons, or `target 158 lb`
-    ///             when this IS the goal-date horizon.
+    ///   * anchor: `goal Aug 21` for non-goal horizons, `target 158 lb` on
+    ///             the goal-date horizon, or `Trip · in 12 days` on milestone
+    ///             horizons (no goal anchor — the milestone IS the anchor).
     /// Stale data appends ` · stale` in tertiary color.
     @ViewBuilder
     private func captionView(for projection: CutWeightProjector.Result) -> some View {
@@ -214,6 +316,12 @@ struct WeightForecastWidget: View {
         case .cutGoalDate:
             let tgt = display(activeCut.targetWeightKg)
             return String(format: "target %.0f %@", tgt, unitSym)
+        case .milestone(let m):
+            let cal = Calendar.current
+            let today = cal.startOfDay(for: Date())
+            let target = cal.startOfDay(for: m.date)
+            let days = cal.dateComponents([.day], from: today, to: target).day ?? 0
+            return "\(m.name) · \(relativeDayPhrase(daysAway: max(0, days)))"
         }
     }
 
@@ -232,6 +340,6 @@ struct WeightForecastWidget: View {
     // MARK: - Tap
 
     private func cycle() {
-        horizonOverride = horizon.next()
+        horizonOverride = nextHorizon(after: horizon)
     }
 }

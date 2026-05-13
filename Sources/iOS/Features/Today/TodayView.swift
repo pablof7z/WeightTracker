@@ -59,7 +59,7 @@ struct TodayView: View {
             }
             .onAppear {
                 if !didLoad {
-                    viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
+                    viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts, milestoneStore: services.milestoneStore)
                     weightInputActive = false
                     didLoad = true
                 }
@@ -72,8 +72,11 @@ struct TodayView: View {
                 AppOrientation.shared.set(.portrait)
             }
             .onChange(of: weightUnitRaw) { _, _ in
-                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
+                viewModel.loadForDate(viewModel.date, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts, milestoneStore: services.milestoneStore)
                 weightInputActive = false
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .milestoneDidChange)) { _ in
+                viewModel.milestones = services.milestoneStore.upcoming(from: Date())
             }
             .onChange(of: viewModel.lastSaved) { _, newValue in
                 dismissTask?.cancel()
@@ -209,7 +212,8 @@ struct TodayView: View {
                         WeightForecastWidget(
                             readings: viewModel.allReadings,
                             activeCut: active,
-                            weightUnit: weightUnit
+                            weightUnit: weightUnit,
+                            milestones: viewModel.milestones
                         )
                         .padding(.bottom, 12)
                     }
@@ -376,6 +380,12 @@ struct TodayView: View {
                             .fill(Color.accentColor)
                             .frame(width: max(4, geo.size.width * progress), height: 3)
                     }
+                    .overlay(alignment: .topLeading) {
+                        // Milestone flags float above the bar without taking
+                        // layout space. Empty when no milestones, so this is
+                        // a true no-op for the existing visual.
+                        milestoneMarkers(active: active, projection: projection, barWidth: geo.size.width)
+                    }
                 }
                 .frame(height: 4)
 
@@ -391,6 +401,65 @@ struct TodayView: View {
                     .foregroundStyle(.tertiary)
             }
         }
+    }
+
+    // MARK: - Milestone markers
+
+    /// One marker per milestone group, positioned along the bar by
+    /// `(milestone.date − today) / (cutEnd − today)`. Markers within ~12pt
+    /// of each other are merged into a single marker with a `+N` badge and
+    /// a shared popover.
+    @ViewBuilder
+    private func milestoneMarkers(active: ActiveCut, projection: CutProjectionResult, barWidth: CGFloat) -> some View {
+        if !viewModel.milestones.isEmpty, barWidth > 0 {
+            let groups = makeMilestoneGroups(active: active, barWidth: barWidth)
+            ZStack(alignment: .topLeading) {
+                ForEach(groups) { group in
+                    MilestoneMarker(
+                        group: group,
+                        active: active,
+                        readings: viewModel.allReadings,
+                        weightUnit: weightUnit
+                    )
+                    .offset(x: group.x - 4, y: -10)  // 8pt-wide flag, 10pt above the 3pt bar
+                }
+            }
+            .frame(width: barWidth, alignment: .topLeading)
+            .allowsHitTesting(true)
+        }
+    }
+
+    private func makeMilestoneGroups(active: ActiveCut, barWidth: CGFloat) -> [MilestoneGroup] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let cutEnd = cal.startOfDay(for: active.targetEndDate)
+        let totalDays = max(1, cal.dateComponents([.day], from: today, to: cutEnd).day ?? 1)
+
+        // Map each upcoming milestone to a clamped x.
+        let positioned: [(milestone: Milestone, x: CGFloat)] = viewModel.milestones
+            .filter { $0.date >= today }
+            .sorted { $0.date < $1.date }
+            .map { m in
+                let days = cal.dateComponents([.day], from: today, to: m.date).day ?? 0
+                let raw = CGFloat(days) / CGFloat(totalDays)
+                let clamped = min(max(raw, 0), 1)
+                return (m, clamped * barWidth)
+            }
+
+        // Cluster adjacent markers within 12pt of each other.
+        let threshold: CGFloat = 12
+        var groups: [MilestoneGroup] = []
+        for entry in positioned {
+            if var last = groups.last, abs(entry.x - last.x) <= threshold {
+                last.milestones.append(entry.milestone)
+                // Recompute group x as average of members so it doesn't drift.
+                last.x = (last.x + entry.x) / 2
+                groups[groups.count - 1] = last
+            } else {
+                groups.append(MilestoneGroup(milestones: [entry.milestone], x: entry.x))
+            }
+        }
+        return groups
     }
 
     // MARK: - Date navigation
@@ -427,7 +496,7 @@ struct TodayView: View {
         withAnimation(.easeInOut(duration: 0.2)) {
             viewModel.lastSaved = nil
             weightInputActive = false
-            viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts)
+            viewModel.loadForDate(day, repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts, milestoneStore: services.milestoneStore)
         }
     }
 
@@ -442,6 +511,126 @@ struct TodayView: View {
         showCoachConversation = true
     }
 
+}
+
+// MARK: - Milestone markers (data + view)
+
+/// One or more milestones rendered as a single flag on the cut progress bar.
+/// `x` is the marker's horizontal pixel offset along the bar.
+struct MilestoneGroup: Identifiable {
+    var milestones: [Milestone]
+    var x: CGFloat
+    var id: String {
+        milestones.map(\.id.uuidString).sorted().joined(separator: "|")
+    }
+}
+
+/// Small flag above the cut-progress bar with a tap-callout showing name,
+/// date, and the projected weight at that day. On iPhone portrait the
+/// callout slides up as a sheet; on iPad / landscape SwiftUI's `.popover`
+/// modifier renders it inline. `+N` badge appears when multiple milestones
+/// share the same spot on the bar.
+private struct MilestoneMarker: View {
+    let group: MilestoneGroup
+    let active: ActiveCut
+    let readings: [Reading]
+    let weightUnit: WeightUnit
+
+    @State private var showCallout = false
+
+    private static let dateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, yyyy"
+        return f
+    }()
+
+    var body: some View {
+        Button {
+            showCallout = true
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "flag.fill")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 14, height: 14)
+                    .contentShape(Rectangle())
+                if group.milestones.count > 1 {
+                    Text("+\(group.milestones.count - 1)")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 3)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(Color.accentColor))
+                        .offset(x: 6, y: -4)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        // `.popover` adapts automatically: popover on iPad/landscape (regular
+        // size class) and sheet on iPhone portrait (compact size class).
+        .popover(isPresented: $showCallout, attachmentAnchor: .point(.center), arrowEdge: .top) {
+            calloutBody
+                .padding(16)
+                .frame(maxWidth: 280)
+        }
+    }
+
+    private var accessibilityLabel: String {
+        let names = group.milestones.map(\.name).joined(separator: ", ")
+        return "Milestone: \(names). Tap for details."
+    }
+
+    @ViewBuilder
+    private var calloutBody: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(group.milestones, id: \.id) { m in
+                milestoneRow(for: m)
+                if m.id != group.milestones.last?.id {
+                    Divider()
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func milestoneRow(for m: Milestone) -> some View {
+        // Format: "≈ 172.1 lbs on Aug 21 (Trip)". Falls back to just the
+        // date and name when the projection can't compute (cut too young,
+        // band too wide, etc.).
+        let dateStr = Self.dateFmt.string(from: m.date)
+        if let projectionStr = projectedWeight(on: m.date) {
+            Text("\(projectionStr) on \(dateStr) (\(m.name))")
+                .font(.subheadline)
+        } else {
+            Text("\(dateStr) (\(m.name))")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Returns just the weight + unit portion, e.g. "≈ 172.1 lbs". Caller
+    /// concatenates with the date and milestone name.
+    private func projectedWeight(on date: Date) -> String? {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let day = cal.startOfDay(for: date)
+        let days = max(1, cal.dateComponents([.day], from: today, to: day).day ?? 1)
+        guard let result = CutWeightProjector.project(
+            activeCut: active,
+            readings: readings,
+            horizonDays: days,
+            asOf: Date()
+        ) else {
+            return nil
+        }
+        if result.isFlat {
+            return "no change projected"
+        }
+        let raw = UnitConvert.displayWeight(kg: result.projectedKg, in: weightUnit)
+        let rounded = (raw * 10.0).rounded() / 10.0
+        return String(format: "\u{2248} %.1f %@", rounded, weightUnit.symbol)
+    }
 }
 
 #Preview {

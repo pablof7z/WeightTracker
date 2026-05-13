@@ -37,6 +37,11 @@ final class TodayViewModel: ObservableObject {
     /// See `CutWeightProjector` for the math.
     @Published var forecast: CutWeightProjector.Result?
 
+    /// Upcoming user-defined milestones (events with a name + date inside the
+    /// current cut window). Surface as markers on the cut progress strip and
+    /// rotate through the forecast widget's horizon list.
+    @Published var milestones: [Milestone] = []
+
     struct SavedConfirmation: Identifiable, Equatable {
         let id = UUID()
         let displayWeight: Double
@@ -49,7 +54,7 @@ final class TodayViewModel: ObservableObject {
 
     /// Load state for a given date. If a reading exists on that date, populate from it.
     /// Otherwise fall back to the most-recent prior reading (or default) and mark as placeholder.
-    func loadForDate(_ date: Date, repository: ReadingRepository, unit: WeightUnit, bodyUnit: BodyUnit, cycleStarts: [Date] = []) {
+    func loadForDate(_ date: Date, repository: ReadingRepository, unit: WeightUnit, bodyUnit: BodyUnit, cycleStarts: [Date] = [], milestoneStore: MilestoneStore? = nil) {
         let day = Reading.dayStart(of: date)
         self.date = day
 
@@ -95,6 +100,16 @@ final class TodayViewModel: ObservableObject {
         // browsed date.
         self.forecast = Self.computeDefaultForecast(activeCut: cut, readings: allReadings)
 
+        // Upcoming milestones — "today and later", independent of the browsed
+        // date so swiping back through history doesn't drop the markers.
+        if let store = milestoneStore {
+            self.milestones = store.upcoming(from: Date())
+        }
+
+        // Recompute forecast now that milestones are loaded so the
+        // time-of-day horizon picks one when applicable.
+        self.forecast = Self.computeDefaultForecast(activeCut: cut, readings: allReadings, milestones: self.milestones)
+
         if let existing = repository.reading(on: day) {
             let display = UnitConvert.displayWeight(kg: existing.weightKg, in: unit)
             self.displayValue = (display * 10.0).rounded() / 10.0
@@ -118,8 +133,8 @@ final class TodayViewModel: ObservableObject {
         }
     }
 
-    func prefill(from repository: ReadingRepository, unit: WeightUnit, bodyUnit: BodyUnit = .inches, cycleStarts: [Date] = []) {
-        loadForDate(Date(), repository: repository, unit: unit, bodyUnit: bodyUnit, cycleStarts: cycleStarts)
+    func prefill(from repository: ReadingRepository, unit: WeightUnit, bodyUnit: BodyUnit = .inches, cycleStarts: [Date] = [], milestoneStore: MilestoneStore? = nil) {
+        loadForDate(Date(), repository: repository, unit: unit, bodyUnit: bodyUnit, cycleStarts: cycleStarts, milestoneStore: milestoneStore)
     }
 
     func adjust(by amount: Double) {
@@ -199,7 +214,9 @@ final class TodayViewModel: ObservableObject {
             readings: refreshed,
             asOf: Date()
         )
-        self.forecast = Self.computeDefaultForecast(activeCut: refreshedCut, readings: refreshed)
+        // Recompute milestones first — keeps any new ones the coach added in sync.
+        self.milestones = services.milestoneStore.upcoming(from: Date())
+        self.forecast = Self.computeDefaultForecast(activeCut: refreshedCut, readings: refreshed, milestones: self.milestones)
 
         // Trigger a proactive coach run on weigh-in days so the coach can
         // comment on the new data and post an observation to the thread.
@@ -216,10 +233,10 @@ final class TodayViewModel: ObservableObject {
     /// Compute the projection for the time-of-day-determined default horizon.
     /// Returned value is used only as a "show / hide the widget" signal; the
     /// widget itself recomputes per the user's currently-selected horizon.
-    static func computeDefaultForecast(activeCut: ActiveCut?, readings: [Reading]) -> CutWeightProjector.Result? {
+    static func computeDefaultForecast(activeCut: ActiveCut?, readings: [Reading], milestones: [Milestone] = []) -> CutWeightProjector.Result? {
         guard let cut = activeCut else { return nil }
         let hour = Calendar.current.component(.hour, from: Date())
-        let horizon = WeightForecastWidget.Horizon.defaultForHour(hour)
+        let horizon = WeightForecastWidget.Horizon.defaultForHour(hour, milestones: milestones)
         let days = horizon.horizonDays(activeCut: cut, asOf: Date(), calendar: .current)
         return CutWeightProjector.project(
             activeCut: cut,
