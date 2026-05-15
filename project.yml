@@ -16,6 +16,8 @@ packages:
     from: 0.18.0
   VoiceCaptureKit:
     path: ../VoiceCaptureKit
+  ShakeFeedbackKit:
+    path: ../ios-shake-feedback
 
 settings:
   base:
@@ -105,6 +107,8 @@ targets:
         product: P256K
       - package: VoiceCaptureKit
         product: VoiceCaptureKit
+      - package: ShakeFeedbackKit
+        product: ShakeFeedbackKit
 
   WeightTrackerWatch Watch App:
     type: application
@@ -147,16 +151,32 @@ targets:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
 
+  WeightTrackerTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Tests
+    dependencies:
+      - target: WeightTracker
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.pfer.weighttracker.tests
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   WeightTracker:
     build:
       targets:
         WeightTracker: all
         WeightTrackerWatch Watch App: all
+        WeightTrackerTests: [test]
     run:
       config: Debug
     test:
       config: Debug
+      targets:
+        - WeightTrackerTests
     profile:
       config: Release
     analyze:

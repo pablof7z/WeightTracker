@@ -1,3 +1,4 @@
+import ShakeFeedbackKit
 import SwiftUI
 import SwiftData
 
@@ -7,6 +8,7 @@ struct WeightTrackerApp: App {
     @AppStorage(AppPrefKey.onboardingComplete) private var onboardingComplete: Bool = false
     @AppStorage(AppPrefKey.theme) private var theme: String = ThemePreference.system.rawValue
     @StateObject private var appServices = AppServices.shared
+    @State private var whatsNewPresentation: WhatsNewPresentation?
 
     var body: some Scene {
         WindowGroup {
@@ -21,6 +23,18 @@ struct WeightTrackerApp: App {
                     )
                     await appServices.bootstrap()
                 }
+                .task {
+                    WhatsNewService.seedIfNeeded()
+                    let unseen = WhatsNewService.unseenEntries(
+                        lastSeenAt: WhatsNewService.lastSeenAt
+                    )
+                    if !unseen.isEmpty {
+                        whatsNewPresentation = WhatsNewPresentation(entries: unseen)
+                    }
+                }
+                .sheet(item: $whatsNewPresentation) { presentation in
+                    WhatsNewSheet(entries: presentation.entries)
+                }
         }
     }
 
@@ -33,9 +47,15 @@ struct WeightTrackerApp: App {
     }
 }
 
+private struct WhatsNewPresentation: Identifiable {
+    let id = UUID()
+    let entries: [WhatsNewEntry]
+}
+
 struct RootView: View {
     @EnvironmentObject private var services: AppServices
     @AppStorage(AppPrefKey.onboardingComplete) private var onboardingComplete: Bool = false
+    @State private var shakeFeedbackStore = ShakeFeedbackStore(config: .weightTracker, namespace: "app.pfer.weighttracker")
     @State private var feedbackPresented = false
     @State private var lastShakeAt: Date = .distantPast
 
@@ -51,9 +71,12 @@ struct RootView: View {
         .onShake(perform: handleShake)
         .onOpenURL(perform: handleURL)
         .sheet(isPresented: $feedbackPresented) {
-            FeedbackView()
-                .environmentObject(services)
+            ShakeFeedbackSheet(store: shakeFeedbackStore)
                 .presentationDetents([.large])
+        }
+        .task(id: services.feedback.publicKeyHex) {
+            guard services.feedback.publicKeyHex != nil else { return }
+            await shakeFeedbackStore.start(hostSigner: WeightTrackerShakeFeedbackSigner(feedback: services.feedback))
         }
     }
 
