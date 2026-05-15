@@ -132,27 +132,30 @@ public final class HealthKitManager: ObservableObject {
         #if canImport(HealthKit)
         var inserted = 0
         var changed = false
-        for raw in samples {
-            guard let sample = raw as? HKQuantitySample else { continue }
+        // Most-recent first: when multiple HK sources exist for the same day,
+        // the latest timestamp takes precedence over earlier ones.
+        let sorted = samples
+            .compactMap { $0 as? HKQuantitySample }
+            .sorted { $0.startDate > $1.startDate }
+        for sample in sorted {
             let kg = sample.quantity.doubleValue(for: .gramUnit(with: .kilo))
             let date = sample.startDate
 
-            // Dedup within 30 minutes same-day
             if let existing = repository.reading(on: date) {
-                let delta = abs(existing.date.timeIntervalSince(date))
-                if delta <= 1800 {
-                    if existing.source != .healthKit {
-                        existing.weightKg = kg
-                        existing.source = .healthKit
-                        existing.deviceName = sample.sourceRevision.source.name
-                        repository.update(existing)
-                        changed = true
-                    }
+                if existing.source != .healthKit {
+                    // User entered this reading in the app (manual/watch/import).
+                    // Never overwrite with an HK sample — avoids rounding roundtrips
+                    // and interference from scales or other health apps.
                     continue
-                } else {
-                    repository.delete(existing)
+                }
+                // HK-sourced reading: update if the value changed meaningfully.
+                if abs(existing.weightKg - kg) > 0.001 {
+                    existing.weightKg = kg
+                    existing.deviceName = sample.sourceRevision.source.name
+                    repository.update(existing)
                     changed = true
                 }
+                continue
             }
             let reading = Reading(
                 date: date,
