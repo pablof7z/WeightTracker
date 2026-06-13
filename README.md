@@ -24,6 +24,22 @@ No food logging. No macros. No barcode scanner. You already know how to eat. Thi
 
 ---
 
+## Your calorie deficit — derived from the scale, not from logging
+
+<img src="docs/screenshot-deficit.png" width="380" />
+
+This is the part of the app I've never seen anywhere else.
+
+Every morning after you weigh in, the app reverse-engineers your calorie deficit directly from your weight change — no food logging required. Body fat is roughly 7,700 kcal/kg. If you're down 3.7 kg since April 28, that's approximately 28,790 kcal of deficit, accumulated over 47 days. The math is right there.
+
+Next to it: **≈ 687 kcal/day** — your recent burn rate, calculated from the last 14 days of weight data. Not from what you said you ate. From what your body actually did.
+
+Below that: **≈ 162.8 lb in 7 days**, with a range of 162.6–163.0. A tight near-term forecast based on your current trajectory, so you can see concretely what the next week looks like before it happens.
+
+This changes how the cut feels. Instead of asking "am I eating enough?" or "am I eating too little?", you look at the number and you *know*. 28,790 kcal is a lot of work. Seeing it quantified — not estimated from a food log, but proven by the scale — is a different kind of motivation. You're not trusting your memory of what you ate. You're reading the evidence your body left behind.
+
+---
+
 ## Progress that actually shows you something
 
 <img src="docs/screenshot-progress.png" width="320" align="right" />
