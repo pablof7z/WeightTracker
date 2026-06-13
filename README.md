@@ -94,4 +94,4 @@ That's not a chatbot. That's someone watching your data and thinking about it.
 
 ## Status
 
-Currently in private TestFlight. Built for iOS.
+Available on TestFlight — [join the beta here](https://testflight.apple.com/join/muNV9QP5). Built for iOS.
