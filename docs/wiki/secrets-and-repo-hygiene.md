@@ -2,7 +2,7 @@
 title: Secrets and Repo Hygiene
 slug: secrets-and-repo-hygiene
 topic: secrets-management
-summary: All credentials (OpenRouter, ElevenLabs, Nostr) are stored in the Keychain at runtime rather than hardcoded in the repo
+summary: The repository is publicly accessible
 tags:
   - capture
 volatility: warm
@@ -19,4 +19,6 @@ sources:
 
 ## Repository Hygiene & Secrets
 
-All credentials (OpenRouter, ElevenLabs, Nostr) are stored in the Keychain at runtime rather than hardcoded in the repo. The MEMORY/WORK/ directory must be excluded from git tracking and added to .gitignore before the repo is made public. The support email pfer@me.com is intentionally hardcoded in AboutSection.swift. Old git commits still contain PRD files in history and would need history rewriting (e.g. git filter-repo) to fully scrub before going public. <!-- [^85cf8-1] -->
+The repository is publicly accessible. The MEMORY/ directory is excluded from git tracking via .gitignore. Git history is scrubbed of the MEMORY/WORK/ directory contents. All credentials (OpenRouter, ElevenLabs, Nostr) are stored in the Keychain at runtime, not hardcoded. The support email pfer@me.com is intentionally hardcoded in AboutSection.swift.
+
+<!-- citations: [^85cf8-1] [^85cf8-2] -->
