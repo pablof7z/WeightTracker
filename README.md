@@ -12,11 +12,13 @@ Cut Tracker is built from the ground up for people running a deliberate cut: phy
 
 <img src="docs/screenshot-today.png" width="320" align="right" />
 
-Open the app and your cut is the first thing you see. Not a chart. Not a streak. Your weight, your pace, and whether you're on track.
+**Open the app and your cut is the first thing you see.** Not a chart. Not a streak. Your weight, your pace, and whether you're on track.
 
-The number is huge because it's the thing that matters. Below it: your 7-day average (the real signal, not the noise), your estimated calorie deficit since day one, your recent burn rate, and a projection of where you'll land in a week.
+The number is huge because it's the thing that matters. Below it: your 7-day average, your calorie deficit since day one, your recent burn rate, and where you'll land in a week.
 
-The chart shows three futures — best, typical, worst — as dashed bands fanning out to your deadline. You can see at a glance whether you're hugging the green or drifting toward the red. When the daily fluctuations spike up from sodium or a hard workout, the bands don't panic. You won't either.
+**The chart shows three futures — best, typical, worst** — fanning out to your deadline. At a glance you can see whether you're hugging the green or drifting toward the red.
+
+When the scale spikes from sodium or a hard workout, the bands don't panic. You won't either.
 
 No food logging. No macros. No barcode scanner. You already know how to eat. This app asks one question: *are you on pace?*
 
@@ -28,15 +30,20 @@ No food logging. No macros. No barcode scanner. You already know how to eat. Thi
 
 <img src="docs/screenshot-deficit.png" width="380" />
 
-This is the part of the app I've never seen anywhere else.
+**This is the part of the app I've never seen anywhere else.**
 
-Every morning after you weigh in, the app reverse-engineers your calorie deficit directly from your weight change — no food logging required. Body fat is roughly 7,700 kcal/kg. If you're down 3.7 kg since April 28, that's approximately 28,790 kcal of deficit, accumulated over 47 days. The math is right there.
+Every morning after you weigh in, the app reverse-engineers your calorie deficit straight from your weight change — no food logging required.
 
-Next to it: **≈ 687 kcal/day** — your recent burn rate, calculated from the last 14 days of weight data. Not from what you said you ate. From what your body actually did.
+The math is simple: body fat is ~7,700 kcal/kg. Down 3.7 kg since April 28 means roughly **28,790 kcal of deficit** over 47 days. It's right there.
 
-Below that: **≈ 162.8 lb in 7 days**, with a range of 162.6–163.0. A tight near-term forecast based on your current trajectory, so you can see concretely what the next week looks like before it happens.
+You also get:
 
-This changes how the cut feels. Instead of asking "am I eating enough?" or "am I eating too little?", you look at the number and you *know*. 28,790 kcal is a lot of work. Seeing it quantified — not estimated from a food log, but proven by the scale — is a different kind of motivation. You're not trusting your memory of what you ate. You're reading the evidence your body left behind.
+- **≈ 687 kcal/day** — your recent burn rate, from the last 14 days of weight data. Not from what you *said* you ate. From what your body actually did.
+- **≈ 162.8 lb in 7 days** (range 162.6–163.0) — a tight near-term forecast, so you see the next week before it happens.
+
+This changes how the cut feels. Instead of "am I eating too little?", you look at the number and you *know*.
+
+28,790 kcal is a lot of work — and seeing it proven by the scale, not estimated from a food log, is a different kind of motivation. You're not trusting your memory. You're reading the evidence your body left behind.
 
 ---
 
@@ -44,13 +51,13 @@ This changes how the cut feels. Instead of asking "am I eating enough?" or "am I
 
 <img src="docs/screenshot-progress.png" width="320" align="right" />
 
-The Progress tab colors every weigh-in by how long you slept the night before. Red dots are short nights. Green dots are good ones. The 30-day moving average runs through it all as a smooth blue line.
+**The Progress tab colors every weigh-in by how well you slept the night before.** Red dots are short nights. Green dots are good ones. A 30-day moving average runs through it all as a smooth blue line.
 
-This isn't decoration. Water retention tracks with sleep debt more than most people realize. When you see a cluster of red dots above the trend line, you know what happened. It stops feeling like random noise.
+This isn't decoration. Water retention tracks with sleep debt more than most people realize — so when you see a cluster of red dots sitting above the trend line, you know exactly what happened. It stops feeling like random noise.
 
-The cut window is highlighted in green. The target weight is a dashed line below. The gap between where you are and where you need to be is the whole story.
+The cut window is highlighted in green, with the target weight as a dashed line below. The gap between the two is the whole story.
 
-At a glance: -2.7 lb past week, -8.6 lb past month, 47 days into a tracking streak. The numbers are in green because green means down.
+At a glance: **-2.7 lb** past week, **-8.6 lb** past month, 47 days into a tracking streak. Green means down.
 
 <br clear="right" />
 
@@ -60,9 +67,13 @@ At a glance: -2.7 lb past week, -8.6 lb past month, 47 days into a tracking stre
 
 <img src="docs/screenshot-coach.png" width="320" align="right" />
 
-The Coach tab is a persistent AI conversation that has access to everything: your full weigh-in history, your current cut, your historical cuts, your sleep data, your step count. It doesn't just answer questions — it notices things.
+**The Coach is a persistent AI conversation that can see everything** — your full weigh-in history, your current and past cuts, your sleep, your step count. It doesn't just answer questions. It notices things.
 
-In the screenshot above, the coach flagged that the current rate of loss exceeds the 0.4 kg/week target and proposed a specific macro adjustment. The user replied that they're a climber who doesn't mind losing leg muscle. The coach remembered that, updated its model, and then listed sport-specific red flags to watch for — including the fact that step count had already dropped from an 11,000 baseline to a 6,900 average over the last 7 days.
+In the screenshot, the coach:
+
+- Flagged that the current loss rate exceeds the 0.4 kg/week target, and proposed a specific macro change
+- Heard the user say "I'm a climber, I don't mind losing leg muscle" — and *remembered* it
+- Listed sport-specific red flags to watch — including that step count had quietly fallen from an 11,000 baseline to a 6,900 average over the last 7 days
 
 That's not a chatbot. That's someone watching your data and thinking about it.
 
