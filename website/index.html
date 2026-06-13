@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Cut Tracker — the weight tracker that thinks in cuts</title>
+<meta name="description" content="A weight tracker for people with a deadline. It reverse-engineers your calorie deficit from the scale, fans out best/typical/worst to your finish line, and tells you the truth." />
+<meta name="theme-color" content="#08090a" />
+<meta name="color-scheme" content="light" />
+
+<!-- Open Graph -->
+<meta property="og:title" content="Cut Tracker — the weight tracker that thinks in cuts" />
+<meta property="og:description" content="You're not on a journey. You're on a cut. It knows you started something, watches you run it, and tells you every morning — honestly — whether you're going to make it." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cut.f7z.io" />
+<meta property="og:image" content="https://cut.f7z.io/assets/screenshot-today.png" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Cut Tracker — the weight tracker that thinks in cuts" />
+<meta name="twitter:description" content="A weight tracker for people with a deadline. Best, typical, worst — fanning out to your finish line. No food logging, now or ever." />
+<meta name="twitter:image" content="https://cut.f7z.io/assets/screenshot-today.png" />
+
+<!-- Favicon: scissors (the Cuts tab icon) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2308090a'/%3E%3Ctext x='50' y='52' font-size='58' text-anchor='middle' dominant-baseline='central' fill='%23ffffff'%3E%E2%9C%82%3C/text%3E%3C/svg%3E" />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Archivo:wght@600;700;800;900&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --ink:#08090a;
+  --ink-2:#3a3d42;
+  --ink-3:#6b7077;
+  --paper:#ffffff;
+  --paper-2:#f6f6f4;
+  --line:#e4e4e0;
+  --line-strong:#08090a;
+
+  --green:#16a34a;       /* legible text green */
+  --green-bright:#22c55e;/* the app's iOS green */
+  --green-wash:#eafaf0;
+  --red:#c74d4d;         /* the "worst" trajectory */
+  --red-wash:#fbeeee;
+
+  --maxw:1180px;
+  --gutter:clamp(20px, 5vw, 80px);
+
+  --display:"Archivo", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  --sans:-apple-system, BlinkMacSystemFont, "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  font-family:var(--sans);
+  color:var(--ink);
+  background:var(--paper);
+  line-height:1.55;
+  font-size:clamp(1rem,0.97rem + 0.2vw,1.0625rem);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+img{max-width:100%;height:auto;display:block}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--green-bright);color:#06250f}
+
+/* ============================================================
+   LAYOUT PRIMITIVES
+   ============================================================ */
+.wrap{max-width:var(--maxw);margin-inline:auto;padding-inline:var(--gutter)}
+section{padding-block:clamp(72px,11vw,150px);position:relative}
+.divider{border:0;border-top:1px solid var(--line);margin:0}
+.rule-ink{border:0;border-top:2px solid var(--ink);width:64px;margin-bottom:28px}
+
+.eyebrow{
+  font-family:var(--sans);
+  font-weight:700;
+  font-size:.78rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  margin-bottom:22px;
+  display:flex;align-items:center;gap:12px;
+}
+.eyebrow::before{
+  content:"";width:26px;height:2px;background:var(--ink);flex:none;
+}
+.eyebrow.green::before{background:var(--green-bright)}
+
+h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:-.02em;line-height:.98}
+h2{font-size:clamp(2.05rem,1.3rem + 3.6vw,4.1rem);max-width:18ch}
+h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-height:1.05}
+
+.lead{font-size:clamp(1.18rem,1.05rem + .65vw,1.6rem);line-height:1.42;color:var(--ink);font-weight:500;max-width:40ch;letter-spacing:-.01em}
+.body{font-size:1.0625rem;line-height:1.62;color:var(--ink-2);max-width:62ch}
+.body + .body{margin-top:1.1em}
+.body strong{color:var(--ink);font-weight:700}
+.muted{color:var(--ink-3)}
+.green-text{color:var(--green)}
+.red-text{color:var(--red)}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn{
+  display:inline-flex;align-items:center;gap:.6em;
+  font-family:var(--sans);font-weight:700;font-size:1.0625rem;
+  letter-spacing:-.01em;
+  background:var(--ink);color:var(--paper);
+  padding:1rem 1.5rem;border-radius:999px;
+  border:2px solid var(--ink);
+  transition:transform .25s var(--ease), background .25s var(--ease), color .25s var(--ease);
+  min-height:52px;
+  cursor:pointer;
+}
+.btn .arrow{transition:transform .3s var(--ease)}
+.btn:hover{background:var(--green);border-color:var(--green);color:#fff}
+.btn:hover .arrow{transform:translateX(4px)}
+.btn:focus-visible{outline:3px solid var(--green-bright);outline-offset:3px}
+.btn-lg{font-size:1.18rem;padding:1.15rem 1.9rem;min-height:60px}
+.btn-ghost{background:transparent;color:var(--ink)}
+.btn-ghost:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ============================================================
+   STICKY NAV
+   ============================================================ */
+.nav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(255,255,255,.82);
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid transparent;
+  transition:border-color .3s var(--ease), background .3s var(--ease);
+}
+.nav.scrolled{border-bottom-color:var(--line)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:.55em;font-family:var(--display);font-weight:800;font-size:1.06rem;letter-spacing:-.02em}
+.brand .mark{font-size:1.1em;line-height:1;transform:translateY(1px)}
+.nav-links{display:none;gap:30px;font-size:.9rem;font-weight:600;color:var(--ink-2)}
+.nav-links a{position:relative;padding:4px 0;transition:color .2s}
+.nav-links a:hover{color:var(--ink)}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:-2px;height:2px;width:0;background:var(--green-bright);transition:width .25s var(--ease)}
+.nav-links a:hover::after{width:100%}
+.nav-cta{font-size:.92rem;padding:.55rem 1.05rem;min-height:40px}
+@media (min-width:1000px){.nav-links{display:flex}}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{padding-top:clamp(40px,7vw,72px);padding-bottom:0;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:1fr;gap:clamp(40px,6vw,72px);align-items:center}
+@media (min-width:920px){.hero-grid{grid-template-columns:1.15fr .85fr}}
+.hero h1{
+  font-size:clamp(2.9rem,1.4rem + 7.4vw,6.6rem);
+  line-height:.92;letter-spacing:-.035em;
+  margin-bottom:.5em;
+}
+.hero h1 .cut{position:relative;white-space:nowrap;color:var(--green)}
+.hero h1 .strike{position:relative;color:var(--ink-3)}
+.hero h1 .strike::after{
+  content:"";position:absolute;left:-2%;right:-2%;top:54%;height:.09em;
+  background:var(--red);transform:scaleX(0);transform-origin:left;
+  transition:transform .7s var(--ease) .35s;
+}
+.reveal-on .hero h1 .strike::after,.hero h1.struck .strike::after{transform:scaleX(1)}
+.hero .lead{margin-bottom:1.5em}
+.hero-body{max-width:54ch;margin-bottom:2em;color:var(--ink-2);font-size:1.075rem;line-height:1.6}
+.hero-cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:18px}
+.micro{font-size:.82rem;color:var(--ink-3);line-height:1.45;margin-top:1.1em;max-width:42ch;letter-spacing:.005em}
+
+/* PHONE */
+.phone{
+  position:relative;width:min(330px,82vw);margin-inline:auto;
+  border-radius:46px;
+  background:#0a0a0a;
+  padding:11px;
+  box-shadow:
+    0 2px 4px rgba(8,9,10,.04),
+    0 30px 60px -20px rgba(8,9,10,.32),
+    0 60px 120px -40px rgba(8,9,10,.28);
+}
+.phone::after{ /* side button hint */
+  content:"";position:absolute;right:-2px;top:120px;width:3px;height:64px;border-radius:3px;background:#0a0a0a;
+}
+.phone img{border-radius:36px;display:block;width:100%}
+.hero-phone{transform:translateY(0) rotate(0.4deg)}
+@media (min-width:920px){.hero-phone{transform:translateY(20px) rotate(1.2deg)}}
+
+/* plain framed shot (rounded, shadow, no bezel) */
+.shot{
+  border-radius:34px;
+  overflow:hidden;
+  box-shadow:0 2px 4px rgba(8,9,10,.05), 0 30px 60px -24px rgba(8,9,10,.30);
+  width:min(330px,82vw);margin-inline:auto;
+  border:1px solid var(--line);
+}
+.shot img{display:block;width:100%}
+
+/* ============================================================
+   MANIFESTO
+   ============================================================ */
+.two-col{display:grid;grid-template-columns:1fr;gap:clamp(36px,5vw,72px);align-items:start}
+@media (min-width:860px){.two-col{grid-template-columns:.85fr 1.15fr}}
+@media (min-width:860px){.col-head h2{position:sticky;top:96px}}
+.lead-in{font-weight:800;color:var(--ink);font-family:var(--display);letter-spacing:-.01em;font-size:1.05em}
+
+.pull{
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(1.5rem,1.1rem + 2.1vw,2.65rem);
+  line-height:1.12;letter-spacing:-.02em;
+  border-left:3px solid var(--green-bright);
+  padding-left:clamp(20px,3vw,38px);
+  margin-block:clamp(40px,6vw,72px);
+  max-width:24ch;
+}
+.pull.center{margin-inline:auto;text-align:left;max-width:30ch}
+
+/* ============================================================
+   SPLIT SECTIONS (screenshot + text)
+   ============================================================ */
+.split{display:grid;grid-template-columns:1fr;gap:clamp(40px,6vw,80px);align-items:center}
+@media (min-width:900px){
+  .split{grid-template-columns:1fr 1fr}
+  .split.flip .split-media{order:2}
+}
+.split-text .lead{margin-bottom:1.2em}
+.caption{
+  font-size:.86rem;line-height:1.5;color:var(--ink-3);
+  margin-top:22px;max-width:42ch;padding-left:16px;border-left:2px solid var(--line);
+}
+
+/* ============================================================
+   DEFICIT — THE STAR
+   ============================================================ */
+.deficit{background:var(--ink);color:#fff;border-radius:0}
+.deficit .eyebrow{color:#7e848c}
+.deficit .eyebrow::before{background:var(--green-bright)}
+.deficit h2{color:#fff}
+.deficit .lead{color:#fff}
+.deficit .body{color:#b6bac0}
+.deficit .body strong{color:#fff}
+.deficit .caption{color:#82878f;border-color:#2a2d31}
+.deficit .green-text{color:var(--green-bright)}
+
+.deficit-hero{display:grid;grid-template-columns:1fr;gap:clamp(40px,6vw,72px);align-items:center;margin-bottom:clamp(48px,7vw,84px)}
+@media (min-width:900px){.deficit-hero{grid-template-columns:1.2fr .8fr}}
+
+.bignum{
+  font-family:var(--display);font-weight:900;letter-spacing:-.04em;line-height:.9;
+  font-size:clamp(4rem,2rem + 13vw,11rem);
+  color:#fff;
+  font-variant-numeric:tabular-nums;
+  display:flex;align-items:baseline;gap:.12em;
+}
+.bignum .unit{font-size:.22em;font-weight:700;color:var(--green-bright);letter-spacing:.02em;transform:translateY(-.2em)}
+.bignum-label{color:#82878f;font-size:.95rem;font-weight:500;margin-top:.4em;letter-spacing:.01em}
+
+.stat-grid{display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid #232629;margin-top:clamp(40px,6vw,72px)}
+@media (min-width:760px){.stat-grid{grid-template-columns:repeat(3,1fr)}}
+.stat{
+  padding:clamp(28px,4vw,40px) clamp(4px,2vw,32px);
+  border-bottom:1px solid #232629;
+}
+@media (min-width:760px){
+  .stat{border-bottom:0;border-right:1px solid #232629}
+  .stat:last-child{border-right:0}
+  .stat:first-child{padding-left:0}
+}
+.stat-num{
+  font-family:var(--display);font-weight:800;letter-spacing:-.025em;line-height:1;
+  font-size:clamp(1.9rem,1.3rem + 2.2vw,2.9rem);
+  color:#fff;font-variant-numeric:tabular-nums;margin-bottom:.45em;
+}
+.stat-num .sm{font-size:.5em;color:#7e848c;font-weight:700}
+.stat-num.accent{color:var(--green-bright)}
+.stat-sub{color:#b6bac0;font-size:.98rem;line-height:1.5}
+.stat-sub b{color:#fff;font-weight:600}
+
+/* ============================================================
+   NEVER — refusal list
+   ============================================================ */
+.never .eyebrow::before{background:var(--red)}
+.never-list{margin-top:clamp(40px,6vw,64px);border-top:2px solid var(--ink)}
+.never-item{
+  display:grid;grid-template-columns:auto 1fr;gap:clamp(16px,3vw,40px);
+  padding-block:clamp(26px,3.5vw,40px);
+  border-bottom:1px solid var(--line);
+  align-items:baseline;
+  transition:background .3s var(--ease);
+}
+.never-item:hover{background:var(--paper-2)}
+.never-no{
+  font-family:var(--display);font-weight:800;
+  font-size:clamp(1.5rem,1rem + 2.2vw,2.6rem);
+  color:var(--red);line-height:.9;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;gap:.3em;
+}
+.never-no .x{color:var(--red);font-size:.8em}
+.never-title{font-family:var(--display);font-weight:800;font-size:clamp(1.15rem,1rem + .7vw,1.55rem);letter-spacing:-.015em;line-height:1.1;margin-bottom:.4em}
+.never-desc{color:var(--ink-2);font-size:1.02rem;line-height:1.55;max-width:60ch}
+
+/* ============================================================
+   QUALIFIER — two honest columns
+   ============================================================ */
+.qual-cols{display:grid;grid-template-columns:1fr;gap:0;margin-top:clamp(40px,6vw,64px);border:2px solid var(--ink);border-radius:6px;overflow:hidden}
+@media (min-width:820px){.qual-cols{grid-template-columns:1fr 1fr}}
+.qual-col{padding:clamp(28px,4vw,48px)}
+.qual-col.not{background:var(--paper)}
+.qual-col.yes{background:var(--ink);color:#fff}
+@media (min-width:820px){.qual-col.not{border-right:2px solid var(--ink)}}
+@media (max-width:819px){.qual-col.not{border-bottom:2px solid var(--ink)}}
+.qual-head{
+  font-family:var(--display);font-weight:800;letter-spacing:-.015em;
+  font-size:clamp(1.2rem,1rem + .8vw,1.7rem);line-height:1.1;
+  margin-bottom:1.4em;display:flex;align-items:center;gap:.5em;
+}
+.qual-col.not .qual-head{color:var(--ink)}
+.qual-col.yes .qual-head{color:#fff}
+.qual-icon{
+  width:1.5em;height:1.5em;border-radius:50%;flex:none;
+  display:grid;place-items:center;font-size:.7em;font-weight:900;
+}
+.not .qual-icon{background:var(--red-wash);color:var(--red);border:1.5px solid var(--red)}
+.yes .qual-icon{background:rgba(34,197,94,.16);color:var(--green-bright);border:1.5px solid var(--green-bright)}
+.qual-list{list-style:none;display:flex;flex-direction:column;gap:1.15em}
+.qual-list li{display:grid;grid-template-columns:auto 1fr;gap:.85em;align-items:start;font-size:1.0125rem;line-height:1.5}
+.not .qual-list li{color:var(--ink-2)}
+.yes .qual-list li{color:#c4c8cd}
+.qual-list .tick{font-weight:900;line-height:1.4;font-size:.95em;flex:none}
+.not .tick{color:var(--red)}
+.yes .tick{color:var(--green-bright)}
+
+/* ============================================================
+   FINAL CTA
+   ============================================================ */
+.close{text-align:left}
+.close h2{font-size:clamp(2.3rem,1.4rem + 5vw,5.4rem);max-width:16ch;margin-bottom:.5em;letter-spacing:-.03em}
+.close .body{max-width:60ch;margin-bottom:2em;font-size:1.1rem}
+.close-cta{display:flex;flex-wrap:wrap;align-items:center;gap:18px}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer{background:var(--ink);color:#9aa0a6;padding-block:clamp(56px,8vw,96px)}
+.footer .tagline{font-family:var(--display);font-weight:800;color:#fff;font-size:clamp(1.3rem,1rem + 1.4vw,2rem);letter-spacing:-.02em;line-height:1.1;max-width:20ch;margin-bottom:2em}
+.footer-nav{display:flex;flex-wrap:wrap;gap:8px 0;font-size:.92rem;font-weight:600;margin-bottom:2.5em}
+.footer-nav a{color:#c4c8cd;transition:color .2s;padding:4px 0}
+.footer-nav a:hover{color:#fff}
+.footer-nav .sep{color:#4a4e53;margin-inline:14px}
+.footer-line{color:#7e848c;font-size:.95rem;line-height:1.6;max-width:58ch;margin-bottom:1.4em}
+.footer-line b{color:#c4c8cd;font-weight:600}
+.legal{color:#5a5f64;font-size:.82rem;line-height:1.6;max-width:62ch;border-top:1px solid #232629;padding-top:1.8em}
+
+/* ============================================================
+   SCROLL REVEAL
+   ============================================================ */
+.r{opacity:0;transform:translateY(22px);transition:opacity .8s var(--ease), transform .8s var(--ease)}
+.r.in{opacity:1;transform:none}
+.r.d1{transition-delay:.08s}
+.r.d2{transition-delay:.16s}
+.r.d3{transition-delay:.24s}
+@media (prefers-reduced-motion:reduce){
+  .r{opacity:1 !important;transform:none !important;transition:none !important}
+  .hero h1 .strike::after{transition:none}
+  .btn,.btn .arrow{transition:none}
+}
+
+/* small screens tidy */
+@media (max-width:560px){
+  .eyebrow{font-size:.72rem}
+  .caption{padding-left:14px}
+  .footer-nav .sep{margin-inline:9px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top" aria-label="Cut Tracker home">
+      <span class="mark" aria-hidden="true">✂</span>
+      <span>Cut&nbsp;Tracker</span>
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#the-cut">The cut</a>
+      <a href="#deficit">The deficit</a>
+      <a href="#progress">Progress</a>
+      <a href="#coach">The Coach</a>
+      <a href="#never">What it'll never be</a>
+    </nav>
+    <a class="btn nav-cta" href="https://testflight.apple.com/join/muNV9QP5">Join the beta</a>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============================ 1 · HERO ============================ -->
+<section class="hero" id="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow green r">A weight tracker for people with a deadline.</p>
+      <h1 class="r d1" id="heroHeadline">You're not on a <span class="strike">journey</span>.<br>You're on a <span class="cut">cut.</span></h1>
+      <p class="lead r d2">Every other weight app models your body as one endless stream with no beginning and no end. Cut Tracker knows you started something, watches you run it, and tells you every morning — honestly — whether you're going to make it.</p>
+      <p class="hero-body r d2">A cut has a start weight, a target, and a date circled on the calendar. That's the unit of work in your head. In every other app, it doesn't exist. You fake it with spreadsheets, app restarts, and a notes file. We made it the whole point.</p>
+      <div class="hero-cta-row r d3">
+        <a class="btn btn-lg" href="https://testflight.apple.com/join/muNV9QP5">Join the TestFlight <span class="arrow" aria-hidden="true">→</span></a>
+      </div>
+      <p class="micro r d3">iOS only. Private beta. No account, no email funnel, no "book a demo."</p>
+    </div>
+    <div class="hero-media r d2">
+      <div class="phone hero-phone">
+        <img src="assets/screenshot-today.png" width="330" alt="Cut Tracker home screen showing 162.6 lb in giant bold type, a 7-day average, deficit stats, and a chart fanning best, typical, and worst projections out to the deadline." />
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================ 2 · MANIFESTO ============================ -->
+<section id="manifesto" class="manifesto">
+  <div class="wrap two-col">
+    <div class="col-head">
+      <p class="eyebrow r">The thesis</p>
+      <h2 class="r d1">Every weight app gets two things wrong.</h2>
+    </div>
+    <div class="manifesto-body">
+      <p class="body r"><span class="lead-in">One:</span> they don't know what a cut is. Happy Scale, Libra, Apple Health, the app that came with your scale — they all draw one infinite line and call it your weight. But you're not tracking your weight forever. You're running an 8-to-16-week block with a finish line. The app should be built around that block. None of them are.</p>
+      <p class="body r d1"><span class="lead-in">Two:</span> they draw a single line into the future and call it a projection. Your scale weight swings a kilo and a half a day from water, sodium, glycogen, and a hard leg session. A single line pretends that noise is signal. So it lurches every weigh-in — "you'll hit it April 17," then April 11, then June 4 — until you stop believing it. A projection without uncertainty is a lie.</p>
+
+      <blockquote class="pull r">A trend line with confidence intervals is statistics. A cut with confidence intervals is a coach.</blockquote>
+
+      <p class="body r">So we show three futures instead of one: <span class="green-text"><strong>best</strong></span>, typical, <span class="red-text"><strong>worst</strong></span> — fanning out to your deadline. The typical line wiggles like real cuts wiggle, not like a curve someone fit to make a screenshot look clean. When the scale jumps three pounds overnight, the bands don't flinch. Neither should you.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================ 3 · THE CUT ============================ -->
+<section id="the-cut">
+  <div class="wrap split">
+    <div class="split-media r">
+      <div class="phone">
+        <img src="assets/screenshot-today.png" width="330" alt="The home screen: an enormous 162.6 lb, the 7-day average below it, deficit and burn-rate stats, and a projection chart with best in green and worst in red fanning to the deadline." />
+      </div>
+    </div>
+    <div class="split-text">
+      <p class="eyebrow r">The home screen</p>
+      <h2 class="r d1">Open the app. There's your cut. That's it.</h2>
+      <p class="lead r d1">Not a chart you have to decode. Not a streak. Not a "you're amazing today" banner. Your weight, your pace, and one answer: are you on track?</p>
+      <p class="body r d2">The number is enormous because it's the only number that matters this morning. Under it: your 7-day average, your deficit so far, your recent burn rate, and where you'll land in a week. The chart fans <span class="green-text">best</span> / typical / <span class="red-text">worst</span> out to your deadline. One glance tells you if you're hugging the green or drifting into the red. No macros. No barcode scanner. No "what did you have for lunch?" You already know how to eat. This screen asks one thing and answers it.</p>
+      <p class="caption r d2">162.6 lb, front and center. Below it: the 7-day average, the deficit, the forecast — and three futures fanning out to the deadline. Best in green. Worst in red. You, somewhere in the band.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 4 · DEFICIT (THE STAR) ============================ -->
+<section id="deficit" class="deficit">
+  <div class="wrap">
+    <div class="deficit-hero">
+      <div class="deficit-intro">
+        <p class="eyebrow r">The part nobody else has</p>
+        <h2 class="r d1">Your calorie deficit. Without logging a single calorie.</h2>
+        <p class="lead r d1">You don't trust your memory of what you ate. Good. Neither do we. So we don't ask.</p>
+        <p class="body r d2">Here's the thing we've never seen another app do. Every morning after you weigh in, Cut Tracker reverse-engineers your calorie deficit straight from your weight change. The math isn't magic, it's physics. A kilo of body fat is about 7,700&nbsp;kcal. You're down 3.7&nbsp;kg since April&nbsp;28 — so you've run roughly <span class="green-text"><strong>28,790&nbsp;kcal</strong></span> of deficit over 47 days. Not estimated. Not guessed from a food diary you padded with optimism. <strong>Proven by the scale.</strong></p>
+      </div>
+      <div class="deficit-num r d2" aria-hidden="false">
+        <div class="bignum"><span class="count" data-target="28790" data-suffix="">0</span></div>
+        <div class="bignum-label">kcal of deficit, reverse-engineered from the scale.</div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat r">
+        <div class="stat-num accent"><span class="count" data-target="28790">0</span> <span class="sm">kcal</span></div>
+        <p class="stat-sub"><b>Deficit since day one.</b> The receipts, not the guess.</p>
+      </div>
+      <div class="stat r d1">
+        <div class="stat-num">≈&nbsp;687 <span class="sm">kcal/day</span></div>
+        <p class="stat-sub"><b>Your real burn rate, from the last 14 days.</b> Not what you said you ate. What your body actually did.</p>
+      </div>
+      <div class="stat r d2">
+        <div class="stat-num">≈&nbsp;162.8 <span class="sm">lb / 7d</span></div>
+        <p class="stat-sub"><b>A tight forecast (162.6–163.0),</b> so you see next week before it arrives.</p>
+      </div>
+    </div>
+
+    <div class="split" style="margin-top:clamp(56px,8vw,96px)">
+      <div class="split-text">
+        <p class="body r">This changes how the cut feels. The question stops being "am I eating little enough?" and becomes a number you can read. 28,790&nbsp;kcal is a mountain of work — and seeing it confirmed by the scale instead of tallied from a food log is a different kind of motivation. You're not trusting your memory. You're reading the evidence your body left behind.</p>
+        <p class="caption r d1">28,790 kcal of proven deficit since April 28. A 687 kcal/day burn rate pulled from two weeks of weigh-ins. A 7-day forecast you didn't have to log a meal to get.</p>
+      </div>
+      <div class="split-media r d1">
+        <figure class="shot">
+          <img src="assets/screenshot-deficit.png" alt="The deficit stats block: 28,790 kcal estimated deficit since April 28, a 687 kcal/day recent rate over the last 14 days, and a 162.8 lb forecast in 7 days toward a goal on August 21." />
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 5 · PROGRESS / SLEEP ============================ -->
+<section id="progress">
+  <div class="wrap split flip">
+    <div class="split-media r">
+      <div class="phone">
+        <img src="assets/screenshot-progress.png" width="330" alt="The Progress tab: weigh-in dots colored by how well you slept, a 30-day average line through the middle, the cut window shaded green, a dashed target line below, and week, month, and year deltas down the side." />
+      </div>
+    </div>
+    <div class="split-text">
+      <p class="eyebrow r">The confound nobody talks about</p>
+      <h2 class="r d1">Every weigh-in is colored by how you slept.</h2>
+      <p class="lead r d1"><span class="red-text">Red dot, short night.</span> <span class="green-text">Green dot, good one.</span> Suddenly the spikes stop looking like noise.</p>
+      <p class="body r d2">Water retention tracks sleep debt far more than people admit. So Progress colors every dot by the night before it. When you see a clump of red dots sitting above the trend line, you don't spiral — you know exactly what that is. You slept like garbage. It's water. It's gone by Thursday. A 30-day average runs through it as a smooth line. The cut window is shaded green, the target sits as a dashed line below it, and the gap between them is the entire story. Week, month, year deltas down the side. Green means down.</p>
+      <blockquote class="pull r d2">The spikes were never random. You just couldn't see what was causing them.</blockquote>
+      <p class="caption r d2">Dots colored by sleep. A 30-day average through the middle. The cut window in green, the target as a dashed line, and the week / month / year deltas that tell you which way you're actually going.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================ 6 · THE COACH ============================ -->
+<section id="coach">
+  <div class="wrap split">
+    <div class="split-media r">
+      <div class="phone">
+        <img src="assets/screenshot-coach.png" width="330" alt="The Coach chat: a conversation with a climber. The coach flags that the loss rate is too aggressive, remembers the user is a climber who'll accept losing some leg muscle, and lists red flags including steps dropping to a 6,900 average." />
+      </div>
+    </div>
+    <div class="split-text">
+      <p class="eyebrow r">Not a cheerleader</p>
+      <h2 class="r d1">A coach that tells you the truth, not "great job."</h2>
+      <p class="lead r d1">It can see your whole history — cuts, sleep, steps, every weigh-in. It doesn't congratulate you. It notices things.</p>
+      <p class="body r d2">Most "AI coaches" are a confetti cannon with a chat box. This one isn't. It reads your data and says what's true, even when true is unwelcome.</p>
+      <ul class="qual-list r d2" style="margin-top:1.5em;gap:1em">
+        <li><span class="tick" style="color:var(--green)">→</span><span>Flagged that your loss rate is too aggressive — past the 0.4&nbsp;kg/week target — and proposed a specific change, not a pat on the head.</span></li>
+        <li><span class="tick" style="color:var(--green)">→</span><span>Remembered you're a climber who told it you don't mind losing some leg muscle, and reasoned from that instead of generic advice.</span></li>
+        <li><span class="tick" style="color:var(--green)">→</span><span>Caught your steps falling quietly from an 11,000 baseline to a 6,900 average over the week — the slow leak you'd never have noticed yourself.</span></li>
+      </ul>
+      <blockquote class="pull r d2">No confetti. No "you're crushing it!" Just someone watching your numbers and thinking about them.</blockquote>
+      <p class="caption r d2">The Coach reads everything, remembers what you tell it, and says the blunt thing — your loss rate is too fast, and your steps quietly dropped 4,000 a day.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 7 · NEVER ============================ -->
+<section id="never" class="never">
+  <div class="wrap">
+    <p class="eyebrow r">Every refusal is a feature.</p>
+    <h2 class="r d1">Here's what we'll never build. On purpose.</h2>
+    <p class="body r d1" style="margin-top:1.4em">Most apps add everything until they're for no one. We wrote down what this will never become, and we re-read the list every quarter.</p>
+
+    <div class="never-list">
+      <div class="never-item r">
+        <div class="never-no"><span class="x">✕</span>01</div>
+        <div>
+          <h3 class="never-title">Never a food logger.</h3>
+          <p class="never-desc">No barcode scanner. No macros. No recipe database. Not in v1, not in v9. If you want to log food, a hundred apps want your thumbs. This isn't one of them.</p>
+        </div>
+      </div>
+      <div class="never-item r">
+        <div class="never-no"><span class="x">✕</span>02</div>
+        <div>
+          <h3 class="never-title">Never a cheerleader.</h3>
+          <p class="never-desc">No streaks. No confetti. No "you're doing amazing!" during a stall. A plateau gets an explanation, not a pep talk.</p>
+        </div>
+      </div>
+      <div class="never-item r">
+        <div class="never-no"><span class="x">✕</span>03</div>
+        <div>
+          <h3 class="never-title">Never social.</h3>
+          <p class="never-desc">No feed. No friends. No leaderboards. The scale is between you and the math. Nobody else is invited.</p>
+        </div>
+      </div>
+      <div class="never-item r">
+        <div class="never-no"><span class="x">✕</span>04</div>
+        <div>
+          <h3 class="never-title">Never a wellness journey.</h3>
+          <p class="never-desc">Not for "mindful eating." Not a vibe. You have a target and a deadline, or you don't.</p>
+        </div>
+      </div>
+      <div class="never-item r">
+        <div class="never-no"><span class="x">✕</span>05</div>
+        <div>
+          <h3 class="never-title">Never a medical product.</h3>
+          <p class="never-desc">No DEXA cosplay, no body-fat coefficient gimmicks, no clinical claims. Just an honest reading of the scale.</p>
+        </div>
+      </div>
+    </div>
+
+    <blockquote class="pull center r" style="margin-top:clamp(56px,8vw,96px);border-left-color:var(--red)">Every other app's roadmap is a list of things it added. Ours is a list of things we refused.</blockquote>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================ 8 · QUALIFIER ============================ -->
+<section id="qualifier">
+  <div class="wrap">
+    <p class="eyebrow r">Read this part honestly.</p>
+    <h2 class="r d1">This isn't for most people. It might be for you.</h2>
+
+    <div class="qual-cols r d1">
+      <div class="qual-col not">
+        <h3 class="qual-head"><span class="qual-icon" aria-hidden="true">✕</span>This is not for you if:</h3>
+        <ul class="qual-list">
+          <li><span class="tick">✕</span><span>You don't have a deadline. If there's no date, you're not in a cut — you're just living, and Apple Health is plenty.</span></li>
+          <li><span class="tick">✕</span><span>You want to log every meal and chase a macro ring. Different app. Different planet.</span></li>
+          <li><span class="tick">✕</span><span>You want an app that tells you you're amazing. We will never do that.</span></li>
+          <li><span class="tick">✕</span><span>You're looking for a "wellness journey." This is a stopwatch, not a spa.</span></li>
+          <li><span class="tick">✕</span><span>A red weigh-in ruins your day. The bands exist precisely so it doesn't have to. But if you want false comfort, look elsewhere.</span></li>
+        </ul>
+      </div>
+      <div class="qual-col yes">
+        <h3 class="qual-head"><span class="qual-icon" aria-hidden="true">✓</span>This is for you if:</h3>
+        <ul class="qual-list">
+          <li><span class="tick">✓</span><span>You have a date circled and a number to hit.</span></li>
+          <li><span class="tick">✓</span><span>You already know how to eat, and you will not log food. Ever.</span></li>
+          <li><span class="tick">✓</span><span>You weigh daily, own a smart scale, and live on your Apple Watch.</span></li>
+          <li><span class="tick">✓</span><span>The only question you have each morning is "am I on pace?"</span></li>
+          <li><span class="tick">✓</span><span>You'd rather hear the truth flat than be flattered.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <blockquote class="pull center r" style="margin-top:clamp(56px,8vw,96px)">If you don't have a deadline, you're not in a cut. <span class="red-text">Close this tab.</span> We mean it.</blockquote>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================ 9 · CLOSE ============================ -->
+<section id="close" class="close">
+  <div class="wrap">
+    <p class="eyebrow r">No hard sell here.</p>
+    <h2 class="r d1">We don't care if you download it.</h2>
+    <p class="body r d1">That's not a growth tactic, it's the truth. This app was built for a specific person running a specific kind of cut, and it's better for not pretending to be for everyone. If that person is you, you already knew it three sections ago. Go weigh in tomorrow morning and watch it tell you something true. If it's not you — genuinely, no hard feelings. Apple Health is right there and it's free.</p>
+    <div class="close-cta r d2">
+      <a class="btn btn-lg" href="https://testflight.apple.com/join/muNV9QP5">Join the TestFlight <span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+    <p class="micro r d2">iOS, private beta. No account. No email capture. No onboarding survey about your "goals and lifestyle." You weigh in, it does the rest.</p>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================ 10 · FOOTER ============================ -->
+<footer class="footer">
+  <div class="wrap">
+    <p class="tagline">Cut Tracker — the weight tracker that thinks in cuts.</p>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="#the-cut">The cut</a><span class="sep" aria-hidden="true">·</span>
+      <a href="#deficit">The deficit</a><span class="sep" aria-hidden="true">·</span>
+      <a href="#progress">Progress</a><span class="sep" aria-hidden="true">·</span>
+      <a href="#coach">The Coach</a><span class="sep" aria-hidden="true">·</span>
+      <a href="#never">What it'll never be</a><span class="sep" aria-hidden="true">·</span>
+      <a href="https://testflight.apple.com/join/muNV9QP5">Join the beta</a>
+    </nav>
+    <p class="footer-line">Built for iOS. Currently in private TestFlight. <b>No food logging — now or ever.</b></p>
+    <p class="legal">Not a medical device. Doesn't diagnose, treat, or cure anything. It reads your scale and does the math. The rest is up to you.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- Sticky nav border on scroll ---- */
+  var nav = document.getElementById('nav');
+  var onScroll = function(){
+    if(window.scrollY > 8){ nav.classList.add('scrolled'); }
+    else{ nav.classList.remove('scrolled'); }
+  };
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  /* ---- Scroll reveal ---- */
+  var revealEls = document.querySelectorAll('.r');
+  if(reduce || !('IntersectionObserver' in window)){
+    revealEls.forEach(function(el){ el.classList.add('in'); });
+    var hl = document.getElementById('heroHeadline'); if(hl) hl.classList.add('struck');
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, {threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+    revealEls.forEach(function(el){ io.observe(el); });
+
+    /* trigger the hero strikethrough shortly after load */
+    var hl = document.getElementById('heroHeadline');
+    if(hl){ window.requestAnimationFrame(function(){ setTimeout(function(){ hl.classList.add('struck'); }, 450); }); }
+  }
+
+  /* ---- Count-up on the deficit numbers ---- */
+  function animateCount(el){
+    var target = parseInt(el.getAttribute('data-target'), 10);
+    if(reduce){ el.textContent = target.toLocaleString('en-US'); return; }
+    var dur = 1500, start = null;
+    function step(ts){
+      if(start === null) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      // easeOutExpo
+      var eased = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+      el.textContent = Math.round(target * eased).toLocaleString('en-US');
+      if(p < 1) requestAnimationFrame(step);
+      else el.textContent = target.toLocaleString('en-US');
+    }
+    requestAnimationFrame(step);
+  }
+  var counts = document.querySelectorAll('.count');
+  if(reduce || !('IntersectionObserver' in window)){
+    counts.forEach(animateCount);
+  } else {
+    var cio = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ animateCount(e.target); cio.unobserve(e.target); }
+      });
+    }, {threshold:0.6});
+    counts.forEach(function(el){ cio.observe(el); });
+  }
+
+  /* ---- Smooth-scroll offset for sticky nav on anchor clicks ---- */
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener('click', function(ev){
+      var id = a.getAttribute('href');
+      if(id === '#top' || id === '#'){ return; }
+      var t = document.querySelector(id);
+      if(t){
+        ev.preventDefault();
+        var y = t.getBoundingClientRect().top + window.scrollY - 72;
+        window.scrollTo({top:y, behavior: reduce ? 'auto' : 'smooth'});
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
