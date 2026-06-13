@@ -14,8 +14,6 @@ struct ActiveCutMinichart: View {
     let milestones: [Milestone]
     let allReadings: [Reading]
 
-    @State private var showFullscreen = false
-
     init(
         active: ActiveCut,
         inCutReadings: [Reading],
@@ -145,39 +143,25 @@ struct ActiveCutMinichart: View {
     }
 
     var body: some View {
-        Button {
-            showFullscreen = true
-        } label: {
-            VStack(spacing: 0) {
-                // Date labels in a safe gutter ABOVE the chart so they remain visible
-                // even when the chart bleeds behind the tab bar.
-                HStack {
-                    Text(Self.dateFmt.string(from: active.startDate))
-                    Spacer()
-                    Text(Self.dateFmt.string(from: windowEnd))
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 4)
-
-                chartBody
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal, 4)
-                    .ignoresSafeArea(.container, edges: .bottom)
+        VStack(spacing: 0) {
+            // Date labels in a safe gutter ABOVE the chart so they remain visible
+            // even when the chart bleeds behind the tab bar.
+            HStack {
+                Text(Self.dateFmt.string(from: active.startDate))
+                Spacer()
+                Text(Self.dateFmt.string(from: windowEnd))
             }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 4)
+
+            chartBody
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, 4)
+                .ignoresSafeArea(.container, edges: .bottom)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Active cut chart. Tap to open fullscreen.")
-        .fullScreenCover(isPresented: $showFullscreen) {
-            FullscreenChartView(
-                title: "Active Cut",
-                subtitle: "\(Self.dateFmt.string(from: active.startDate)) → \(Self.dateFmt.string(from: active.targetEndDate))",
-                series: buildSeries(),
-                unit: unit,
-                targetWeightKg: active.targetWeightKg
-            )
-        }
+        .accessibilityLabel("Active cut chart. Rotate to landscape for a focused view.")
     }
 
     /// Chart body extracted so the parent button can size it with `maxHeight: .infinity`
@@ -404,26 +388,5 @@ struct ActiveCutMinichart: View {
         path.addLine(to: CGPoint(x: lastX, y: bottomY))
         path.closeSubpath()
         return path
-    }
-
-    private func buildSeries() -> [FullscreenChartView.Series] {
-        var out: [FullscreenChartView.Series] = []
-        out.append(.init(name: "Actual", style: .actualSolidPrimary, points: inCutReadings.map { ($0.date, $0.weightKg) }))
-        if !projection.isTargetReached {
-            if let bestEnd = projection.bestEndKg {
-                out.append(.init(name: "Best", style: .projectionDashedGreen, points: [(active.startDate, active.startWeightKg), (projection.targetEndDate, bestEnd)]))
-            }
-            if let worstEnd = projection.worstEndKg {
-                out.append(.init(name: "Worst", style: .projectionDashedRed, points: [(active.startDate, active.startWeightKg), (projection.targetEndDate, worstEnd)]))
-            }
-            if !projection.avgPath.isEmpty {
-                out.append(.init(name: "Avg", style: .projectionSolidBlue, points: [(active.startDate, active.startWeightKg)] + projection.avgPath))
-            }
-        }
-        return out
-    }
-
-    private func formatted(_ kg: Double) -> String {
-        String(format: "%.1f %@", display(kg), unit.symbol)
     }
 }

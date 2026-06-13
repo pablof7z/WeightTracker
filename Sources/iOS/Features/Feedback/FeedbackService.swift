@@ -446,6 +446,10 @@ final class FeedbackService: ObservableObject {
         return try NostrEvent.signed(kind: kind, content: content, tags: tags, keyPair: keyPair)
     }
 
+    func signSharedFeedbackEvent(kind: Int, content: String, tags: [[String]]) async throws -> NostrEvent {
+        try await sign(kind: kind, content: content, tags: tags)
+    }
+
     private func publishFeedbackEvent(_ event: NostrEvent) async throws {
         do {
             try await feedbackRelay.publishAndAwaitOK(event, timeout: 8)

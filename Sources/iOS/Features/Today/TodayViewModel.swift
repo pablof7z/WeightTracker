@@ -218,6 +218,20 @@ final class TodayViewModel: ObservableObject {
         self.milestones = services.milestoneStore.upcoming(from: Date())
         self.forecast = Self.computeDefaultForecast(activeCut: refreshedCut, readings: refreshed, milestones: self.milestones)
 
+        // Refresh chart data so the minichart updates immediately without a restart.
+        if let cut = refreshedCut {
+            self.inCutReadings = refreshed.filter { $0.date >= cut.startDate }
+            let preCurrentCut = refreshed.filter { $0.date < cut.startDate }
+            let clusters = ClusterDetector.clusters(from: preCurrentCut)
+            let historicals = HistoricalCutDetector.detect(in: clusters, readings: preCurrentCut)
+            self.projection = CutProjection.project(
+                active: cut,
+                readings: refreshed,
+                historicalCuts: historicals,
+                cycleStarts: services.cycleStarts
+            )
+        }
+
         // Trigger a proactive coach run on weigh-in days so the coach can
         // comment on the new data and post an observation to the thread.
         if Calendar.current.isDateInToday(day), ActiveCutStore.load() != nil {

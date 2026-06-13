@@ -15,7 +15,6 @@ struct ProgressTabView: View {
     @State private var showGaps: Bool = true
     @State private var pinnedToCut: Bool = true
     @State private var colorBySleep: Bool = false
-    @State private var showFullscreen: Bool = false
 
     // Trends state
     @StateObject private var trendsViewModel = TrendsViewModel()
@@ -60,26 +59,6 @@ struct ProgressTabView: View {
             .refreshable {
                 trendsViewModel.reload(repository: services.repository)
             }
-            .fullScreenCover(isPresented: $showFullscreen) {
-                FullscreenChartView(
-                    title: "Weight",
-                    subtitle: nil,
-                    series: [
-                        .init(
-                            name: "Actual",
-                            style: .actualSolidPrimary,
-                            points: chartViewModel.readings.map { ($0.date, $0.weightKg) }
-                        ),
-                        .init(
-                            name: "30-day avg",
-                            style: .averagePurple,
-                            points: chartViewModel.movingAverage.map { ($0.date, $0.kg) }
-                        )
-                    ],
-                    unit: weightUnit,
-                    targetWeightKg: chartViewModel.activeCut?.targetWeightKg
-                )
-            }
             .sheet(item: $selectedGap) { gap in
                 GapDetailSheet(gap: gap)
                     .presentationDetents([.medium, .large])
@@ -123,8 +102,6 @@ struct ProgressTabView: View {
                     showCycleBands: cycleEnabled
                 )
                 .padding(.horizontal)
-                .contentShape(Rectangle())
-                .onTapGesture { showFullscreen = true }
 
                 if colorBySleep {
                     SleepOverlayLegend()

@@ -9,7 +9,6 @@ struct ActiveCutCard: View {
     let unit: WeightUnit
     var readings: [Reading] = []
     var projection: CutProjectionResult? = nil
-    @State private var showFullscreen = false
 
     private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
@@ -83,11 +82,6 @@ struct ActiveCutCard: View {
                 }
             }
             .padding(.top, 4)
-            .contentShape(Rectangle())
-            .onTapGesture { showFullscreen = true }
-            .fullScreenCover(isPresented: $showFullscreen) {
-                fullscreenChart
-            }
 
         }
         .padding()
@@ -155,42 +149,4 @@ struct ActiveCutCard: View {
         }
     }
 
-    @ViewBuilder
-    private var fullscreenChart: some View {
-        let inCut = readings.filter { $0.date >= cut.startDate }
-        FullscreenChartView(
-            title: "Active Cut",
-            subtitle: "\(Self.dateFmt.string(from: cut.startDate)) → \(Self.dateFmt.string(from: cut.targetEndDate))",
-            series: buildSeries(inCut: inCut),
-            unit: unit,
-            targetWeightKg: cut.targetWeightKg
-        )
-    }
-
-    private func buildSeries(inCut: [Reading]) -> [FullscreenChartView.Series] {
-        var out: [FullscreenChartView.Series] = []
-        out.append(.init(
-            name: "Actual",
-            style: .actualSolidPrimary,
-            points: inCut.map { ($0.date, $0.weightKg) }
-        ))
-        if let p = projection, !p.isTargetReached {
-            if let bestEnd = p.bestEndKg {
-                out.append(.init(name: "Best", style: .projectionDashedGreen, points: [
-                    (p.anchorDate, p.anchorKg),
-                    (p.targetEndDate, bestEnd)
-                ]))
-            }
-            if let worstEnd = p.worstEndKg {
-                out.append(.init(name: "Worst", style: .projectionDashedRed, points: [
-                    (p.anchorDate, p.anchorKg),
-                    (p.targetEndDate, worstEnd)
-                ]))
-            }
-            if !p.avgPath.isEmpty {
-                out.append(.init(name: "Avg", style: .projectionSolidBlue, points: p.avgPath))
-            }
-        }
-        return out
-    }
 }

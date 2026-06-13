@@ -228,6 +228,7 @@ struct TodayView: View {
                         milestones: viewModel.milestones,
                         allReadings: viewModel.allReadings
                     )
+                    .animation(.easeInOut(duration: 0.4), value: viewModel.inCutReadings.count)
                     .transition(.opacity)
                 }
             }

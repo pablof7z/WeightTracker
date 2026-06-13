@@ -5,8 +5,6 @@ struct HistoricalCutCard: View {
     let unit: WeightUnit
     var readings: [Reading] = []
 
-    @State private var showFullscreen = false
-
     private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
         f.dateStyle = .medium
@@ -46,23 +44,9 @@ struct HistoricalCutCard: View {
                 startWeightKg: cut.startWeightKg
             )
             .padding(.top, 4)
-            .contentShape(Rectangle())
-            .onTapGesture { showFullscreen = true }
         }
         .padding()
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-        .fullScreenCover(isPresented: $showFullscreen) {
-            let cutReadings = readings.filter { $0.date >= cut.startDate && $0.date <= cut.endDate }
-            FullscreenChartView(
-                title: "Cut",
-                subtitle: "\(Self.dateFmt.string(from: cut.startDate)) → \(Self.dateFmt.string(from: cut.endDate))",
-                series: [
-                    .init(name: "Actual", style: .actualSolidPrimary, points: cutReadings.map { ($0.date, $0.weightKg) })
-                ],
-                unit: unit,
-                targetWeightKg: cut.endWeightKg
-            )
-        }
     }
 
     private var yearsAgoLabel: String {
