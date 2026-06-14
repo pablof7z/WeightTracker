@@ -196,8 +196,7 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
   content:"";position:absolute;right:-2px;top:120px;width:3px;height:64px;border-radius:3px;background:#0a0a0a;
 }
 .phone img{border-radius:36px;display:block;width:100%}
-.hero-phone{transform:translateY(0) rotate(0.4deg)}
-@media (min-width:920px){.hero-phone{transform:translateY(20px) rotate(1.2deg)}}
+.hero-phone{transform:none}
 
 /* plain framed shot (rounded, shadow, no bezel) */
 .shot{
@@ -214,7 +213,6 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
    ============================================================ */
 .two-col{display:grid;grid-template-columns:1fr;gap:clamp(36px,5vw,72px);align-items:start}
 @media (min-width:860px){.two-col{grid-template-columns:.85fr 1.15fr}}
-@media (min-width:860px){.col-head h2{position:sticky;top:96px}}
 .lead-in{font-weight:800;color:var(--ink);font-family:var(--display);letter-spacing:-.01em;font-size:1.05em}
 
 .pull{
@@ -416,7 +414,7 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
       <p class="eyebrow green r">A weight tracker for people with a deadline.</p>
       <h1 class="r d1" id="heroHeadline">You're not on a <span class="strike">journey</span>.<br>You're on a <span class="cut">cut.</span></h1>
       <p class="lead r d2">Every other weight app models your body as one endless stream with no beginning and no end. Cut Tracker knows you started something, watches you run it, and tells you every morning — honestly — whether you're going to make it.</p>
-      <p class="hero-body r d2">A cut has a start weight, a target, and a date circled on the calendar. That's the unit of work in your head. In every other app, it doesn't exist. You fake it with spreadsheets, app restarts, and a notes file. We made it the whole point.</p>
+      <p class="hero-body r d2">A cut has a start weight, a target, and a date on the calendar. In every other app, it doesn't exist — you fake it with spreadsheets and a notes file. We made it the whole point.</p>
       <div class="hero-cta-row r d3">
         <a class="btn btn-lg" href="https://testflight.apple.com/join/muNV9QP5">Join the TestFlight <span class="arrow" aria-hidden="true">→</span></a>
       </div>
@@ -440,12 +438,12 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
       <h2 class="r d1">Every weight app gets two things wrong.</h2>
     </div>
     <div class="manifesto-body">
-      <p class="body r"><span class="lead-in">One:</span> they don't know what a cut is. Happy Scale, Libra, Apple Health, the app that came with your scale — they all draw one infinite line and call it your weight. But you're not tracking your weight forever. You're running an 8-to-16-week block with a finish line. The app should be built around that block. None of them are.</p>
-      <p class="body r d1"><span class="lead-in">Two:</span> they draw a single line into the future and call it a projection. Your scale weight swings a kilo and a half a day from water, sodium, glycogen, and a hard leg session. A single line pretends that noise is signal. So it lurches every weigh-in — "you'll hit it April 17," then April 11, then June 4 — until you stop believing it. A projection without uncertainty is a lie.</p>
+      <p class="body r"><span class="lead-in">One:</span> they don't know what a cut is. Happy Scale, Libra, Apple Health — they draw one infinite line and call it your weight. But you're not tracking forever. You're running an 8-to-16-week block with a finish line. The app should be built around that block. None of them are.</p>
+      <p class="body r d1"><span class="lead-in">Two:</span> they draw one line into the future and call it a projection. But scale weight swings a kilo a day from water, sodium, and a hard leg session. A single line pretends that noise is signal — so it lurches every weigh-in, "April 17," then April 11, then June 4, until you stop believing it. A projection without uncertainty is a lie.</p>
 
       <blockquote class="pull r">A trend line with confidence intervals is statistics. A cut with confidence intervals is a coach.</blockquote>
 
-      <p class="body r">So we show three futures instead of one: <span class="green-text"><strong>best</strong></span>, typical, <span class="red-text"><strong>worst</strong></span> — fanning out to your deadline. The typical line wiggles like real cuts wiggle, not like a curve someone fit to make a screenshot look clean. When the scale jumps three pounds overnight, the bands don't flinch. Neither should you.</p>
+      <p class="body r">So we show three futures instead of one: <span class="green-text"><strong>best</strong></span>, typical, <span class="red-text"><strong>worst</strong></span> — fanning out to your deadline. When the scale jumps three pounds overnight, the bands don't flinch. Neither should you.</p>
     </div>
   </div>
 </section>
@@ -464,8 +462,7 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
       <p class="eyebrow r">The home screen</p>
       <h2 class="r d1">Open the app. There's your cut. That's it.</h2>
       <p class="lead r d1">Not a chart you have to decode. Not a streak. Not a "you're amazing today" banner. Your weight, your pace, and one answer: are you on track?</p>
-      <p class="body r d2">The number is enormous because it's the only number that matters this morning. Under it: your 7-day average, your deficit so far, your recent burn rate, and where you'll land in a week. The chart fans <span class="green-text">best</span> / typical / <span class="red-text">worst</span> out to your deadline. One glance tells you if you're hugging the green or drifting into the red. No macros. No barcode scanner. No "what did you have for lunch?" You already know how to eat. This screen asks one thing and answers it.</p>
-      <p class="caption r d2">162.6 lb, front and center. Below it: the 7-day average, the deficit, the forecast — and three futures fanning out to the deadline. Best in green. Worst in red. You, somewhere in the band.</p>
+      <p class="body r d2">The number is enormous because it's the only number that matters this morning. Under it: your 7-day average, your deficit so far, your burn rate, and where you'll land in a week. The chart fans <span class="green-text">best</span> / typical / <span class="red-text">worst</span> out to your deadline. No macros. No barcode scanner. You already know how to eat — this screen asks one thing and answers it.</p>
     </div>
   </div>
 </section>
@@ -478,7 +475,7 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
         <p class="eyebrow r">The part nobody else has</p>
         <h2 class="r d1">Your calorie deficit. Without logging a single calorie.</h2>
         <p class="lead r d1">You don't trust your memory of what you ate. Good. Neither do we. So we don't ask.</p>
-        <p class="body r d2">Here's the thing we've never seen another app do. Every morning after you weigh in, Cut Tracker reverse-engineers your calorie deficit straight from your weight change. The math isn't magic, it's physics. A kilo of body fat is about 7,700&nbsp;kcal. You're down 3.7&nbsp;kg since April&nbsp;28 — so you've run roughly <span class="green-text"><strong>28,790&nbsp;kcal</strong></span> of deficit over 47 days. Not estimated. Not guessed from a food diary you padded with optimism. <strong>Proven by the scale.</strong></p>
+        <p class="body r d2">Every morning after you weigh in, Cut Tracker reverse-engineers your calorie deficit straight from your weight change. It's not magic, it's physics: a kilo of body fat is about 7,700&nbsp;kcal. Down 3.7&nbsp;kg since April&nbsp;28 means roughly <span class="green-text"><strong>28,790&nbsp;kcal</strong></span> of deficit over 47 days. Not guessed from a food diary you padded with optimism. <strong>Proven by the scale.</strong></p>
       </div>
       <div class="deficit-num r d2" aria-hidden="false">
         <div class="bignum"><span class="count" data-target="28790" data-suffix="">0</span></div>
@@ -503,8 +500,7 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
 
     <div class="split" style="margin-top:clamp(56px,8vw,96px)">
       <div class="split-text">
-        <p class="body r">This changes how the cut feels. The question stops being "am I eating little enough?" and becomes a number you can read. 28,790&nbsp;kcal is a mountain of work — and seeing it confirmed by the scale instead of tallied from a food log is a different kind of motivation. You're not trusting your memory. You're reading the evidence your body left behind.</p>
-        <p class="caption r d1">28,790 kcal of proven deficit since April 28. A 687 kcal/day burn rate pulled from two weeks of weigh-ins. A 7-day forecast you didn't have to log a meal to get.</p>
+        <p class="body r">The question stops being "am I eating little enough?" and becomes a number you can read. You're not trusting your memory — you're reading the evidence your body left behind.</p>
       </div>
       <div class="split-media r d1">
         <figure class="shot">
@@ -527,9 +523,8 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
       <p class="eyebrow r">The confound nobody talks about</p>
       <h2 class="r d1">Every weigh-in is colored by how you slept.</h2>
       <p class="lead r d1"><span class="red-text">Red dot, short night.</span> <span class="green-text">Green dot, good one.</span> Suddenly the spikes stop looking like noise.</p>
-      <p class="body r d2">Water retention tracks sleep debt far more than people admit. So Progress colors every dot by the night before it. When you see a clump of red dots sitting above the trend line, you don't spiral — you know exactly what that is. You slept like garbage. It's water. It's gone by Thursday. A 30-day average runs through it as a smooth line. The cut window is shaded green, the target sits as a dashed line below it, and the gap between them is the entire story. Week, month, year deltas down the side. Green means down.</p>
+      <p class="body r d2">Water retention tracks sleep debt more than people admit. So when you see a clump of red dots sitting above the trend line, you don't spiral — you slept like garbage, it's water, it's gone by Thursday. The cut window is shaded green, the target a dashed line below, and the gap between them is the whole story. Green means down.</p>
       <blockquote class="pull r d2">The spikes were never random. You just couldn't see what was causing them.</blockquote>
-      <p class="caption r d2">Dots colored by sleep. A 30-day average through the middle. The cut window in green, the target as a dashed line, and the week / month / year deltas that tell you which way you're actually going.</p>
     </div>
   </div>
 </section>
@@ -548,14 +543,13 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
       <p class="eyebrow r">Not a cheerleader</p>
       <h2 class="r d1">A coach that tells you the truth, not "great job."</h2>
       <p class="lead r d1">It can see your whole history — cuts, sleep, steps, every weigh-in. It doesn't congratulate you. It notices things.</p>
-      <p class="body r d2">Most "AI coaches" are a confetti cannon with a chat box. This one isn't. It reads your data and says what's true, even when true is unwelcome.</p>
+      <p class="body r d2">Most "AI coaches" are a confetti cannon with a chat box. This one reads your data and says what's true, even when it's unwelcome.</p>
       <ul class="qual-list r d2" style="margin-top:1.5em;gap:1em">
-        <li><span class="tick" style="color:var(--green)">→</span><span>Flagged that your loss rate is too aggressive — past the 0.4&nbsp;kg/week target — and proposed a specific change, not a pat on the head.</span></li>
-        <li><span class="tick" style="color:var(--green)">→</span><span>Remembered you're a climber who told it you don't mind losing some leg muscle, and reasoned from that instead of generic advice.</span></li>
-        <li><span class="tick" style="color:var(--green)">→</span><span>Caught your steps falling quietly from an 11,000 baseline to a 6,900 average over the week — the slow leak you'd never have noticed yourself.</span></li>
+        <li><span class="tick" style="color:var(--green)">→</span><span>Flagged that your loss rate is too aggressive — past your 0.4&nbsp;kg/week target — and proposed a specific fix, not a pat on the head.</span></li>
+        <li><span class="tick" style="color:var(--green)">→</span><span>Remembered you're a climber who'll accept losing some leg muscle, and reasoned from that instead of generic advice.</span></li>
+        <li><span class="tick" style="color:var(--green)">→</span><span>Caught your steps falling quietly from an 11,000 baseline to 6,900 over the week — a leak you'd never have spotted.</span></li>
       </ul>
       <blockquote class="pull r d2">No confetti. No "you're crushing it!" Just someone watching your numbers and thinking about them.</blockquote>
-      <p class="caption r d2">The Coach reads everything, remembers what you tell it, and says the blunt thing — your loss rate is too fast, and your steps quietly dropped 4,000 a day.</p>
     </div>
   </div>
 </section>
@@ -651,7 +645,7 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
   <div class="wrap">
     <p class="eyebrow r">No hard sell here.</p>
     <h2 class="r d1">We don't care if you download it.</h2>
-    <p class="body r d1">That's not a growth tactic, it's the truth. This app was built for a specific person running a specific kind of cut, and it's better for not pretending to be for everyone. If that person is you, you already knew it three sections ago. Go weigh in tomorrow morning and watch it tell you something true. If it's not you — genuinely, no hard feelings. Apple Health is right there and it's free.</p>
+    <p class="body r d1">That's not a growth tactic, it's the truth. This was built for a specific person running a specific kind of cut. If that's you, you knew it three sections ago. If it's not — no hard feelings. Apple Health is right there and it's free.</p>
     <div class="close-cta r d2">
       <a class="btn btn-lg" href="https://testflight.apple.com/join/muNV9QP5">Join the TestFlight <span class="arrow" aria-hidden="true">→</span></a>
     </div>
