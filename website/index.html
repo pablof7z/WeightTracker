@@ -172,10 +172,8 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
 .hero h1 .strike{position:relative;color:var(--ink-3)}
 .hero h1 .strike::after{
   content:"";position:absolute;left:-2%;right:-2%;top:54%;height:.09em;
-  background:var(--red);transform:scaleX(0);transform-origin:left;
-  transition:transform .7s var(--ease) .35s;
+  background:var(--red);transform-origin:left;
 }
-.reveal-on .hero h1 .strike::after,.hero h1.struck .strike::after{transform:scaleX(1)}
 .hero .lead{margin-bottom:1.5em}
 .hero-body{max-width:54ch;margin-bottom:2em;color:var(--ink-2);font-size:1.075rem;line-height:1.6}
 .hero-cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:18px}
@@ -366,14 +364,8 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
 /* ============================================================
    SCROLL REVEAL
    ============================================================ */
-.r{opacity:0;transform:translateY(22px);transition:opacity .8s var(--ease), transform .8s var(--ease)}
-.r.in{opacity:1;transform:none}
-.r.d1{transition-delay:.08s}
-.r.d2{transition-delay:.16s}
-.r.d3{transition-delay:.24s}
+.r{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){
-  .r{opacity:1 !important;transform:none !important;transition:none !important}
-  .hero h1 .strike::after{transition:none}
   .btn,.btn .arrow{transition:none}
 }
 
@@ -478,14 +470,14 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
         <p class="body r d2">Every morning after you weigh in, Cut Tracker reverse-engineers your calorie deficit straight from your weight change. It's not magic, it's physics: a kilo of body fat is about 7,700&nbsp;kcal. Down 3.7&nbsp;kg since April&nbsp;28 means roughly <span class="green-text"><strong>28,790&nbsp;kcal</strong></span> of deficit over 47 days. Not guessed from a food diary you padded with optimism. <strong>Proven by the scale.</strong></p>
       </div>
       <div class="deficit-num r d2" aria-hidden="false">
-        <div class="bignum"><span class="count" data-target="28790" data-suffix="">0</span></div>
+        <div class="bignum">28,790</div>
         <div class="bignum-label">kcal of deficit, reverse-engineered from the scale.</div>
       </div>
     </div>
 
     <div class="stat-grid">
       <div class="stat r">
-        <div class="stat-num accent"><span class="count" data-target="28790">0</span> <span class="sm">kcal</span></div>
+        <div class="stat-num accent">28,790 <span class="sm">kcal</span></div>
         <p class="stat-sub"><b>Deficit since day one.</b> The receipts, not the guess.</p>
       </div>
       <div class="stat r d1">
@@ -676,7 +668,7 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
 (function(){
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---- Sticky nav border on scroll ---- */
+  /* ---- Nav border once you've scrolled past the top ---- */
   var nav = document.getElementById('nav');
   var onScroll = function(){
     if(window.scrollY > 8){ nav.classList.add('scrolled'); }
@@ -685,53 +677,7 @@ h3{font-size:clamp(1.35rem,1.1rem + 1.1vw,1.95rem);letter-spacing:-.015em;line-h
   window.addEventListener('scroll', onScroll, {passive:true});
   onScroll();
 
-  /* ---- Scroll reveal ---- */
-  var revealEls = document.querySelectorAll('.r');
-  if(reduce || !('IntersectionObserver' in window)){
-    revealEls.forEach(function(el){ el.classList.add('in'); });
-    var hl = document.getElementById('heroHeadline'); if(hl) hl.classList.add('struck');
-  } else {
-    var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
-      });
-    }, {threshold:0.12, rootMargin:'0px 0px -8% 0px'});
-    revealEls.forEach(function(el){ io.observe(el); });
-
-    /* trigger the hero strikethrough shortly after load */
-    var hl = document.getElementById('heroHeadline');
-    if(hl){ window.requestAnimationFrame(function(){ setTimeout(function(){ hl.classList.add('struck'); }, 450); }); }
-  }
-
-  /* ---- Count-up on the deficit numbers ---- */
-  function animateCount(el){
-    var target = parseInt(el.getAttribute('data-target'), 10);
-    if(reduce){ el.textContent = target.toLocaleString('en-US'); return; }
-    var dur = 1500, start = null;
-    function step(ts){
-      if(start === null) start = ts;
-      var p = Math.min((ts - start) / dur, 1);
-      // easeOutExpo
-      var eased = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
-      el.textContent = Math.round(target * eased).toLocaleString('en-US');
-      if(p < 1) requestAnimationFrame(step);
-      else el.textContent = target.toLocaleString('en-US');
-    }
-    requestAnimationFrame(step);
-  }
-  var counts = document.querySelectorAll('.count');
-  if(reduce || !('IntersectionObserver' in window)){
-    counts.forEach(animateCount);
-  } else {
-    var cio = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(e.isIntersecting){ animateCount(e.target); cio.unobserve(e.target); }
-      });
-    }, {threshold:0.6});
-    counts.forEach(function(el){ cio.observe(el); });
-  }
-
-  /* ---- Smooth-scroll offset for sticky nav on anchor clicks ---- */
+  /* ---- Anchor links offset under the sticky nav ---- */
   document.querySelectorAll('a[href^="#"]').forEach(function(a){
     a.addEventListener('click', function(ev){
       var id = a.getAttribute('href');
