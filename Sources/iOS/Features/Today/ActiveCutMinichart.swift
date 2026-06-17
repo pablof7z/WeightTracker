@@ -69,40 +69,98 @@ struct ActiveCutMinichart: View {
     /// is changing, in kg/day. Computed by central-differencing the already-
     /// smoothed series (so it's not amplifying raw scale noise). Endpoints use a
     /// one-sided difference. Negative = losing, positive = gaining.
+    /// Rate of weight change at each reading, in kg/day, as the slope of a
+    /// least-squares fit over a ±7-day window (a ~2-week trend). This is what
+    /// makes the number trustworthy and correctly signed: day-to-day water
+    /// swings of a pound or two are ±7–14 lb/wk of apparent "rate" and would
+    /// otherwise dwarf — and randomly flip the sign of — the ~0.1 kg/day a cut
+    /// actually moves. A two-week regression recovers the underlying direction:
+    /// negative while cutting. The window is date-based, so gaps in logging
+    /// don't distort it. Endpoints (incl. "today") fit over the days available,
+    /// i.e. a trailing ~1–2 week trend.
     private var rateLine: [(date: Date, perDayKg: Double)] {
+        // Regress over the already-5-day-smoothed weight line, not the raw
+        // readings: raw weigh-ins are quantized and often repeat day to day,
+        // which makes the slope come out as visible stair-steps. Smoothing the
+        // input first gives a continuous, fluid rate curve.
         let s = smoothedLine
         guard s.count >= 2 else { return [] }
-        return s.indices.compactMap { i in
-            let lo = max(0, i - 1)
-            let hi = min(s.count - 1, i + 1)
-            let dtDays = s[hi].date.timeIntervalSince(s[lo].date) / Self.secondsPerDay
-            guard dtDays > 0 else { return nil }
-            let perDay = (s[hi].kg - s[lo].kg) / dtDays
-            return (s[i].date, perDay)
+        let halfWindow = 7.0 * Self.secondsPerDay
+        return s.map { center in
+            let lo = center.date.addingTimeInterval(-halfWindow)
+            let hi = center.date.addingTimeInterval(halfWindow)
+            let window = s
+                .filter { $0.date >= lo && $0.date <= hi }
+                .map { (date: $0.date, kg: $0.kg) }
+            return (center.date, Self.slopePerDay(window))
         }
+    }
+
+    /// Light ±2 centered moving average over the rate series — removes the
+    /// small kinks that appear as readings cross the regression-window edge.
+    private var rateSmoothed: [(date: Date, perDayKg: Double)] {
+        let r = rateLine
+        guard r.count > 2 else { return r }
+        return r.indices.map { i in
+            let lo = max(0, i - 2)
+            let hi = min(r.count - 1, i + 2)
+            let avg = r[lo...hi].reduce(0.0) { $0 + $1.perDayKg } / Double(hi - lo + 1)
+            return (r[i].date, avg)
+        }
+    }
+
+    /// Least-squares slope (kg/day) over a set of (date, kg) points.
+    private static func slopePerDay(_ pts: [(date: Date, kg: Double)]) -> Double {
+        guard pts.count >= 2, let t0 = pts.first?.date else { return 0 }
+        let xs = pts.map { $0.date.timeIntervalSince(t0) / secondsPerDay }
+        let ys = pts.map(\.kg)
+        let n = Double(pts.count)
+        let sx = xs.reduce(0, +)
+        let sy = ys.reduce(0, +)
+        let sxx = xs.reduce(0) { $0 + $1 * $1 }
+        let sxy = zip(xs, ys).reduce(0) { $0 + $1.0 * $1.1 }
+        let denom = n * sxx - sx * sx
+        guard abs(denom) > 1e-9 else { return 0 }
+        return (n * sxy - sx * sy) / denom
     }
 
     /// Rate line in the user's display unit, per week (the chart's y-values).
     /// Conversion is linear, so applying `display(_:)` to a delta is valid.
     private var rateWeekValues: [(date: Date, perWeek: Double)] {
-        rateLine.map { (date: $0.date, perWeek: display($0.perDayKg) * 7) }
+        rateSmoothed.map { (date: $0.date, perWeek: display($0.perDayKg) * 7) }
     }
 
     /// Most-recent rate, in display unit, as both per-week and per-day.
     private var currentRate: (perWeek: Double, perDay: Double)? {
-        guard let last = rateLine.last else { return nil }
+        guard let last = rateSmoothed.last else { return nil }
         let perDay = display(last.perDayKg)
         return (perDay * 7, perDay)
     }
 
-    /// Y-domain for the rate chart, always including zero so the baseline rule
-    /// is visible and the sign of the trend is readable.
+    /// Y-domain for the rate chart: fit the actual data range and always
+    /// include zero so the baseline is visible and the sign is readable. Not
+    /// symmetric — a cut is essentially always negative, so reserving the whole
+    /// "gaining" half would waste half the chart. Padding gives the curve (and
+    /// its Catmull-Rom overshoot) headroom so nothing bleeds past the plot.
     private var rateYDomain: ClosedRange<Double> {
         let vals = rateWeekValues.map(\.perWeek)
         let lo = min(vals.min() ?? 0, 0)
         let hi = max(vals.max() ?? 0, 0)
-        let range = max(hi - lo, 0.5)
-        return (lo - range * 0.15)...(hi + range * 0.15)
+        let pad = max((hi - lo) * 0.12, 0.3)
+        return (lo - pad)...(hi + pad)
+    }
+
+    /// X-domain for the rate page: its own data span (first → last reading), so
+    /// the curve fills edge-to-edge. Unlike the weight page we do NOT extend to
+    /// `windowEnd`: there's no future rate to project, so that would just leave
+    /// blank space on the right.
+    private var rateXDomain: ClosedRange<Date> {
+        guard let first = rateWeekValues.first?.date,
+              let last = rateWeekValues.last?.date,
+              first < last else {
+            return active.startDate...windowEnd
+        }
+        return first...last
     }
 
     private func rateText(_ value: Double, decimals: Int, per: String) -> String {
@@ -212,11 +270,11 @@ struct ActiveCutMinichart: View {
             // Date labels + page dots in a safe gutter ABOVE the chart so they
             // remain visible even when the chart bleeds behind the tab bar.
             HStack {
-                Text(Self.dateFmt.string(from: active.startDate))
+                Text(Self.dateFmt.string(from: page == 1 ? rateXDomain.lowerBound : active.startDate))
                 Spacer()
                 pageDots
                 Spacer()
-                Text(Self.dateFmt.string(from: windowEnd))
+                Text(Self.dateFmt.string(from: page == 1 ? rateXDomain.upperBound : windowEnd))
             }
             .font(.caption2)
             .foregroundStyle(.secondary)
@@ -439,7 +497,7 @@ struct ActiveCutMinichart: View {
             GeometryReader { geo in
                 if let plotFrame = proxy.plotFrame.map({ geo[$0] }) {
                     fillPath(smoothedLine.map { (date: $0.date, y: display($0.kg)) },
-                             in: plotFrame, proxy: proxy)
+                             baselineY: plotFrame.maxY, in: plotFrame, proxy: proxy)
                         .fill(Self.areaGradient)
                 }
             }
@@ -462,11 +520,11 @@ struct ActiveCutMinichart: View {
     /// closes down to its bottom edge — the shape that the gradient fills.
     /// `series` carries already-display-mapped y-values. Coordinates are in the
     /// GeometryReader's local space, with the plot rect already offset.
-    private func fillPath(_ series: [(date: Date, y: Double)], in plotFrame: CGRect, proxy: ChartProxy) -> Path {
+    private func fillPath(_ series: [(date: Date, y: Double)], baselineY: CGFloat, in plotFrame: CGRect, proxy: ChartProxy) -> Path {
         var path = Path()
         guard !series.isEmpty else { return path }
 
-        let bottomY = plotFrame.maxY
+        let bottomY = baselineY
         let leftX = plotFrame.minX
 
         let pts: [CGPoint] = series.map { p in
@@ -519,6 +577,11 @@ struct ActiveCutMinichart: View {
                 RuleMark(y: .value("Zero", 0))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 6]))
                     .foregroundStyle(.secondary.opacity(0.3))
+                    .annotation(position: .trailing, alignment: .leading, spacing: 4) {
+                        Text("0")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.tertiary)
+                    }
 
                 ForEach(Array(rateWeekValues.enumerated()), id: \.offset) { _, p in
                     LineMark(
@@ -526,30 +589,26 @@ struct ActiveCutMinichart: View {
                         y: .value("Rate", p.perWeek),
                         series: .value("series", "rate")
                     )
-                    .interpolationMethod(.monotone)
+                    .interpolationMethod(.catmullRom)
                     .lineStyle(StrokeStyle(lineWidth: 2))
                     .foregroundStyle(Color.primary)
                 }
-
-                ForEach(Array(rateWeekValues.enumerated()), id: \.offset) { _, p in
-                    PointMark(
-                        x: .value("Date", p.date),
-                        y: .value("Rate", p.perWeek)
-                    )
-                    .symbolSize(12)
-                    .foregroundStyle(Color.primary)
-                }
             }
-            .chartXScale(domain: active.startDate...windowEnd)
+            .chartXScale(domain: rateXDomain)
             .chartYScale(domain: rateYDomain)
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
             .chartBackground { proxy in
                 GeometryReader { geo in
                     if let plotFrame = proxy.plotFrame.map({ geo[$0] }) {
+                        // Fill the area UNDER the curve, down to the plot bottom
+                        // (a conventional area chart). Filling up to the zero
+                        // baseline reads as inverted here: a cut is essentially
+                        // always negative, so zero sits at the very top and the
+                        // band-to-zero grey would hang above the line.
                         fillPath(rateWeekValues.map { (date: $0.date, y: $0.perWeek) },
-                                 in: plotFrame, proxy: proxy)
-                            .fill(Self.areaGradient)
+                                 baselineY: plotFrame.maxY, in: plotFrame, proxy: proxy)
+                            .fill(Color.primary.opacity(0.15))
                     }
                 }
             }
