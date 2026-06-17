@@ -8,7 +8,7 @@ import Charts
 /// gradient fill that fades from solid black under the readings down to
 /// transparent at the plot bottom), but exposes interactions: tap-to-inspect
 /// (vertical rule + value pill), a window selector for the visible X domain,
-/// and a double-tap-to-reset.
+/// pan/pinch to navigate through time freely, and a double-tap-to-reset.
 ///
 /// Designed to be presented bleed-edge — caller hides the tab bar and the
 /// container ignores all safe areas.
@@ -48,11 +48,26 @@ struct LandscapeFocusChart: View {
     @State private var window: Window = .all
     @State private var selectedDate: Date?
 
+    // Pan / pinch navigation
+    @State private var panOffset: TimeInterval = 0
+    @State private var lastDragX: CGFloat = 0
+    @State private var spanDays: Double? = nil
+    @State private var spanAtPinchStart: Double? = nil
+    @State private var chartWidth: CGFloat = 800
+
+    private var isCustomWindow: Bool { spanDays != nil || panOffset != 0 }
+
     private static let secondsPerDay: TimeInterval = 86_400
 
     private static let pillFmt: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "MMM d, yyyy"
+        return f
+    }()
+
+    private static let rangeShortFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
         return f
     }()
 
@@ -62,6 +77,18 @@ struct LandscapeFocusChart: View {
 
     private func display(_ kg: Double) -> Double {
         UnitConvert.displayWeight(kg: kg, in: unit)
+    }
+
+    private var smoothedLine: [(date: Date, kg: Double)] {
+        let n = inCutReadings.count
+        guard n > 0 else { return [] }
+        return inCutReadings.enumerated().map { i, r in
+            let lo = max(0, i - 2)
+            let hi = min(n - 1, i + 2)
+            let slice = inCutReadings[lo...hi]
+            let avg = slice.reduce(0.0) { $0 + $1.weightKg } / Double(slice.count)
+            return (r.date, avg)
+        }
     }
 
     // MARK: - Domain (X)
@@ -108,24 +135,52 @@ struct LandscapeFocusChart: View {
         }
     }
 
-    private var xDomain: ClosedRange<Date> {
+    /// Base domain driven purely by the window preset (no pan/span applied).
+    private var baseDomain: (start: Date, end: Date) {
         let now = projection.anchorDate
         switch window {
         case .all:
-            return fullStart...fullEnd
+            return (fullStart, fullEnd)
         case .last30:
-            let start = max(fullStart, now.addingTimeInterval(-30 * Self.secondsPerDay))
-            return start...now
+            return (max(fullStart, now.addingTimeInterval(-30 * Self.secondsPerDay)), now)
         case .last14:
-            let start = max(fullStart, now.addingTimeInterval(-14 * Self.secondsPerDay))
-            return start...now
+            return (max(fullStart, now.addingTimeInterval(-14 * Self.secondsPerDay)), now)
         case .last7:
-            let start = max(fullStart, now.addingTimeInterval(-7 * Self.secondsPerDay))
-            return start...now
+            return (max(fullStart, now.addingTimeInterval(-7 * Self.secondsPerDay)), now)
         case .next14:
-            let end = min(fullEnd, now.addingTimeInterval(14 * Self.secondsPerDay))
-            return now...end
+            return (now, min(fullEnd, now.addingTimeInterval(14 * Self.secondsPerDay)))
         }
+    }
+
+    private var xDomain: ClosedRange<Date> {
+        let base = baseDomain
+        let baseDuration = base.end.timeIntervalSince(base.start)
+        let duration = spanDays.map { $0 * Self.secondsPerDay } ?? baseDuration
+
+        var end = base.end.addingTimeInterval(panOffset)
+        var start = end.addingTimeInterval(-duration)
+
+        // Clamp so the window never escapes the full data range.
+        if start < fullStart {
+            start = fullStart
+            end = start.addingTimeInterval(duration)
+        }
+        if end > fullEnd {
+            end = fullEnd
+            start = end.addingTimeInterval(-duration)
+        }
+        start = max(fullStart, start)
+        end = min(fullEnd, end)
+
+        guard start < end else { return base.start...base.end }
+        return start...end
+    }
+
+    private var windowLabel: String {
+        if !isCustomWindow { return window.rawValue }
+        let domain = xDomain
+        let fmt = Self.rangeShortFmt
+        return "\(fmt.string(from: domain.lowerBound)) – \(fmt.string(from: domain.upperBound))"
     }
 
     // MARK: - Domain (Y, autoscaled to visible window)
@@ -193,6 +248,126 @@ struct LandscapeFocusChart: View {
         })
     }
 
+    // MARK: - Window stats
+
+    private struct WindowStats {
+        let label: String
+        let startWeight: Double
+        let endWeight: Double
+        let delta: Double
+        let pct: Double
+        let isProjected: Bool
+    }
+
+    /// Linear interpolation along the avg projection path, in display units.
+    private func projectedWeight(at date: Date) -> Double? {
+        guard !projection.avgPath.isEmpty else { return nil }
+        let path = projection.avgPath
+        if date <= path[0].0 { return display(path[0].1 + avgPathShift) }
+        if date >= path[path.count - 1].0 { return display(path[path.count - 1].1 + avgPathShift) }
+        for i in 0..<path.count - 1 {
+            let (d0, w0) = path[i]
+            let (d1, w1) = path[i + 1]
+            if date >= d0 && date <= d1 {
+                let t = date.timeIntervalSince(d0) / d1.timeIntervalSince(d0)
+                return display(w0 + t * (w1 - w0) + avgPathShift)
+            }
+        }
+        return nil
+    }
+
+    private var windowStats: WindowStats? {
+        let domain = xDomain
+        let now = projection.anchorDate
+        let domainHasFuture = domain.upperBound > now
+        let visible = inCutReadings.filter { domain.contains($0.date) }
+
+        let startW: Double
+        let endW: Double
+        let isProjected: Bool
+
+        if domainHasFuture && visible.isEmpty {
+            // Pure future window — start at today's anchor, end at projection
+            startW = display(projection.anchorKg)
+            guard let projEnd = projectedWeight(at: domain.upperBound) else { return nil }
+            endW = projEnd
+            isProjected = true
+        } else if let first = visible.first, let last = visible.last {
+            startW = display(first.weightKg)
+            if domainHasFuture && !projection.isTargetReached,
+               let projEnd = projectedWeight(at: domain.upperBound) {
+                endW = projEnd
+                isProjected = true
+            } else {
+                endW = display(last.weightKg)
+                isProjected = false
+            }
+        } else {
+            return nil
+        }
+
+        let delta = endW - startW
+        let pct = startW > 0 ? (delta / startW) * 100.0 : 0
+        return WindowStats(
+            label: windowLabel,
+            startWeight: startW,
+            endWeight: endW,
+            delta: delta,
+            pct: pct,
+            isProjected: isProjected
+        )
+    }
+
+    // MARK: - Gesture handlers
+
+    private func handlePanChanged(_ value: DragGesture.Value) {
+        let delta = value.translation.width - lastDragX
+        lastDragX = value.translation.width
+        let domain = xDomain
+        let secondsPerPoint = domain.upperBound.timeIntervalSince(domain.lowerBound) / Double(chartWidth)
+        // Drag left → window moves forward; drag right → backward.
+        panOffset -= Double(delta) * secondsPerPoint
+    }
+
+    private func handlePanEnded(_: DragGesture.Value) {
+        lastDragX = 0
+        guard spanDays == nil else { return }
+        // Snap to "ending today" if the window's upper bound is very close.
+        let domain = xDomain
+        let distanceFromToday = abs(projection.anchorDate.timeIntervalSince(domain.upperBound))
+        if distanceFromToday < 2 * Self.secondsPerDay {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                panOffset = 0
+            }
+        }
+    }
+
+    private func handlePinchChanged(_ scale: CGFloat) {
+        if spanAtPinchStart == nil {
+            let d = xDomain
+            spanAtPinchStart = d.upperBound.timeIntervalSince(d.lowerBound) / Self.secondsPerDay
+        }
+        let base = spanAtPinchStart ?? 7.0
+        // Pinch-in (scale > 1) narrows span; pinch-out widens — matches map behavior.
+        spanDays = max(3, min(180, base / Double(scale)))
+    }
+
+    private func handlePinchEnded() {
+        spanAtPinchStart = nil
+        guard let span = spanDays else { return }
+        let presets: [Double] = [7, 14, 30]
+        guard let nearest = presets.min(by: { abs($0 - span) < abs($1 - span) }),
+              abs(nearest - span) / nearest < 0.10 else { return }
+        let snapped: Window = nearest == 7 ? .last7 : nearest == 14 ? .last14 : .last30
+        withAnimation(.spring(response: 0.3)) {
+            spanDays = nil
+            window = snapped
+            panOffset = 0
+        }
+    }
+
+    // MARK: - Body
+
     var body: some View {
         ZStack {
             // True bleed-edge background
@@ -206,7 +381,24 @@ struct LandscapeFocusChart: View {
                 .padding(.bottom, 12)
                 .ignoresSafeArea()
 
+            // Stats card — top leading, dims when tap-inspecting a point
+            VStack {
+                HStack(alignment: .top) {
+                    if let stats = windowStats {
+                        statsCard(stats)
+                            .padding(.leading, 56)
+                            .padding(.top, 16)
+                    }
+                    Spacer()
+                }
+                Spacer()
+            }
+            .opacity(selectedDate != nil ? 0.3 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: selectedDate != nil)
+            .ignoresSafeArea(.keyboard)
+
             // Floating window picker, bottom-center, unobtrusive.
+            // Dims in custom (pan/pinch) mode; tap any preset to snap back.
             VStack {
                 Spacer()
                 Picker("Window", selection: $window) {
@@ -219,6 +411,8 @@ struct LandscapeFocusChart: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .glass(in: Capsule())
+                .opacity(isCustomWindow ? 0.45 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: isCustomWindow)
                 .padding(.bottom, 12)
             }
             .ignoresSafeArea(.keyboard)
@@ -234,12 +428,79 @@ struct LandscapeFocusChart: View {
                 .ignoresSafeArea(.keyboard)
             }
         }
+        .background(
+            // Capture the view's rendered width for gesture → time conversion.
+            GeometryReader { geo in
+                Color.clear.onAppear { chartWidth = geo.size.width }
+            }
+        )
+        .simultaneousGesture(
+            // minimumDistance:20 keeps tap-to-inspect alive for stationary touches.
+            DragGesture(minimumDistance: 20, coordinateSpace: .local)
+                .onChanged { handlePanChanged($0) }
+                .onEnded   { handlePanEnded($0) }
+        )
+        .simultaneousGesture(
+            MagnificationGesture(minimumScaleDelta: 0.05)
+                .onChanged { handlePinchChanged($0) }
+                .onEnded   { _ in handlePinchEnded() }
+        )
         .contentShape(Rectangle())
         .onTapGesture(count: 2) {
-            // Double-tap resets window + selection.
-            window = .all
-            selectedDate = nil
+            // Double-tap resets everything to the default full view.
+            withAnimation(.spring(response: 0.35)) {
+                window = .all
+                panOffset = 0
+                spanDays = nil
+                selectedDate = nil
+            }
         }
+        .onChange(of: window) { _, _ in
+            // Tapping a preset pill snaps pan and custom span back to zero.
+            withAnimation(.easeInOut(duration: 0.2)) {
+                panOffset = 0
+                spanDays = nil
+            }
+        }
+    }
+
+    // MARK: - Stats card
+
+    @ViewBuilder
+    private func statsCard(_ stats: WindowStats) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(stats.label)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .lineLimit(1)
+
+            HStack(spacing: 3) {
+                Text(String(format: "%.1f", stats.startWeight))
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+                Image(systemName: "arrow.right")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(String(format: "%.1f", stats.endWeight))
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+                if stats.isProjected {
+                    Text("~")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+
+            HStack(spacing: 4) {
+                Text(String(format: "%+.1f %@", stats.delta, unit.symbol))
+                Text("·").foregroundStyle(.tertiary)
+                Text(String(format: "%+.1f%%", stats.pct))
+            }
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(stats.delta <= 0 ? Color.green : Self.worstColor)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .glass(in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Chart
@@ -257,20 +518,22 @@ struct LandscapeFocusChart: View {
                         .foregroundStyle(.tertiary)
                 }
 
-            // Actual readings — black line + dots, same as minichart.
-            ForEach(inCutReadings, id: \.id) { r in
+            // Smooth trend line (EWMA) + raw reading dots
+            ForEach(Array(smoothedLine.enumerated()), id: \.offset) { _, p in
                 LineMark(
-                    x: .value("Date", r.date),
-                    y: .value("Weight", display(r.weightKg)),
+                    x: .value("Date", p.date),
+                    y: .value("Weight", display(p.kg)),
                     series: .value("series", "actual")
                 )
                 .interpolationMethod(.monotone)
                 .lineStyle(StrokeStyle(lineWidth: 2.5))
                 .foregroundStyle(Color.primary)
+            }
 
+            ForEach(Array(smoothedLine.enumerated()), id: \.offset) { _, p in
                 PointMark(
-                    x: .value("Date", r.date),
-                    y: .value("Weight", display(r.weightKg))
+                    x: .value("Date", p.date),
+                    y: .value("Weight", display(p.kg))
                 )
                 .symbolSize(18)
                 .foregroundStyle(Color.primary)
@@ -454,23 +717,39 @@ struct LandscapeFocusChart: View {
     private func areaFillPath(in plotFrame: CGRect, proxy: ChartProxy) -> Path {
         var path = Path()
         let domain = xDomain
-        let visible = inCutReadings.filter { domain.contains($0.date) }
+        let visible = smoothedLine.filter { domain.contains($0.date) }
         guard !visible.isEmpty else { return path }
 
         let bottomY = plotFrame.maxY
-        let leftX = plotFrame.minX
+        let plotLeft = plotFrame.minX
 
-        let firstX = (proxy.position(forX: visible.first!.date) ?? 0) + leftX
-        path.move(to: CGPoint(x: firstX, y: bottomY))
-
-        for r in visible {
-            let px = (proxy.position(forX: r.date) ?? 0) + leftX
-            let py = (proxy.position(forY: display(r.weightKg)) ?? 0) + plotFrame.minY
-            path.addLine(to: CGPoint(x: px, y: py))
+        let pts: [CGPoint] = visible.map { p in
+            let px = (proxy.position(forX: p.date) ?? 0) + plotLeft
+            let py = (proxy.position(forY: display(p.kg)) ?? 0) + plotFrame.minY
+            return CGPoint(x: px, y: py)
         }
 
-        let lastX = (proxy.position(forX: visible.last!.date) ?? 0) + leftX
-        path.addLine(to: CGPoint(x: lastX, y: bottomY))
+        // Extend the fill left past the y-axis and safe-area region so there's no
+        // white strip on the left edge in landscape. The gradient is transparent at
+        // the bottom so this has no visible effect there; at the data-line height it
+        // extends the fill behind the y-axis labels cleanly.
+        let fillLeft: CGFloat = 0  // extend to chart view's left edge, covering safe area + y-axis
+        path.move(to: CGPoint(x: fillLeft, y: bottomY))
+        path.addLine(to: CGPoint(x: fillLeft, y: pts[0].y))
+        path.addLine(to: pts[0])
+
+        // Catmull-Rom smooth curve to match the LineMark's .monotone interpolation.
+        for i in 1..<pts.count {
+            let p0 = i > 1 ? pts[i - 2] : pts[i - 1]
+            let p1 = pts[i - 1]
+            let p2 = pts[i]
+            let p3 = i + 1 < pts.count ? pts[i + 1] : pts[i]
+            let cp1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6.0, y: p1.y + (p2.y - p0.y) / 6.0)
+            let cp2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6.0, y: p2.y - (p3.y - p1.y) / 6.0)
+            path.addCurve(to: p2, control1: cp1, control2: cp2)
+        }
+
+        path.addLine(to: CGPoint(x: pts[pts.count - 1].x, y: bottomY))
         path.closeSubpath()
         return path
     }
