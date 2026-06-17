@@ -78,12 +78,47 @@ struct ActiveCutMinichart: View {
     /// negative while cutting. The window is date-based, so gaps in logging
     /// don't distort it. Endpoints (incl. "today") fit over the days available,
     /// i.e. a trailing ~1–2 week trend.
+    /// One point per calendar day. The store can hold several readings for the
+    /// same day (a DST/timezone bug saves duplicates ~1h apart, and a day can
+    /// legitimately have more than one weigh-in); collapsing to the daily mean
+    /// keeps the time axis regular so the smoothing window spans real days, not
+    /// a variable number of readings. Grouped in UTC so the near-midnight
+    /// duplicates fall in the same bucket regardless of the device's zone.
+    private var dailyReadings: [(date: Date, kg: Double)] {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC") ?? cal.timeZone
+        var byDay: [Date: (sum: Double, n: Int)] = [:]
+        for r in inCutReadings {
+            let day = cal.startOfDay(for: r.date)
+            let cur = byDay[day] ?? (0, 0)
+            byDay[day] = (cur.sum + r.weightKg, cur.n + 1)
+        }
+        return byDay
+            .map { (date: $0.key, kg: $0.value.sum / Double($0.value.n)) }
+            .sorted { $0.date < $1.date }
+    }
+
+    /// 5-day centered moving average over the daily series — the smooth weight
+    /// trend the rate is differentiated from, and the overlay drawn on the
+    /// rate page.
+    private var dailySmoothed: [(date: Date, kg: Double)] {
+        let d = dailyReadings
+        let n = d.count
+        guard n > 0 else { return [] }
+        return d.indices.map { i in
+            let lo = max(0, i - 2)
+            let hi = min(n - 1, i + 2)
+            let slice = d[lo...hi]
+            return (d[i].date, slice.reduce(0.0) { $0 + $1.kg } / Double(slice.count))
+        }
+    }
+
     private var rateLine: [(date: Date, perDayKg: Double)] {
-        // Regress over the already-5-day-smoothed weight line, not the raw
-        // readings: raw weigh-ins are quantized and often repeat day to day,
-        // which makes the slope come out as visible stair-steps. Smoothing the
-        // input first gives a continuous, fluid rate curve.
-        let s = smoothedLine
+        // Regress over the day-deduped, smoothed weight line. Using one point
+        // per day keeps the ±7-day window a true ~2-week span; regressing over
+        // the raw per-reading series let duplicate-per-day rows shrink the
+        // window and make the slope jump around.
+        let s = dailySmoothed
         guard s.count >= 2 else { return [] }
         let halfWindow = 7.0 * Self.secondsPerDay
         return s.map { center in
@@ -93,6 +128,23 @@ struct ActiveCutMinichart: View {
                 .filter { $0.date >= lo && $0.date <= hi }
                 .map { (date: $0.date, kg: $0.kg) }
             return (center.date, Self.slopePerDay(window))
+        }
+    }
+
+    /// Smoothed weight trend mapped into the rate chart's y-range, so it can be
+    /// overlaid as a faint reference: heaviest (cut start) at the top, lightest
+    /// (now) at the bottom, so the descending shape reads as "weight coming
+    /// down" against the rate it produces.
+    private var weightOverlay: [(date: Date, y: Double)] {
+        let s = dailySmoothed
+        guard s.count >= 2 else { return [] }
+        let kgs = s.map(\.kg)
+        guard let wMin = kgs.min(), let wMax = kgs.max(), wMax > wMin else { return [] }
+        let dom = rateYDomain
+        let lo = dom.lowerBound, hi = dom.upperBound
+        return s.map { p in
+            let f = (p.kg - wMin) / (wMax - wMin)   // 0 = lightest, 1 = heaviest
+            return (p.date, lo + (hi - lo) * f)
         }
     }
 
@@ -583,6 +635,20 @@ struct ActiveCutMinichart: View {
                             .foregroundStyle(.tertiary)
                     }
 
+                // Weight trend overlay (faint, dashed) — normalized into the
+                // rate's y-range purely as a shape reference: where it descends
+                // steeply, the rate line dips most negative.
+                ForEach(Array(weightOverlay.enumerated()), id: \.offset) { _, p in
+                    LineMark(
+                        x: .value("Date", p.date),
+                        y: .value("Weight overlay", p.y),
+                        series: .value("series", "weight")
+                    )
+                    .interpolationMethod(.catmullRom)
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                    .foregroundStyle(.secondary.opacity(0.45))
+                }
+
                 ForEach(Array(rateWeekValues.enumerated()), id: \.offset) { _, p in
                     LineMark(
                         x: .value("Date", p.date),
@@ -632,8 +698,30 @@ struct ActiveCutMinichart: View {
                 Text(rateText(r.perDay, decimals: 2, per: "day"))
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    DashedSwatch()
+                        .frame(width: 14, height: 1.5)
+                    Text("weight")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, 2)
             }
             .padding(10)
+        }
+    }
+}
+
+/// Tiny dashed line swatch for the rate page's weight-overlay legend.
+private struct DashedSwatch: View {
+    var body: some View {
+        GeometryReader { geo in
+            Path { p in
+                p.move(to: CGPoint(x: 0, y: geo.size.height / 2))
+                p.addLine(to: CGPoint(x: geo.size.width, y: geo.size.height / 2))
+            }
+            .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+            .foregroundStyle(.secondary.opacity(0.6))
         }
     }
 }
