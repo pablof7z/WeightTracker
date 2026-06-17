@@ -29,10 +29,19 @@ struct WeightLogView: View {
                     .buttonStyle(.plain)
                 }
                 .onDelete { offsets in
+                    // Capture date+value BEFORE deleting (the SwiftData object is
+                    // invalidated by delete), then remove the matching Apple
+                    // Health sample we wrote so it doesn't linger / re-import.
+                    let targets = offsets.map { (kg: readings[$0].weightKg, date: readings[$0].date) }
                     for index in offsets {
                         services.repository.delete(readings[index])
                     }
                     reload()
+                    Task { @MainActor in
+                        for t in targets {
+                            await services.healthKit.deleteSample(weightKg: t.kg, on: t.date)
+                        }
+                    }
                 }
             }
             .navigationTitle("Weight Log")
@@ -162,9 +171,16 @@ private struct EditReadingSheet: View {
 
     private func persist() {
         let kg = UnitConvert.storeWeight(displayValue, from: weightUnit)
+        let oldKg = reading.weightKg
+        let day = reading.date
         reading.weightKg = kg
         services.repository.update(reading)
         Task { @MainActor in
+            // Remove the stale Health sample for the previous value before
+            // writing the new one, so an edit doesn't leave a ghost behind.
+            if abs(oldKg - kg) > 0.0001 {
+                await services.healthKit.deleteSample(weightKg: oldKg, on: day)
+            }
             await services.healthKit.writeReading(reading)
         }
         onSaved()

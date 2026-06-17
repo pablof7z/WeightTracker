@@ -112,6 +112,34 @@ public final class HealthKitManager: ObservableObject {
         #endif
     }
 
+    /// Deletes the Apple Health body-mass sample(s) THIS app wrote for a given
+    /// day and value. Called when a reading is deleted or edited in-app so the
+    /// matching Health sample doesn't linger (and can't be re-imported). We can
+    /// only delete our own samples, which is exactly what we want.
+    public func deleteSample(weightKg: Double, on date: Date) async {
+        #if canImport(HealthKit)
+        guard isAvailable else { return }
+        let bodyMass = HKQuantityType(.bodyMass)
+        let day = Reading.dayStart(of: date)
+        let lo = day.addingTimeInterval(-12 * 3600)
+        let hi = day.addingTimeInterval(12 * 3600)
+        let datePredicate = HKQuery.predicateForSamples(withStart: lo, end: hi, options: [])
+        let mine = HKQuery.predicateForObjects(from: .default())
+        let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [datePredicate, mine])
+        let samples: [HKSample] = await withCheckedContinuation { cont in
+            let q = HKSampleQuery(sampleType: bodyMass, predicate: predicate, limit: 0, sortDescriptors: nil) { _, s, _ in
+                cont.resume(returning: s ?? [])
+            }
+            store.execute(q)
+        }
+        let targets = samples
+            .compactMap { $0 as? HKQuantitySample }
+            .filter { abs($0.quantity.doubleValue(for: .gramUnit(with: .kilo)) - weightKg) < 0.05 }
+        guard !targets.isEmpty else { return }
+        do { try await store.delete(targets) } catch { print("[HK] delete failed: \(error)") }
+        #endif
+    }
+
     private func fetchRecentSamples() async {
         #if canImport(HealthKit)
         let bodyMass = HKQuantityType(.bodyMass)
@@ -137,11 +165,21 @@ public final class HealthKitManager: ObservableObject {
         let sorted = samples
             .compactMap { $0 as? HKQuantitySample }
             .sorted { $0.startDate > $1.startDate }
+        // Bundle prefix that identifies samples THIS app wrote (iOS app, watch
+        // app, extensions). Derived from the shared app-group id.
+        let ownBundlePrefix = AppGroup.identifier.replacingOccurrences(of: "group.", with: "")
         for sample in sorted {
             let kg = sample.quantity.doubleValue(for: .gramUnit(with: .kilo))
             let date = sample.startDate
+            let isOwnSample = sample.sourceRevision.source.bundleIdentifier.hasPrefix(ownBundlePrefix)
 
             if let existing = repository.reading(on: date) {
+                // Our own previously-written sample being observed back. The
+                // reading already lives in the local store, so never re-import
+                // it — this is the round-trip that created duplicate records
+                // once a DST shift moved the bucketed day-start by an hour and
+                // the same-day match missed.
+                if isOwnSample { continue }
                 if existing.source != .healthKit {
                     // User entered this reading in the app (manual/watch/import).
                     // Never overwrite with an HK sample — avoids rounding roundtrips
@@ -157,6 +195,9 @@ public final class HealthKitManager: ObservableObject {
                 }
                 continue
             }
+            // No local reading for this day — import it. This still covers our
+            // own samples after a reinstall (no iCloud sync, so Health is the
+            // only backup), as well as external scales / other health apps.
             let reading = Reading(
                 date: date,
                 weightKg: kg,

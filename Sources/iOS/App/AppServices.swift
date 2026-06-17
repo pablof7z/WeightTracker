@@ -111,6 +111,11 @@ final class AppServices: ObservableObject {
     }
 
     func bootstrap() async {
+        // One-time cleanup of duplicate readings left by the old HealthKit
+        // round-trip bug. Runs before HK observing so the backfill sees a clean
+        // store.
+        ReadingDeduper.runIfNeeded(repository)
+
         // Don't auto-request notification permission — let onboarding/Settings ask explicitly.
         await healthKit.startObservingIfAuthorized()
         await sleepHealthKit.startObservingIfAuthorized()

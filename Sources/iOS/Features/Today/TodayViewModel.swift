@@ -150,7 +150,13 @@ final class TodayViewModel: ObservableObject {
         let priorKg = prior?.weightKg
 
         if let existing = services.repository.reading(on: day) {
+            let oldKg = existing.weightKg
             services.repository.delete(existing)
+            // Clear the prior Health sample if the value is changing, so we
+            // don't leave a ghost reading behind in Apple Health.
+            if abs(oldKg - weightKg) > 0.0001 {
+                await services.healthKit.deleteSample(weightKg: oldKg, on: day)
+            }
         }
 
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
