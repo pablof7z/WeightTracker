@@ -2,7 +2,7 @@
 title: Secrets and Repo Hygiene
 slug: secrets-and-repo-hygiene
 topic: secrets-management
-summary: The repository is publicly accessible
+summary: "The repository is publicly accessible at https://github.com/pablof7z/WeightTracker"
 tags:
   - capture
 volatility: warm
@@ -19,6 +19,6 @@ sources:
 
 ## Repository Hygiene & Secrets
 
-The repository is publicly accessible. The MEMORY/ directory is excluded from git tracking via .gitignore. Git history is scrubbed of the MEMORY/WORK/ directory contents. All credentials (OpenRouter, ElevenLabs, Nostr) are stored in the Keychain at runtime, not hardcoded. The support email pfer@me.com is intentionally hardcoded in AboutSection.swift.
+The repository is publicly accessible at https://github.com/pablof7z/WeightTracker. The MEMORY/ directory is excluded from git tracking via .gitignore. The MEMORY/WORK/ directory is excluded from git tracking and listed in .gitignore. Git history is fully scrubbed of the MEMORY/ directory contents via history rewrite. All credentials (OpenRouter, ElevenLabs, Nostr) are stored in the Keychain at runtime, not hardcoded. The support email pfer@me.com is intentionally hardcoded in AboutSection.swift.
 
-<!-- citations: [^85cf8-1] [^85cf8-2] -->
+<!-- citations: [^85cf8-1] [^85cf8-2] [^85cf8-4] -->
