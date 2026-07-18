@@ -8,6 +8,7 @@ public enum AppPrefKey {
     public static let onboardingComplete = "onboardingComplete"
     public static let lastChartRangeDays = "lastChartRangeDays"
     public static let todayChartVariation = "todayChartVariation"
+    public static let todayChartVariationOrder = "todayChartVariationOrder"
     public static let icloudSyncEnabled = "icloudSyncEnabled"
     public static let autoExportEnabled = "autoExportEnabled"
     public static let activeCutJSON = "activeCutJSON"
