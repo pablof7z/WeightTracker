@@ -12,6 +12,8 @@ struct ActiveCutCard: View {
     var chartModel: CutChartModel? = nil
     var chartDomains: CutChartDomainState? = nil
 
+    @State private var weeklyChartMode: WeeklyCutChartMode = .weeklyAverage
+
     private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
         f.dateStyle = .medium
@@ -84,9 +86,34 @@ struct ActiveCutCard: View {
             }
             .padding(.top, 4)
 
+            if let chartModel {
+                weeklySection(chartModel: chartModel)
+                    .padding(.top, 8)
+            }
         }
         .padding()
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func weeklySection(chartModel: CutChartModel) -> some View {
+        let weeklyPoints = WeeklyCutAggregator.aggregate(model: chartModel)
+        return VStack(alignment: .leading, spacing: 6) {
+            Picker("Weekly view", selection: $weeklyChartMode) {
+                ForEach(WeeklyCutChartMode.allCases) { mode in
+                    Text(mode.label).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .font(.caption)
+            .labelsHidden()
+
+            WeeklyCutChartView(
+                points: weeklyPoints,
+                mode: weeklyChartMode,
+                unit: unit,
+                requiredWeeklyRateLb: chartModel.requiredWeeklyRateLb
+            )
+        }
     }
 
     private func metric(title: String, value: String) -> some View {
