@@ -21,6 +21,8 @@ final class TodayViewModel: ObservableObject {
     /// widget uses this so the EWMA seed window can include pre-cut days.
     @Published var allReadings: [Reading] = []
     @Published var projection: CutProjectionResult?
+    @Published var chartModel: CutChartModel?
+    @Published var chartDomains: CutChartDomainState?
     /// 7-day EMA of weight in kg, computed over the most recent ≤7 readings on or before
     /// the currently-selected date. `nil` when fewer than 2 readings are available.
     @Published var ema7Kg: Double?
@@ -81,9 +83,12 @@ final class TodayViewModel: ObservableObject {
                 historicalCuts: historicals,
                 cycleStarts: cycleStarts
             )
+            refreshChartModel(active: cut, readings: allReadings)
         } else {
             self.inCutReadings = []
             self.projection = nil
+            self.chartModel = nil
+            self.chartDomains = nil
         }
 
         // Recompute the deficit estimate. Always uses "today" as `asOf` (not
@@ -236,6 +241,7 @@ final class TodayViewModel: ObservableObject {
                 historicalCuts: historicals,
                 cycleStarts: services.cycleStarts
             )
+            refreshChartModel(active: cut, readings: refreshed)
         }
 
         // Trigger a proactive coach run on weigh-in days so the coach can
@@ -264,6 +270,21 @@ final class TodayViewModel: ObservableObject {
             horizonDays: days,
             asOf: Date()
         )
+    }
+
+    private func refreshChartModel(active: ActiveCut, readings: [Reading]) {
+        guard let projection else {
+            chartModel = nil
+            chartDomains = nil
+            return
+        }
+        let prepared = CutChartModel.prepare(
+            active: active,
+            readings: readings,
+            projection: projection
+        )
+        chartModel = prepared
+        chartDomains = CutChartDomainStore.resolve(model: prepared, active: active)
     }
 
     /// 7-day EMA over the most recent ≤7 readings whose date is ≤ `asOf`.
