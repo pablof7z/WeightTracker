@@ -91,19 +91,31 @@ struct LandscapeFocusChart: View {
         }
     }
 
+    /// One raw reading per calendar day (mean if duplicates), used for the
+    /// dots so they show actual measurements rather than the smoothed trend.
+    /// Grouped in UTC so near-midnight duplicates fall in the same bucket
+    /// regardless of the device's zone.
+    private var dailyReadings: [(date: Date, kg: Double)] {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC") ?? cal.timeZone
+        var byDay: [Date: (sum: Double, n: Int)] = [:]
+        for r in inCutReadings {
+            let day = cal.startOfDay(for: r.date)
+            let cur = byDay[day] ?? (0, 0)
+            byDay[day] = (cur.sum + r.weightKg, cur.n + 1)
+        }
+        return byDay
+            .map { (date: $0.key, kg: $0.value.sum / Double($0.value.n)) }
+            .sorted { $0.date < $1.date }
+    }
+
     // MARK: - Domain (X)
 
     private var fullStart: Date { active.startDate }
-    private var fullEnd: Date {
-        // Show readings through projection-anchor + 14 days, capped at the
-        // cut target end date. Same windowing as the minichart, but
-        // extended to include the furthest upcoming milestone so a trip in
-        // 6 weeks still appears on the .all window.
-        let twoWeeksOut = projection.anchorDate.addingTimeInterval(14 * Self.secondsPerDay)
-        let furthestMilestone = upcomingMilestones.map(\.date).max()
-        let baseEnd = max(twoWeeksOut, furthestMilestone ?? twoWeeksOut)
-        return min(active.targetEndDate, baseEnd)
-    }
+    /// Fixed right edge for the "All" window: the cut's target end date.
+    /// Using the immutable cut parameters (rather than "today + 14 days")
+    /// keeps every day's horizontal position constant for the whole cut.
+    private var fullEnd: Date { active.targetEndDate }
 
     /// Upcoming milestones inside this cut window, sorted oldest-first.
     private var upcomingMilestones: [Milestone] {
@@ -194,7 +206,7 @@ struct LandscapeFocusChart: View {
         if domain.contains(active.startDate) { w.append(active.startWeightKg) }
         if domain.contains(projection.anchorDate) { w.append(projection.anchorKg) }
         for p in projection.avgPath where domain.contains(p.0) {
-            w.append(p.1 + avgPathShift)
+            w.append(p.1)
         }
         if let bestEnd = projection.bestEndKg, domain.contains(projection.targetEndDate) {
             w.append(bestEnd)
@@ -215,30 +227,26 @@ struct LandscapeFocusChart: View {
         return w
     }
 
+    /// Stable y-domain anchored on the cut's immutable start/target weights.
+    /// It may expand outward when an actual reading or forecast value falls
+    /// outside that base range, but it never contracts or chases the latest
+    /// reading — the target and start weight are always inside the domain.
     private var yMin: Double {
-        let lo = visibleWeightsKg.min().map { display($0) } ?? 0
-        let hi = visibleWeightsKg.max().map { display($0) } ?? 100
+        let startTarget = [display(active.startWeightKg), display(active.targetWeightKg)]
+        let all = startTarget + visibleWeightsKg.map { display($0) }
+        let lo = all.min() ?? 0
+        let hi = all.max() ?? 100
         let range = max(hi - lo, 1.0)
-        return lo - max(1.5, range * 0.12)
+        return lo - max(1.5, range * 0.1)
     }
     private var yMax: Double {
-        let hi = visibleWeightsKg.max().map { display($0) } ?? 100
-        let lo = visibleWeightsKg.min().map { display($0) } ?? 0
+        let startTarget = [display(active.startWeightKg), display(active.targetWeightKg)]
+        let all = startTarget + visibleWeightsKg.map { display($0) }
+        let lo = all.min() ?? 0
+        let hi = all.max() ?? 100
         let range = max(hi - lo, 1.0)
-        return hi + max(1.5, range * 0.08)
+        return hi + max(1.5, range * 0.1)
     }
-
-    // Same implied-avg shift the minichart uses, so the avg dashed line is
-    // continuous through the anchor in the focus chart too.
-    private var impliedAvgAtAnchorKg: Double {
-        guard let avgEnd = projection.avgPath.last?.1 else { return projection.anchorKg }
-        let totalDays = active.startDate.distance(to: projection.targetEndDate) / Self.secondsPerDay
-        let histDays = active.startDate.distance(to: projection.anchorDate) / Self.secondsPerDay
-        guard totalDays > 0 else { return projection.anchorKg }
-        let impliedSlope = (avgEnd - active.startWeightKg) / totalDays
-        return active.startWeightKg + impliedSlope * histDays
-    }
-    private var avgPathShift: Double { impliedAvgAtAnchorKg - projection.anchorKg }
 
     // MARK: - Selection helper
 
@@ -263,14 +271,14 @@ struct LandscapeFocusChart: View {
     private func projectedWeight(at date: Date) -> Double? {
         guard !projection.avgPath.isEmpty else { return nil }
         let path = projection.avgPath
-        if date <= path[0].0 { return display(path[0].1 + avgPathShift) }
-        if date >= path[path.count - 1].0 { return display(path[path.count - 1].1 + avgPathShift) }
+        if date <= path[0].0 { return display(path[0].1) }
+        if date >= path[path.count - 1].0 { return display(path[path.count - 1].1) }
         for i in 0..<path.count - 1 {
             let (d0, w0) = path[i]
             let (d1, w1) = path[i + 1]
             if date >= d0 && date <= d1 {
                 let t = date.timeIntervalSince(d0) / d1.timeIntervalSince(d0)
-                return display(w0 + t * (w1 - w0) + avgPathShift)
+                return display(w0 + t * (w1 - w0))
             }
         }
         return nil
@@ -530,7 +538,7 @@ struct LandscapeFocusChart: View {
                 .foregroundStyle(Color.primary)
             }
 
-            ForEach(Array(smoothedLine.enumerated()), id: \.offset) { _, p in
+            ForEach(Array(dailyReadings.enumerated()), id: \.offset) { _, p in
                 PointMark(
                     x: .value("Date", p.date),
                     y: .value("Weight", display(p.kg))
@@ -542,8 +550,8 @@ struct LandscapeFocusChart: View {
             if !projection.isTargetReached {
                 if let bestEnd = projection.bestEndKg {
                     LineMark(
-                        x: .value("Date", active.startDate),
-                        y: .value("Weight", display(active.startWeightKg)),
+                        x: .value("Date", projection.anchorDate),
+                        y: .value("Weight", display(projection.anchorKg)),
                         series: .value("series", "best")
                     )
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
@@ -562,8 +570,8 @@ struct LandscapeFocusChart: View {
 
                 if let worstEnd = projection.worstEndKg {
                     LineMark(
-                        x: .value("Date", active.startDate),
-                        y: .value("Weight", display(active.startWeightKg)),
+                        x: .value("Date", projection.anchorDate),
+                        y: .value("Weight", display(projection.anchorKg)),
                         series: .value("series", "worst")
                     )
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
@@ -580,29 +588,12 @@ struct LandscapeFocusChart: View {
                     .interpolationMethod(.linear)
                 }
 
-                // Avg dashed (implied historical → wiggly future).
-                LineMark(
-                    x: .value("Date", active.startDate),
-                    y: .value("Weight", display(active.startWeightKg)),
-                    series: .value("series", "avg")
-                )
-                .interpolationMethod(.linear)
-                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                .foregroundStyle(Self.avgColor)
-
-                LineMark(
-                    x: .value("Date", projection.anchorDate),
-                    y: .value("Weight", display(impliedAvgAtAnchorKg)),
-                    series: .value("series", "avg")
-                )
-                .interpolationMethod(.linear)
-                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                .foregroundStyle(Self.avgColor)
-
+                // Avg: dashed path starting exactly at today's anchor —
+                // `projection.avgPath` already begins at (anchorDate, anchorKg).
                 ForEach(Array(projection.avgPath.enumerated()), id: \.offset) { _, p in
                     LineMark(
                         x: .value("Date", p.0),
-                        y: .value("Weight", display(p.1 + avgPathShift)),
+                        y: .value("Weight", display(p.1)),
                         series: .value("series", "avg")
                     )
                     .interpolationMethod(.linear)

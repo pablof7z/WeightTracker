@@ -224,15 +224,12 @@ struct ActiveCutMinichart: View {
 
     private static let secondsPerDay: TimeInterval = 86_400
 
-    private var windowEnd: Date {
-        let fourteenDaysOut = projection.anchorDate.addingTimeInterval(14 * Self.secondsPerDay)
-        // Extend the visible window to include the furthest upcoming
-        // milestone so its dot doesn't fall off the right edge. Capped at
-        // the cut's target end date — we never project past the cut.
-        let furthestMilestone = upcomingMilestones.map(\.date).max()
-        let baseEnd = max(fourteenDaysOut, furthestMilestone ?? fourteenDaysOut)
-        return min(active.targetEndDate, baseEnd)
-    }
+    /// Fixed right edge of the weight chart's x-domain: the cut's target end
+    /// date. Using the immutable cut parameters (rather than "today + 14
+    /// days") keeps every day's horizontal position constant for the whole
+    /// cut — the axis no longer follows today's reading and pins it near a
+    /// fixed edge.
+    private var windowEnd: Date { active.targetEndDate }
 
     /// Upcoming milestones inside this cut window, sorted oldest-first.
     private var upcomingMilestones: [Milestone] {
@@ -264,57 +261,44 @@ struct ActiveCutMinichart: View {
         }
     }
 
-    private func interp(from a: (Date, Double), to b: (Date, Double), at t: Date) -> Double {
-        let total = b.0.timeIntervalSince(a.0)
-        guard total > 0 else { return a.1 }
-        let f = max(0, min(1, t.timeIntervalSince(a.0) / total))
-        return a.1 + (b.1 - a.1) * f
-    }
-
+    /// All weights that must remain visible in the chart's y-domain, in kg.
+    /// Milestones and the full avg/best/worst forecast are included so the
+    /// domain expands outward if any of them fall outside the cut's
+    /// start/target range — but the base range itself never chases readings.
     private var visibleWeightsKg: [Double] {
         var w = inCutReadings.map(\.weightKg)
         w.append(active.startWeightKg)
+        w.append(active.targetWeightKg)
         w.append(projection.anchorKg)
-        w.append(contentsOf: projection.avgPath.filter { $0.0 <= windowEnd }.map { $0.1 + avgPathShift })
-        if let bestEnd = projection.bestEndKg {
-            w.append(interp(from: (active.startDate, active.startWeightKg),
-                            to: (projection.targetEndDate, bestEnd), at: windowEnd))
-        }
-        if let worstEnd = projection.worstEndKg {
-            w.append(interp(from: (active.startDate, active.startWeightKg),
-                            to: (projection.targetEndDate, worstEnd), at: windowEnd))
-        }
+        w.append(contentsOf: projection.avgPath.map(\.1))
+        if let bestEnd = projection.bestEndKg { w.append(bestEnd) }
+        if let worstEnd = projection.worstEndKg { w.append(worstEnd) }
         // Include milestone projections so the y-axis autoscale doesn't
         // clip them — a milestone weight below the current data range
         // would otherwise sit off-screen.
         w.append(contentsOf: milestonePoints.map(\.projectedKg))
         return w
     }
-    /// Lower-bounds the chart well below the data so the gradient under the AreaMark
-    /// has real vertical distance to fade across — otherwise Swift Charts maps the
-    /// gradient to the AreaMark's tight bounding box and the fade looks uniformly grey.
+
+    /// Stable y-domain anchored on the cut's immutable start/target weights.
+    /// It may expand outward when an actual reading or forecast value falls
+    /// outside that base range, but it never contracts or chases the latest
+    /// reading — the target and start weight are always inside the domain.
     private var yMin: Double {
-        let lo = visibleWeightsKg.min().map { display($0) } ?? 0
-        let hi = visibleWeightsKg.max().map { display($0) } ?? 100
+        let startTarget = [display(active.startWeightKg), display(active.targetWeightKg)]
+        let all = startTarget + visibleWeightsKg.map { display($0) }
+        let lo = all.min() ?? 0
+        let hi = all.max() ?? 100
         let range = max(hi - lo, 1.0)
-        return lo - max(1.5, range * 0.15)
+        return lo - max(1.5, range * 0.1)
     }
-    private var yMax: Double { (visibleWeightsKg.max().map { display($0) } ?? 100) + 1.5 }
-
-    /// Where the avg line would be at anchorDate if it had been descending at its implied slope
-    /// from (startDate, startWeightKg) — keeps best < avg < worst at every date on the chart.
-    private var impliedAvgAtAnchorKg: Double {
-        guard let avgEnd = projection.avgPath.last?.1 else { return projection.anchorKg }
-        let totalDays = active.startDate.distance(to: projection.targetEndDate) / Self.secondsPerDay
-        let histDays = active.startDate.distance(to: projection.anchorDate) / Self.secondsPerDay
-        guard totalDays > 0 else { return projection.anchorKg }
-        let impliedSlope = (avgEnd - active.startWeightKg) / totalDays
-        return active.startWeightKg + impliedSlope * histDays
-    }
-
-    /// Offset applied to each future avgPath point so it continues from impliedAvgAtAnchorKg.
-    private var avgPathShift: Double {
-        impliedAvgAtAnchorKg - projection.anchorKg
+    private var yMax: Double {
+        let startTarget = [display(active.startWeightKg), display(active.targetWeightKg)]
+        let all = startTarget + visibleWeightsKg.map { display($0) }
+        let lo = all.min() ?? 0
+        let hi = all.max() ?? 100
+        let range = max(hi - lo, 1.0)
+        return hi + max(1.5, range * 0.1)
     }
 
     var body: some View {
@@ -401,7 +385,7 @@ struct ActiveCutMinichart: View {
                 .foregroundStyle(Color.primary)
             }
 
-            ForEach(Array(smoothedLine.enumerated()), id: \.offset) { _, p in
+            ForEach(Array(dailyReadings.enumerated()), id: \.offset) { _, p in
                 PointMark(
                     x: .value("Date", p.date),
                     y: .value("Weight", display(p.kg))
@@ -411,11 +395,11 @@ struct ActiveCutMinichart: View {
             }
 
             if !projection.isTargetReached {
-                // Best: dashed green, day 0 → cut end
+                // Best: dashed green ray from today's anchor to the cut end.
                 if let bestEnd = projection.bestEndKg {
                     LineMark(
-                        x: .value("Date", active.startDate),
-                        y: .value("Weight", display(active.startWeightKg)),
+                        x: .value("Date", projection.anchorDate),
+                        y: .value("Weight", display(projection.anchorKg)),
                         series: .value("series", "best")
                     )
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
@@ -432,11 +416,11 @@ struct ActiveCutMinichart: View {
                     .interpolationMethod(.linear)
                 }
 
-                // Worst: dashed red, day 0 → cut end
+                // Worst: dashed red ray from today's anchor to the cut end.
                 if let worstEnd = projection.worstEndKg {
                     LineMark(
-                        x: .value("Date", active.startDate),
-                        y: .value("Weight", display(active.startWeightKg)),
+                        x: .value("Date", projection.anchorDate),
+                        y: .value("Weight", display(projection.anchorKg)),
                         series: .value("series", "worst")
                     )
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
@@ -453,30 +437,13 @@ struct ActiveCutMinichart: View {
                     .interpolationMethod(.linear)
                 }
 
-                // Avg: dashed black, day 0 → implied-avg-at-today → wiggly future.
-                // Historical segment uses the implied slope so best < avg < worst always.
-                LineMark(
-                    x: .value("Date", active.startDate),
-                    y: .value("Weight", display(active.startWeightKg)),
-                    series: .value("series", "avg")
-                )
-                .interpolationMethod(.linear)
-                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                .foregroundStyle(Self.avgColor)
-
-                LineMark(
-                    x: .value("Date", projection.anchorDate),
-                    y: .value("Weight", display(impliedAvgAtAnchorKg)),
-                    series: .value("series", "avg")
-                )
-                .interpolationMethod(.linear)
-                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                .foregroundStyle(Self.avgColor)
-
+                // Avg: dashed black path starting exactly at today's anchor —
+                // `projection.avgPath` already begins at (anchorDate, anchorKg),
+                // so it's drawn unshifted.
                 ForEach(Array(projection.avgPath.enumerated()), id: \.offset) { _, point in
                     LineMark(
                         x: .value("Date", point.0),
-                        y: .value("Weight", display(point.1 + avgPathShift)),
+                        y: .value("Weight", display(point.1)),
                         series: .value("series", "avg")
                     )
                     .interpolationMethod(.linear)
