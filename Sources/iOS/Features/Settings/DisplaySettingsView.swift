@@ -6,5 +6,6 @@ struct DisplaySettingsView: View {
             DisplaySettingsSection()
         }
         .navigationTitle("Display")
+        .toolbar { EditButton() }
     }
 }

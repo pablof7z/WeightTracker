@@ -264,6 +264,22 @@ final class CutChartModelTests: XCTestCase {
         XCTAssertEqual(translated.recentSpan, forced.recentSpan)
     }
 
+    func testDefaultSwipeOrderStartsWithRecentAndContainsEveryVariation() {
+        XCTAssertEqual(CutChartVariationOrder.default.first, .recentFocus)
+        XCTAssertEqual(Set(CutChartVariationOrder.default), Set(CutChartVariation.allCases))
+        XCTAssertEqual(CutChartVariationOrder.default.count, CutChartVariation.allCases.count)
+    }
+
+    func testSavedSwipeOrderPreservesKnownUniqueValuesAndRestoresMissingCharts() {
+        let decoded = CutChartVariationOrder.decode(
+            "paceDelta,recentFocus,paceDelta,unknown"
+        )
+        XCTAssertEqual(decoded.prefix(2), [.paceDelta, .recentFocus])
+        XCTAssertEqual(Set(decoded), Set(CutChartVariation.allCases))
+        XCTAssertEqual(decoded.count, CutChartVariation.allCases.count)
+        XCTAssertEqual(CutChartVariationOrder.decode(CutChartVariationOrder.encode(decoded)), decoded)
+    }
+
     private func transformedValue(
         weight: Double,
         date: Date,

@@ -7,8 +7,9 @@ extension Notification.Name {
 struct ActiveCutMinichart: View {
     let chartModel: CutChartModel
     let domains: CutChartDomainState
-    let variation: CutChartVariation
+    let variations: [CutChartVariation]
     let unit: WeightUnit
+    @Binding var variation: CutChartVariation
 
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -56,17 +57,45 @@ struct ActiveCutMinichart: View {
 
                 Spacer()
 
-                Text("\(Self.dateFormatter.string(from: transformed.xDomain.lowerBound)) – \(Self.dateFormatter.string(from: transformed.xDomain.upperBound))")
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .trailing, spacing: 5) {
+                    Text("\(Self.dateFormatter.string(from: transformed.xDomain.lowerBound)) – \(Self.dateFormatter.string(from: transformed.xDomain.upperBound))")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    pageIndicator
+                }
             }
             .padding(.horizontal, 16)
 
-            StableCutChart(model: transformed, unit: unit)
-                .padding(.horizontal, 6)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea(.container, edges: .bottom)
+            TabView(selection: $variation) {
+                ForEach(variations) { item in
+                    StableCutChart(
+                        model: CutChartTransformer.transform(
+                            chartModel,
+                            variation: item,
+                            domains: domains
+                        ),
+                        unit: unit
+                    )
+                    .padding(.horizontal, 6)
+                    .tag(item)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea(.container, edges: .bottom)
         }
         .accessibilityElement(children: .contain)
+        .accessibilityHint("Swipe left or right to change chart")
+    }
+
+    private var pageIndicator: some View {
+        HStack(spacing: 4) {
+            ForEach(variations) { item in
+                Capsule()
+                    .fill(item == variation ? Color.primary : Color.secondary.opacity(0.28))
+                    .frame(width: item == variation ? 12 : 5, height: 5)
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: variation)
     }
 }

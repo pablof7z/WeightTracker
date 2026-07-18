@@ -237,6 +237,34 @@ public enum CutChartVariation: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+public enum CutChartVariationOrder {
+    public static let `default`: [CutChartVariation] = [
+        .recentFocus,
+        .paceDelta,
+        .fixedFullCut,
+        .remainingToGoal,
+        .cumulativeLoss,
+        .completionPercent,
+    ]
+
+    public static func decode(_ rawValue: String) -> [CutChartVariation] {
+        let decoded = rawValue
+            .split(separator: ",")
+            .compactMap { CutChartVariation(rawValue: String($0)) }
+        return normalized(decoded)
+    }
+
+    public static func encode(_ variations: [CutChartVariation]) -> String {
+        normalized(variations).map(\.rawValue).joined(separator: ",")
+    }
+
+    public static func normalized(_ variations: [CutChartVariation]) -> [CutChartVariation] {
+        var seen: Set<CutChartVariation> = []
+        let unique = variations.filter { seen.insert($0).inserted }
+        return unique + Self.default.filter { !seen.contains($0) }
+    }
+}
+
 public struct CutChartDomainState: Codable, Equatable, Sendable {
     public var absoluteLower: Double
     public var absoluteUpper: Double

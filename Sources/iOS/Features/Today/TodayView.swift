@@ -9,6 +9,7 @@ struct TodayView: View {
     @AppStorage(AppPrefKey.bodyUnit) private var bodyUnitRaw: String = BodyUnit.inches.rawValue
     @AppStorage(AppPrefKey.elevenLabsSTTModel) private var sttModel: String = AppConstants.defaultElevenLabsSTTModel
     @AppStorage(AppPrefKey.todayChartVariation) private var chartVariationRaw: String = CutChartVariation.recentFocus.rawValue
+    @AppStorage(AppPrefKey.todayChartVariationOrder) private var chartVariationOrderRaw: String = ""
 
     /// `.compact` vertical size class on iPhone == landscape. Drives the
     /// portrait/landscape body swap on the Today tab. We allow the actual
@@ -30,6 +31,13 @@ struct TodayView: View {
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var bodyUnit: BodyUnit { BodyUnit(rawValue: bodyUnitRaw) ?? .inches }
     private var chartVariation: CutChartVariation { CutChartVariation(rawValue: chartVariationRaw) ?? .recentFocus }
+    private var chartVariations: [CutChartVariation] { CutChartVariationOrder.decode(chartVariationOrderRaw) }
+    private var chartVariationBinding: Binding<CutChartVariation> {
+        Binding(
+            get: { chartVariation },
+            set: { chartVariationRaw = $0.rawValue }
+        )
+    }
     private var showWeightControls: Bool { !viewModel.hasEntry || weightInputActive }
 
     /// Subtitle showing the 7-day EMA in the active display unit, or "—" when not enough history.
@@ -223,8 +231,9 @@ struct TodayView: View {
                         ActiveCutMinichart(
                             chartModel: chartModel,
                             domains: domains,
-                            variation: chartVariation,
-                            unit: weightUnit
+                            variations: chartVariations,
+                            unit: weightUnit,
+                            variation: chartVariationBinding
                         )
                         .animation(.easeInOut(duration: 0.4), value: viewModel.inCutReadings.count)
                         .transition(.opacity)
