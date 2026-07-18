@@ -227,26 +227,26 @@ struct LandscapeFocusChart: View {
         return w
     }
 
+    private static let minAxisPadding: Double = 1.5
+    private static let axisPaddingRatio: Double = 0.1
+
+    /// Lowest/highest visible weight (display units) and padding, shared by
+    /// `yMin`/`yMax` to avoid duplicating the bounds computation.
+    private var yBounds: (lo: Double, hi: Double, pad: Double) {
+        let startTarget = [display(active.startWeightKg), display(active.targetWeightKg)]
+        let all = startTarget + visibleWeightsKg.map { display($0) }
+        let lo = all.min() ?? 0
+        let hi = all.max() ?? 100
+        let range = max(hi - lo, 1.0)
+        return (lo, hi, max(Self.minAxisPadding, range * Self.axisPaddingRatio))
+    }
+
     /// Stable y-domain anchored on the cut's immutable start/target weights.
     /// It may expand outward when an actual reading or forecast value falls
     /// outside that base range, but it never contracts or chases the latest
     /// reading — the target and start weight are always inside the domain.
-    private var yMin: Double {
-        let startTarget = [display(active.startWeightKg), display(active.targetWeightKg)]
-        let all = startTarget + visibleWeightsKg.map { display($0) }
-        let lo = all.min() ?? 0
-        let hi = all.max() ?? 100
-        let range = max(hi - lo, 1.0)
-        return lo - max(1.5, range * 0.1)
-    }
-    private var yMax: Double {
-        let startTarget = [display(active.startWeightKg), display(active.targetWeightKg)]
-        let all = startTarget + visibleWeightsKg.map { display($0) }
-        let lo = all.min() ?? 0
-        let hi = all.max() ?? 100
-        let range = max(hi - lo, 1.0)
-        return hi + max(1.5, range * 0.1)
-    }
+    private var yMin: Double { yBounds.lo - yBounds.pad }
+    private var yMax: Double { yBounds.hi + yBounds.pad }
 
     // MARK: - Selection helper
 
