@@ -37,11 +37,15 @@ private func displayWeight(_ lb: Double, unit: WeightUnit) -> Double {
 }
 
 /// `lossVsPrevious` is `previous - current`, so a positive value means the
-/// average weight decreased. Render that as a loss (green, minus sign).
+/// average weight decreased (a loss). We render a loss with a minus sign
+/// (weight went down) and a gain with a plus sign (weight went up), which is
+/// the opposite of `lossVsPrevious`'s own sign — hence the inverted check
+/// below (`>= 0` on the loss value produces the "−" / loss glyph).
 private func formattedLoss(_ lossLb: Double, unit: WeightUnit) -> (text: String, isGood: Bool) {
-    let displayValue = displayWeight(lossLb, unit: unit)
-    let text = String(format: "%@%.1f %@", displayValue >= 0 ? "−" : "+", abs(displayValue), unit.symbol)
-    return (text, displayValue >= 0)
+    let lossValue = displayWeight(lossLb, unit: unit)
+    let isLoss = lossValue >= 0
+    let text = String(format: "%@%.1f %@", isLoss ? "−" : "+", abs(lossValue), unit.symbol)
+    return (text, isLoss)
 }
 
 struct WeeklyCutChartView: View {

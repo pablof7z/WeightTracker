@@ -167,6 +167,8 @@ public enum WeeklyCutAggregator {
     private static func mondayWeekStart(for date: Date, calendar: Calendar) -> Date {
         let day = calendar.startOfDay(for: date)
         let weekday = calendar.component(.weekday, from: day) // Sunday = 1 ... Saturday = 7
+        // Sunday (1) is 6 days after Monday, so step back 6 days. Every other
+        // weekday (Mon=2 ... Sat=7) steps back (weekday - 2) days to reach Monday.
         let offset = weekday == 1 ? -6 : -(weekday - 2)
         return calendar.date(byAdding: .day, value: offset, to: day) ?? day
     }
