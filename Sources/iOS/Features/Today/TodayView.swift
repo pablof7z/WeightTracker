@@ -8,6 +8,7 @@ struct TodayView: View {
     @AppStorage(AppPrefKey.weightUnit) private var weightUnitRaw: String = WeightUnit.lbs.rawValue
     @AppStorage(AppPrefKey.bodyUnit) private var bodyUnitRaw: String = BodyUnit.inches.rawValue
     @AppStorage(AppPrefKey.elevenLabsSTTModel) private var sttModel: String = AppConstants.defaultElevenLabsSTTModel
+    @AppStorage(AppPrefKey.todayChartVariation) private var chartVariationRaw: String = CutChartVariation.recentFocus.rawValue
 
     /// `.compact` vertical size class on iPhone == landscape. Drives the
     /// portrait/landscape body swap on the Today tab. We allow the actual
@@ -28,6 +29,7 @@ struct TodayView: View {
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var bodyUnit: BodyUnit { BodyUnit(rawValue: bodyUnitRaw) ?? .inches }
+    private var chartVariation: CutChartVariation { CutChartVariation(rawValue: chartVariationRaw) ?? .recentFocus }
     private var showWeightControls: Bool { !viewModel.hasEntry || weightInputActive }
 
     /// Subtitle showing the 7-day EMA in the active display unit, or "—" when not enough history.
@@ -94,14 +96,11 @@ struct TodayView: View {
 
     @ViewBuilder
     private var landscapeContent: some View {
-        if let active = viewModel.activeCut, let projection = viewModel.projection {
+        if let chartModel = viewModel.chartModel, let domains = viewModel.chartDomains {
             LandscapeFocusChart(
-                active: active,
-                inCutReadings: viewModel.inCutReadings,
-                projection: projection,
-                unit: weightUnit,
-                milestones: viewModel.milestones,
-                allReadings: viewModel.allReadings
+                chartModel: chartModel,
+                domains: domains,
+                unit: weightUnit
             )
         } else {
             // No active cut yet — fall back to a minimal hint instead of
@@ -220,16 +219,16 @@ struct TodayView: View {
                         .padding(.bottom, 12)
                     }
 
-                    ActiveCutMinichart(
-                        active: active,
-                        inCutReadings: viewModel.inCutReadings,
-                        projection: projection,
-                        unit: weightUnit,
-                        milestones: viewModel.milestones,
-                        allReadings: viewModel.allReadings
-                    )
-                    .animation(.easeInOut(duration: 0.4), value: viewModel.inCutReadings.count)
-                    .transition(.opacity)
+                    if let chartModel = viewModel.chartModel, let domains = viewModel.chartDomains {
+                        ActiveCutMinichart(
+                            chartModel: chartModel,
+                            domains: domains,
+                            variation: chartVariation,
+                            unit: weightUnit
+                        )
+                        .animation(.easeInOut(duration: 0.4), value: viewModel.inCutReadings.count)
+                        .transition(.opacity)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

@@ -9,6 +9,8 @@ struct ActiveCutCard: View {
     let unit: WeightUnit
     var readings: [Reading] = []
     var projection: CutProjectionResult? = nil
+    var chartModel: CutChartModel? = nil
+    var chartDomains: CutChartDomainState? = nil
 
     private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
@@ -62,11 +64,10 @@ struct ActiveCutCard: View {
             }
 
             Group {
-                if let projection {
+                if let chartModel, let chartDomains {
                     CutProjectionChartContent(
-                        active: cut,
-                        inCutReadings: readings.filter { $0.date >= cut.startDate },
-                        projection: projection,
+                        chartModel: chartModel,
+                        domains: chartDomains,
                         unit: unit,
                         height: 140
                     )

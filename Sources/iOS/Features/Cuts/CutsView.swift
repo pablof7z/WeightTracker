@@ -98,7 +98,9 @@ struct CutsView: View {
                     projectedEndWeightKg: viewModel.projectedEndWeightKg(),
                     unit: unit,
                     readings: viewModel.allReadings,
-                    projection: viewModel.projection
+                    projection: viewModel.projection,
+                    chartModel: viewModel.chartModel,
+                    chartDomains: viewModel.chartDomains
                 )
 
                 MacroCard(cutStartDate: cut.startDate)
