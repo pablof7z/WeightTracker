@@ -34,7 +34,9 @@ struct LensStat: Identifiable {
 struct CurrentWeightHero: Equatable {
     let valueText: String
     let unit: String
-    let context: String
+    /// Nil when there's nothing worth stating in words: today's unlogged state
+    /// is already carried by the muted value color, so no caption is shown.
+    let context: String?
     let logged: Bool
 }
 
@@ -146,7 +148,7 @@ struct TodayLensCarousel: View {
         let value = String(format: "%.1f", selectedDayValue)
         let isToday = Calendar.current.isDateInToday(selectedDate)
         let dateStr = Self.heroDate.string(from: selectedDate)
-        let context: String
+        let context: String?
         if selectedDayLogged {
             if let n = selectedDayNumber {
                 context = "\(dateStr) · Day \(n)"
@@ -154,9 +156,13 @@ struct TodayLensCarousel: View {
                 context = dateStr
             }
         } else if isToday {
-            context = "Not logged · tap to add today"
+            // The muted value color already says "not logged"; a tap anywhere
+            // on the hero logs it, so no caption is needed.
+            context = nil
         } else {
-            context = "\(dateStr) · not logged · tap to add"
+            // Still muted-color-implies-unlogged; the date is real information
+            // (which day is being browsed), so it stays.
+            context = dateStr
         }
         return CurrentWeightHero(valueText: value, unit: unit.symbol, context: context, logged: selectedDayLogged)
     }
