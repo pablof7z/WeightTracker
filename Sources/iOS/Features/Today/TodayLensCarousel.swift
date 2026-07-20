@@ -108,7 +108,6 @@ struct TodayLensCarousel: View {
 
     @Binding var selection: TodayLens
 
-    @AppStorage("today.lensSwipeHintDismissed") private var hintDismissed = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let heroDate: DateFormatter = {
@@ -140,13 +139,7 @@ struct TodayLensCarousel: View {
         // Belt-and-braces with the chart's high-priority gesture: the pager is
         // also told to stand down for the duration of a scrub.
         .scrollDisabled(isScrubbing)
-        .overlay(alignment: .center) { swipeHint }
         .sensoryFeedback(.selection, trigger: selection)
-        .onChange(of: selection) { _, _ in
-            if !hintDismissed {
-                withAnimation(.easeOut(duration: 0.25)) { hintDismissed = true }
-            }
-        }
     }
 
     private var currentWeightHero: CurrentWeightHero {
@@ -197,23 +190,6 @@ struct TodayLensCarousel: View {
         .accessibilityHidden(true)
     }
 
-    @ViewBuilder
-    private var swipeHint: some View {
-        if !hintDismissed {
-            HStack(spacing: 8) {
-                Image(systemName: "chevron.compact.left")
-                Text("Swipe for more").font(.footnote.weight(.medium))
-                Image(systemName: "chevron.compact.right")
-            }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .glass(in: Capsule())
-            .allowsHitTesting(false)
-            .transition(.opacity)
-            .offset(y: 40)
-        }
-    }
 }
 
 // MARK: - Shared lens composition (hero + full-bleed chart + supporting shelf)
