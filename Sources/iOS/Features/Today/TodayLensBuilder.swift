@@ -651,7 +651,6 @@ struct TodayLensBuilder {
     /// required weekly rate. Bars rather than a line: the quantity is discrete
     /// per week, and the form gives the carousel visual variety.
     private func weeklyLossLens() -> RenderedLens {
-        let accent = TodayLens.weeklyLoss.accent
         // Only weeks with a genuinely comparable prior week produce a bar.
         let comparable = weekly.points.filter { $0.lossVsPrevious != nil }.suffix(9)
         let bars = comparable.map { DatedValue(date: $0.weekStart, value: $0.lossVsPrevious ?? 0) }

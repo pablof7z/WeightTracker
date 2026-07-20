@@ -16,6 +16,8 @@ struct DisplaySettingsSection: View {
     @State private var pickerItems: [PhotosPickerItem] = []
 
     var body: some View {
+        let hasPhotos = photoStore.count > 0
+
         Section {
             Picker("Weight unit", selection: $weightUnitRaw) {
                 ForEach(WeightUnit.allCases, id: \.rawValue) { u in
@@ -82,7 +84,7 @@ struct DisplaySettingsSection: View {
                 matching: .images,
                 photoLibrary: .shared()
             ) {
-                Label(photoStore.count == 0 ? "Choose photos" : "Add more photos",
+                Label(hasPhotos ? "Add more photos" : "Choose photos",
                       systemImage: "photo.on.rectangle.angled")
             }
             .onChange(of: pickerItems) { _, items in
