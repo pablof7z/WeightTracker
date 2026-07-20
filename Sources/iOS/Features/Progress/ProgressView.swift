@@ -3,6 +3,10 @@ import SwiftData
 import Charts
 
 struct ProgressTabView: View {
+    /// When embedded (pushed onto another NavigationStack, e.g. from Today),
+    /// omit the internal NavigationStack so it doesn't nest.
+    var embedded: Bool = false
+
     @EnvironmentObject var services: AppServices
 
     // Chart state
@@ -20,21 +24,34 @@ struct ProgressTabView: View {
     @StateObject private var trendsViewModel = TrendsViewModel()
     @State private var selectedGap: Gap?
     @State private var showWeightLog = false
+    @State private var showConversations = false
+    @State private var activeCut: ActiveCut?
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
 
     var body: some View {
-        NavigationStack {
+        if embedded {
+            content
+        } else {
+            NavigationStack { content }
+        }
+    }
+
+    private var content: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     chartSection
                     Divider()
                         .padding(.horizontal)
                     trendsSection
+                    Divider()
+                        .padding(.horizontal)
+                    planSection
                 }
                 .padding(.bottom, 24)
             }
             .navigationTitle("Progress")
+            .navigationBarTitleDisplayMode(embedded ? .inline : .automatic)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -52,9 +69,15 @@ struct ProgressTabView: View {
                 WeightLogView()
                     .environmentObject(services)
             }
+            .sheet(isPresented: $showConversations) {
+                CoachConversationsView()
+                    .environmentObject(services)
+                    .presentationDetents([.large])
+            }
             .onAppear {
                 chartViewModel.reload(from: services.repository)
                 trendsViewModel.reload(repository: services.repository)
+                activeCut = ActiveCutStore.load()
             }
             .refreshable {
                 trendsViewModel.reload(repository: services.repository)
@@ -63,7 +86,6 @@ struct ProgressTabView: View {
                 GapDetailSheet(gap: gap)
                     .presentationDetents([.medium, .large])
             }
-        }
     }
 
     @ViewBuilder
@@ -133,6 +155,46 @@ struct ProgressTabView: View {
             }
             .padding(.horizontal, 16)
         }
+    }
+
+    // MARK: - Plan & Coach (rehomed from the retired Cuts/Coach tabs)
+
+    @ViewBuilder
+    private var planSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if let cut = activeCut {
+                MacroCard(cutStartDate: cut.startDate)
+                MealPlanCard(cutStartDate: cut.startDate)
+                ActivityCard()
+            }
+
+            Button {
+                showConversations = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "brain.head.profile")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: 32)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Coach conversations")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text("Chat, voice notes, and plan proposals")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
     }
 
     private var chartEmptyState: some View {

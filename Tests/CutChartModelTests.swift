@@ -109,9 +109,9 @@ final class CutChartModelTests: XCTestCase {
         """
         return fixture.split(separator: "\n").map { row in
             let columns = row.split(separator: ",")
-            return Reading(
-                date: date(String(columns[0])),
-                weightKg: UnitConvert.lbToKg(Double(columns[1])!),
+            return reading(
+                String(columns[0]),
+                pounds: Double(columns[1])!,
                 source: .importCSV
             )
         }
@@ -156,8 +156,8 @@ final class CutChartModelTests: XCTestCase {
 
     func testCanonicalDayPrefersManualReading() {
         var readings = fixtureReadings
-        readings.append(Reading(date: date("2026-07-17"), weightKg: UnitConvert.lbToKg(160), source: .healthKit))
-        readings.append(Reading(date: date("2026-07-17"), weightKg: UnitConvert.lbToKg(156.2), source: .manual))
+        readings.append(reading("2026-07-17", pounds: 160, source: .healthKit))
+        readings.append(reading("2026-07-17", pounds: 156.2, source: .manual))
         let model = prepared(readings: readings)
         XCTAssertEqual(model.raw.filter { $0.date == date("2026-07-17") }.count, 1)
         XCTAssertEqual(model.raw.last!.value, 156.2, accuracy: 0.000_001)
@@ -167,7 +167,7 @@ final class CutChartModelTests: XCTestCase {
         let model = prepared()
         let state = CutChartDomainState.resolved(for: model, calendar: calendar)
         var readings = fixtureReadings
-        readings.append(Reading(date: date("2026-07-18"), weightKg: UnitConvert.lbToKg(156), source: .manual))
+        readings.append(reading("2026-07-18", pounds: 156, source: .manual))
         let appended = prepared(readings: readings)
         let appendedState = CutChartDomainState.resolved(for: appended, previous: state, calendar: calendar)
 
@@ -182,13 +182,13 @@ final class CutChartModelTests: XCTestCase {
         let model = prepared()
         let initial = CutChartDomainState.resolved(for: model, calendar: calendar)
         var inRange = fixtureReadings
-        inRange.append(Reading(date: date("2026-07-18"), weightKg: UnitConvert.lbToKg(156), source: .manual))
+        inRange.append(reading("2026-07-18", pounds: 156, source: .manual))
         let unchanged = CutChartDomainState.resolved(for: prepared(readings: inRange), previous: initial, calendar: calendar)
         XCTAssertEqual(initial.absoluteLower, unchanged.absoluteLower)
         XCTAssertEqual(initial.absoluteUpper, unchanged.absoluteUpper)
 
         var outlier = fixtureReadings
-        outlier.append(Reading(date: date("2026-07-18"), weightKg: UnitConvert.lbToKg(180), source: .manual))
+        outlier.append(reading("2026-07-18", pounds: 180, source: .manual))
         let expanded = CutChartDomainState.resolved(for: prepared(readings: outlier), previous: initial, calendar: calendar)
         XCTAssertGreaterThan(expanded.absoluteUpper, initial.absoluteUpper)
 
@@ -216,7 +216,7 @@ final class CutChartModelTests: XCTestCase {
     func testAppendingReadingDoesNotRewriteHistoricalTrailingTrend() {
         let before = prepared()
         var readings = fixtureReadings
-        readings.append(Reading(date: date("2026-07-18"), weightKg: UnitConvert.lbToKg(154), source: .manual))
+        readings.append(reading("2026-07-18", pounds: 154, source: .manual))
         let after = prepared(readings: readings)
         XCTAssertEqual(Array(after.trailing7.prefix(before.trailing7.count)), before.trailing7)
     }
@@ -278,6 +278,189 @@ final class CutChartModelTests: XCTestCase {
         XCTAssertEqual(Set(decoded), Set(CutChartVariation.allCases))
         XCTAssertEqual(decoded.count, CutChartVariation.allCases.count)
         XCTAssertEqual(CutChartVariationOrder.decode(CutChartVariationOrder.encode(decoded)), decoded)
+    }
+
+    func testWeeklyAggregationUsesMondayThroughSundayBuckets() {
+        let model = weekly(asOf: "2026-07-17")
+        let first = model.points.first!
+        XCTAssertEqual(first.weekStart, date("2026-04-27"))
+        XCTAssertEqual(first.weekEnd, date("2026-05-03"))
+        XCTAssertEqual(first.readingCount, 6)
+
+        let next = weeklyPoint("2026-05-04", in: model)
+        XCTAssertEqual(next.weekEnd, date("2026-05-10"))
+        XCTAssertEqual(next.readingCount, 7)
+    }
+
+    func testCutStartPartialWeekIsNotUsedForNormalComparison() {
+        let model = weekly(asOf: "2026-07-17")
+        let partial = weeklyPoint("2026-04-27", in: model)
+        let firstFullWeek = weeklyPoint("2026-05-04", in: model)
+        XCTAssertTrue(partial.isPartial)
+        XCTAssertNil(partial.lossVsPrevious)
+        XCTAssertFalse(firstFullWeek.isPartial)
+        XCTAssertNil(firstFullWeek.lossVsPrevious)
+    }
+
+    func testIncompleteCurrentWeekIsExplicitWeekToDate() {
+        let model = weekly(asOf: "2026-07-17")
+        let current = weeklyPoint("2026-07-13", in: model)
+        XCTAssertTrue(current.isWeekToDate)
+        XCTAssertFalse(current.isPartial)
+        XCTAssertEqual(current.weekEnd, date("2026-07-17"))
+        XCTAssertEqual(current.readingCount, 5)
+    }
+
+    func testWeekToDateUsesMatchingPreviousWeekdays() {
+        let model = weekly(asOf: "2026-07-17")
+        let current = weeklyPoint("2026-07-13", in: model)
+        XCTAssertEqual(current.averageWeight, 156.26, accuracy: 0.000_001)
+        XCTAssertEqual(current.lossVsPrevious!, 2.12, accuracy: 0.000_001)
+    }
+
+    func testMissingWeighInDaysAreNotInterpolated() {
+        let model = weekly(asOf: "2026-07-17")
+        let point = weeklyPoint("2026-06-01", in: model)
+        let observed = [163.5, 163.1, 163.9, 164.7, 165.3, 164.6]
+        XCTAssertEqual(point.readingCount, observed.count)
+        XCTAssertEqual(
+            point.averageWeight,
+            observed.reduce(0, +) / Double(observed.count),
+            accuracy: 0.000_001
+        )
+    }
+
+    func testWeeklyAverageMatchesImportedMeasurementFixture() {
+        let point = weeklyPoint("2026-07-13", in: weekly(asOf: "2026-07-17"))
+        XCTAssertEqual(point.averageWeight, 156.26, accuracy: 0.000_001)
+        XCTAssertEqual(point.minWeight, 155.0, accuracy: 0.000_001)
+        XCTAssertEqual(point.maxWeight, 157.4, accuracy: 0.000_001)
+    }
+
+    func testWeeklyLossIsPositiveWhenAverageWeightFalls() {
+        let point = weeklyPoint("2026-07-13", in: weekly(asOf: "2026-07-17"))
+        XCTAssertEqual(point.lossVsPrevious!, 2.12, accuracy: 0.000_001)
+        XCTAssertGreaterThan(point.lossVsPrevious!, 0)
+    }
+
+    func testPlannedAverageUsesOnlyObservedDates() {
+        let model = weekly(asOf: "2026-07-17")
+        let point = weeklyPoint("2026-06-01", in: model)
+        let observedDates = ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-05", "2026-06-06", "2026-06-07"]
+            .map(date)
+        let expected = observedDates.map {
+            CutChartModel.requiredPace(
+                at: $0,
+                startDate: cut.startDate,
+                targetDate: cut.targetEndDate,
+                startWeight: UnitConvert.kgToLb(cut.startWeightKg),
+                targetWeight: UnitConvert.kgToLb(cut.targetWeightKg)
+            )
+        }
+        .reduce(0, +) / Double(observedDates.count)
+        XCTAssertEqual(point.plannedAverage, expected, accuracy: 0.000_001)
+    }
+
+    func testAheadOfPlanUsesPlannedMinusActualAndPositiveMeansAhead() {
+        let point = weeklyPoint("2026-07-13", in: weekly(asOf: "2026-07-17"))
+        XCTAssertEqual(
+            point.aheadOfPlan,
+            point.plannedAverage - point.averageWeight,
+            accuracy: 0.000_001
+        )
+        XCTAssertGreaterThan(point.aheadOfPlan, 0)
+    }
+
+    func testWeeklyPresentationConvertsEveryValueAndDomainToKilograms() {
+        let model = weekly(asOf: "2026-07-17")
+        let pounds = WeeklyCutChartPresentation(model: model, unit: .lbs, calendar: calendar)
+        let kilograms = WeeklyCutChartPresentation(model: model, unit: .kg, calendar: calendar)
+        XCTAssertEqual(kilograms.points.count, pounds.points.count)
+
+        for (lb, kg) in zip(pounds.points, kilograms.points) {
+            XCTAssertEqual(kg.averageWeight, UnitConvert.lbToKg(lb.averageWeight), accuracy: 0.000_001)
+            XCTAssertEqual(kg.minWeight, UnitConvert.lbToKg(lb.minWeight), accuracy: 0.000_001)
+            XCTAssertEqual(kg.maxWeight, UnitConvert.lbToKg(lb.maxWeight), accuracy: 0.000_001)
+            XCTAssertEqual(kg.plannedAverage, UnitConvert.lbToKg(lb.plannedAverage), accuracy: 0.000_001)
+            XCTAssertEqual(kg.aheadOfPlan, UnitConvert.lbToKg(lb.aheadOfPlan), accuracy: 0.000_001)
+        }
+        XCTAssertEqual(
+            kilograms.requiredWeeklyLoss,
+            UnitConvert.lbToKg(pounds.requiredWeeklyLoss),
+            accuracy: 0.000_001
+        )
+        XCTAssertEqual(
+            kilograms.averageWeightDomain.lowerBound,
+            UnitConvert.lbToKg(pounds.averageWeightDomain.lowerBound),
+            accuracy: 0.000_001
+        )
+    }
+
+    func testAllWeeklyChartModesConsumeTheSamePresentationPoints() {
+        let presentation = WeeklyCutChartPresentation(
+            model: weekly(asOf: "2026-07-17"),
+            unit: .lbs,
+            calendar: calendar
+        )
+        let expectedIDs = presentation.points.map(\.id)
+        for mode in WeeklyCutChartMode.allCases {
+            XCTAssertEqual(presentation.points.map(\.id), expectedIDs, "\(mode) created a separate series")
+            XCTAssertEqual(
+                presentation.points.map { $0.accessibilityDescription(for: mode) }.count,
+                presentation.points.count
+            )
+        }
+    }
+
+    func testExistingTodayCarouselPreferencesGainWeeklyPagesWithoutLosingOrder() {
+        let legacyOrder = CutChartVariationOrder.encode([
+            .paceDelta,
+            .recentFocus,
+            .fixedFullCut,
+        ])
+        let pages = TodayChartPageOrder.decode(legacyOrder)
+
+        XCTAssertEqual(pages.first, .daily(.paceDelta))
+        XCTAssertEqual(pages.dropFirst().first, .daily(.recentFocus))
+        XCTAssertEqual(pages.count, CutChartVariation.allCases.count + WeeklyCutChartMode.allCases.count)
+        XCTAssertEqual(
+            pages.compactMap(\.weeklyMode),
+            WeeklyCutChartMode.allCases
+        )
+        XCTAssertEqual(
+            TodayChartPage(rawValue: CutChartVariation.recentFocus.rawValue),
+            .daily(.recentFocus)
+        )
+    }
+
+    private func weekly(asOf value: String) -> WeeklyCutChartModel {
+        WeeklyCutChartModel.prepare(
+            active: cut,
+            readings: fixtureReadings,
+            asOf: date(value),
+            calendar: calendar
+        )
+    }
+
+    private func weeklyPoint(_ weekStart: String, in model: WeeklyCutChartModel) -> WeeklyCutPoint {
+        model.points.first { $0.weekStart == date(weekStart) }!
+    }
+
+    private func reading(
+        _ day: String,
+        pounds: Double,
+        source: ReadingSource
+    ) -> Reading {
+        let exactDate = date(day)
+        let result = Reading(
+            date: exactDate,
+            weightKg: UnitConvert.lbToKg(pounds),
+            source: source
+        )
+        // `Reading` normalizes with the process calendar. Restore the fixture's
+        // explicit UTC day so tests remain deterministic in every simulator timezone.
+        result.date = exactDate
+        return result
     }
 
     private func transformedValue(

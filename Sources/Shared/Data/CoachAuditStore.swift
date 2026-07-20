@@ -111,11 +111,14 @@ public final class CoachAuditStore {
         text: String,
         payloadJSON: Data? = nil,
         audioDraftID: UUID? = nil,
+        conversationID: UUID? = nil,
         runID: UUID? = nil,
         createdAt: Date = .now
     ) -> CoachNote? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
+        // Allow empty text only when an audio recording is attached — that is a
+        // pure audio message (e.g. transcription failed). Otherwise drop empties.
+        guard !trimmed.isEmpty || audioDraftID != nil else { return nil }
         let note = CoachNote(
             runID: runID,
             source: source,
@@ -126,6 +129,7 @@ public final class CoachAuditStore {
             text: trimmed,
             payloadJSON: payloadJSON,
             audioDraftID: audioDraftID,
+            conversationID: conversationID,
             createdAt: createdAt
         )
         context.insert(note)

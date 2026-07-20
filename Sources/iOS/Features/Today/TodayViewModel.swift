@@ -23,6 +23,11 @@ final class TodayViewModel: ObservableObject {
     @Published var projection: CutProjectionResult?
     @Published var chartModel: CutChartModel?
     @Published var chartDomains: CutChartDomainState?
+    @Published var weeklyChartModel: WeeklyCutChartModel?
+    /// Trailing-regression pace lens data (lb/week). `nil` when no active cut.
+    @Published var paceModel: PaceLensModel?
+    /// Current-calendar-week cumulative-change lens data. `nil` when no active cut.
+    @Published var thisWeekModel: ThisWeekModel?
     /// 7-day EMA of weight in kg, computed over the most recent ≤7 readings on or before
     /// the currently-selected date. `nil` when fewer than 2 readings are available.
     @Published var ema7Kg: Double?
@@ -83,12 +88,15 @@ final class TodayViewModel: ObservableObject {
                 historicalCuts: historicals,
                 cycleStarts: cycleStarts
             )
-            refreshChartModel(active: cut, readings: allReadings)
+            refreshChartModels(active: cut, readings: allReadings)
         } else {
             self.inCutReadings = []
             self.projection = nil
             self.chartModel = nil
             self.chartDomains = nil
+            self.weeklyChartModel = nil
+            self.paceModel = nil
+            self.thisWeekModel = nil
         }
 
         // Recompute the deficit estimate. Always uses "today" as `asOf` (not
@@ -241,7 +249,7 @@ final class TodayViewModel: ObservableObject {
                 historicalCuts: historicals,
                 cycleStarts: services.cycleStarts
             )
-            refreshChartModel(active: cut, readings: refreshed)
+            refreshChartModels(active: cut, readings: refreshed)
         }
 
         // Trigger a proactive coach run on weigh-in days so the coach can
@@ -272,10 +280,21 @@ final class TodayViewModel: ObservableObject {
         )
     }
 
-    private func refreshChartModel(active: ActiveCut, readings: [Reading]) {
+    private func refreshChartModels(active: ActiveCut, readings: [Reading]) {
+        weeklyChartModel = WeeklyCutChartModel.prepare(
+            active: active,
+            readings: readings,
+            asOf: Date()
+        )
+        thisWeekModel = ThisWeekModel.prepare(
+            active: active,
+            readings: readings,
+            asOf: Date()
+        )
         guard let projection else {
             chartModel = nil
             chartDomains = nil
+            paceModel = nil
             return
         }
         let prepared = CutChartModel.prepare(
@@ -285,6 +304,12 @@ final class TodayViewModel: ObservableObject {
         )
         chartModel = prepared
         chartDomains = CutChartDomainStore.resolve(model: prepared, active: active)
+        paceModel = PaceLensModel.prepare(
+            active: active,
+            readings: readings,
+            projection: projection,
+            asOf: Date()
+        )
     }
 
     /// 7-day EMA over the most recent ≤7 readings whose date is ≤ `asOf`.

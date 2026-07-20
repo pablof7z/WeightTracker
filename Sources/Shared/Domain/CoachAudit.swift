@@ -144,6 +144,11 @@ public final class CoachNote {
     public var text: String
     public var payloadJSON: Data?
     public var audioDraftID: UUID?
+    /// Groups notes into a Telegram-style conversation. Legacy rows (and all
+    /// automated coach output) have `nil` here, which is treated as the single
+    /// default "Coach" conversation. Additive optional → SwiftData migrates it
+    /// automatically with no destructive schema change.
+    public var conversationID: UUID?
     public var createdAt: Date
     public var supersededAt: Date?
 
@@ -158,6 +163,7 @@ public final class CoachNote {
         text: String,
         payloadJSON: Data? = nil,
         audioDraftID: UUID? = nil,
+        conversationID: UUID? = nil,
         createdAt: Date = .now,
         supersededAt: Date? = nil
     ) {
@@ -171,9 +177,17 @@ public final class CoachNote {
         self.text = text
         self.payloadJSON = payloadJSON
         self.audioDraftID = audioDraftID
+        self.conversationID = conversationID
         self.createdAt = createdAt
         self.supersededAt = supersededAt
     }
+
+    /// Whether this note is a pure audio message: it has an attached voice
+    /// recording but no usable transcript text (e.g. transcription failed).
+    public var isAudioOnly: Bool {
+        audioDraftID != nil && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
 
     public var source: CoachNoteSource {
         get { CoachNoteSource(rawValue: sourceRaw) ?? .user }

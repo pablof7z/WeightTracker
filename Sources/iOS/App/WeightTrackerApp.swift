@@ -22,6 +22,9 @@ struct WeightTrackerApp: App {
                         notifications: appServices.notifications
                     )
                     await appServices.bootstrap()
+                    #if DEBUG
+                    DebugCSVSeeder.seedIfRequested(services: appServices)
+                    #endif
                 }
                 .task {
                     WhatsNewService.seedIfNeeded()
@@ -62,7 +65,7 @@ struct RootView: View {
     var body: some View {
         Group {
             if onboardingComplete {
-                MainTabView()
+                TodayView()
             } else {
                 OnboardingFlow()
             }
@@ -94,36 +97,6 @@ struct RootView: View {
         guard let bunkerURI = items.first(where: { $0.name == "bunker" })?.value else { return }
         Task {
             try? await services.feedback.connectBunker(uri: bunkerURI)
-        }
-    }
-}
-
-struct MainTabView: View {
-    @State private var selection: Int = 0
-
-    var body: some View {
-        TabView(selection: $selection) {
-            TodayPager()
-                .tag(0)
-                .tabItem { Label("Today", systemImage: "scalemass") }
-            ProgressTabView()
-                .tag(1)
-                .tabItem { Label("Progress", systemImage: "chart.xyaxis.line") }
-            CutsView()
-                .tag(2)
-                .tabItem { Label("Cuts", systemImage: "scissors") }
-            CoachTabView()
-                .tag(3)
-                .tabItem { Label("Coach", systemImage: "brain.head.profile") }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openCutsTab)) { _ in
-            selection = 2
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openMealPlanEditor)) { _ in
-            selection = 2
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openCoachForMealSetup)) { _ in
-            selection = 3
         }
     }
 }

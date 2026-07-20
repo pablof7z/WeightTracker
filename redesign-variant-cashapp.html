@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cut Tracker — Variant 011 · Cash Cut</title>
+<style>
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html,body{margin:0;padding:0}
+body{background:#d9d9de;font-family:var(--font)}
+@page{size:297mm 210mm;margin:0}
+.page{width:297mm;height:210mm;overflow:hidden;position:relative;background:#fff;display:flex;page-break-after:always}
+@media screen{.page{margin:28px auto;box-shadow:0 10px 44px rgba(0,0,0,.20)}}
+@media print{body{background:#fff}}
+
+/* ---------------- iPhone frame ---------------- */
+.phonewrap{position:relative;flex:none}
+.phone{position:absolute;top:0;left:0;width:412px;height:866px;transform-origin:top left;
+  background:linear-gradient(150deg,#33333a,#0a0a0c 60%);border-radius:64px;padding:11px;
+  box-shadow:0 34px 70px rgba(0,0,0,.38),inset 0 0 0 2px #45454c}
+.phone .screen{width:390px;height:844px;border-radius:53px;overflow:hidden;position:relative;background:#000}
+.island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:33px;background:#000;border-radius:18px;z-index:70}
+.pbtn{position:absolute;background:#17171a;border-radius:2px}
+.pbtn-mute{left:-2px;top:118px;width:3px;height:30px}
+.pbtn-v1{left:-2px;top:172px;width:3px;height:54px}
+.pbtn-v2{left:-2px;top:236px;width:3px;height:54px}
+.pbtn-pwr{right:-2px;top:196px;width:3px;height:88px}
+.sbar{position:absolute;top:0;left:0;right:0;height:54px;display:flex;justify-content:space-between;align-items:flex-start;
+  padding:19px 34px 0 32px;font-weight:600;font-size:15px;z-index:60;letter-spacing:-.2px}
+.homeind{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;z-index:60}
+.chart{line-height:0}
+.chart svg{display:block}
+
+/* ---------------- sheet ---------------- */
+.pleft{width:106mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#f1f1ee}
+.pright{flex:1;padding:11mm 15mm 12mm 13mm;display:flex;flex-direction:column;position:relative}
+.cnum{position:absolute;top:13mm;right:15mm;font-family:var(--mono);font-size:12px;color:#bbb;letter-spacing:1px}
+.pright h1{font-size:40px;letter-spacing:-1.5px;margin:0;font-weight:800}
+.ubar{width:38px;height:4px;border-radius:2px;margin:8px 0 7px;background:#00c853}
+.pright .tag{font-size:16px;color:#8a8a8a;margin-bottom:4px;font-style:italic}
+.pright h3{font-size:10px;letter-spacing:2px;color:#a3a3a3;margin:10px 0 4px;font-weight:700}
+.pright p{font-size:13px;line-height:1.4;color:#3d3d3d;margin:0}
+.pright ul{margin:0;padding-left:17px}
+.pright li{font-size:12.5px;line-height:1.32;color:#3d3d3d;margin:2px 0}
+.dataline{font-family:var(--mono);font-size:10px;line-height:1.4;background:#f6f6f3;padding:7px 10px;margin-top:8px;color:#555;border-left:3px solid #00c853}
+.palette{display:flex;align-items:center;gap:6px;margin-top:7px}
+.palette .sw{width:15px;height:15px;border-radius:8px;border:1px solid rgba(0,0,0,.12)}
+.palette .hex{font-family:var(--mono);font-size:9.5px;color:#aaa;margin-right:10px}
+.figcap{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:#999;text-align:center}
+.pfoot{position:absolute;bottom:9mm;left:13mm;right:15mm;display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:1.5px;color:#c2c2c2}
+.borrowed{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;margin-top:2px}
+.borrowed div{font-size:11.5px;color:#555;border-top:1px solid #ececec;padding-top:4px;line-height:1.35}
+.borrowed b{color:#111}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ================= live data — Day 84 (Jul 19, 2026) ================= */
+const DOTS =[162.6,162.7,162.5,162.3,161.4,161.8,161.2,161.9,160.8,160.6,160.9,160.3,160.2,160.5,160.1,158.9,159.4,159.1,158.3,158.0,157.9,158.4,157.3,156.9,157.2,156.3,155.4,156.1,155.2,154.5];
+const TREND=[162.6,162.6,162.5,162.3,162.0,161.7,161.5,161.3,161.0,160.7,160.4,160.2,160.1,160.0,159.7,159.3,159.0,158.6,158.3,158.1,157.9,157.7,157.4,157.0,156.6,156.2,155.9,155.9,155.9];
+const PROJ =[155.6,155.2,155.8,154.9,155.4,154.5,155.0,153.9,154.4,153.2,153.9,152.6,153.1,151.9,151.0,150.2];
+
+function xy(data,w,h,min,max,top,bottom){
+  top=top||0;bottom=bottom||0;const ih=h-top-bottom;
+  return data.map(function(v,i){return [+(i/(data.length-1)*w).toFixed(2),+(top+(max-v)/(max-min)*ih).toFixed(2)];});
+}
+function smoothPath(p){
+  var d='M'+p[0][0]+','+p[0][1];
+  for(var i=0;i<p.length-1;i++){
+    var p0=p[Math.max(0,i-1)],p1=p[i],p2=p[i+1],p3=p[Math.min(p.length-1,i+2)];
+    d+='C'+(p1[0]+(p2[0]-p0[0])/6).toFixed(1)+','+(p1[1]+(p2[1]-p0[1])/6).toFixed(1)+' '
+       +(p2[0]-(p3[0]-p1[0])/6).toFixed(1)+','+(p2[1]-(p3[1]-p1[1])/6).toFixed(1)+' '
+       +p2[0]+','+p2[1];
+  }
+  return d;
+}
+function linePath(p){return 'M'+p.map(function(q){return q[0]+','+q[1]}).join('L')}
+
+/* ---- Cash-style chart: green line on black, zoomed, glow ---- */
+function cashChartSVG(w,h){
+  var min=153,max=163.5;
+  var P=xy(TREND.concat(PROJ),w,h,min,max,18,34),tP=P.slice(0,30),pP=P.slice(29),dP=xy(DOTS,w,h,min,max,18,34);
+  var s='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg">';
+  s+='<defs><linearGradient id="cf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(0,214,50,.22)"/><stop offset="1" stop-color="rgba(0,214,50,0)"/></linearGradient>'
+   +'<filter id="gl" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+  [154,157,160,163].forEach(function(g){var y=(18+(max-g)/(max-min)*(h-52)).toFixed(1);
+   s+='<line x1="0" y1="'+y+'" x2="'+w+'" y2="'+y+'" stroke="rgba(255,255,255,.06)" stroke-width="1"/>';
+   s+='<text x="10" y="'+(y-6)+'" font-size="10.5" fill="rgba(255,255,255,.28)" font-family="-apple-system,sans-serif">'+g+'</text>';});
+  var gy=18+(max-150)/(max-min)*(h-52); /* below viewport range — goal note only */
+  var tx=tP[29][0];
+  s+='<path d="'+smoothPath(tP)+'L'+tx+','+(h-34)+'L0,'+(h-34)+'Z" fill="url(#cf)" stroke="none"/>';
+  s+=dP.map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.2" fill="rgba(255,255,255,.14)"/>'}).join('');
+  s+='<path d="'+smoothPath(tP)+'" fill="none" stroke="#00d632" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#gl)"/>';
+  s+='<path d="'+linePath(pP)+'" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-dasharray="6 6" stroke-linecap="round"/>';
+  var e=tP[29];
+  s+='<circle cx="'+e[0]+'" cy="'+e[1]+'" r="8" fill="none" stroke="#00d632" stroke-width="1.5" opacity=".5"/><circle cx="'+e[0]+'" cy="'+e[1]+'" r="4.5" fill="#00d632"/>';
+  var f=pP[pP.length-1];
+  s+='<line x1="'+Math.min(f[0]-2,374)+'" y1="'+f[1]+'" x2="'+Math.min(f[0]-2,374)+'" y2="'+(f[1]-26)+'" stroke="rgba(255,255,255,.85)" stroke-width="2"/>'
+   +'<path d="M'+Math.min(f[0]-2,374)+','+(f[1]-26)+' l15,5 l-15,5 Z" fill="rgba(255,255,255,.85)"/>'
+   +'<text x="'+(Math.min(f[0]-2,374)-8)+'" y="'+(f[1]-15)+'" text-anchor="end" font-size="10.5" font-weight="700" fill="rgba(255,255,255,.85)" font-family="-apple-system,sans-serif">150 · AUG 21</text>';
+  ['JUN 19','JUN 26','JUL 3','JUL 10','TODAY'].forEach(function(d,i){var x=16+i*(w-32)/4;
+   s+='<text x="'+x+'" y="'+(h-14)+'" text-anchor="middle" font-size="9" letter-spacing="1" fill="rgba(255,255,255,.30)" font-family="-apple-system,sans-serif">'+d+'</text>';});
+  return s+'</svg>';
+}
+
+/* ---- chrome bits ---- */
+function sbar(){
+  var c='#fff';
+  return '<div class="sbar" style="color:'+c+'"><span>10:20</span>'
+   +'<span style="display:flex;align-items:center;gap:6px">'
+   +'<svg width="17" height="11" viewBox="0 0 17 11" fill="'+c+'"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>'
+   +'<svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="'+c+'" stroke-width="1.6" stroke-linecap="round"><path d="M1.5 4.6a9.5 9.5 0 0 1 13 0"/><path d="M4.2 7.4a5.6 5.6 0 0 1 7.6 0"/><circle cx="8" cy="10.2" r="1.3" fill="'+c+'" stroke="none"/></svg>'
+   +'<svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="'+c+'" opacity=".45"/><rect x="2" y="2" width="15" height="8" rx="2" fill="'+c+'"/><path d="M23.2 4v4a2.1 2.1 0 0 0 0-4z" fill="'+c+'" opacity=".45"/></svg>'
+   +'</span></div>';
+}
+function icon(name,color){
+  var p={
+   gear:'<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>',
+   mic:'<rect x="9" y="2.5" width="6" height="11" rx="3" fill="'+color+'" stroke="none"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><line x1="12" y1="18" x2="12" y2="21"/>',
+   scale:'<path d="M12 21c-5 0-8-2.7-8-6 0-4.5 3.6-11 8-11s8 6.5 8 11c0 3.3-3 6-8 6z"/><circle cx="12" cy="8.5" r="1.6" fill="'+color+'" stroke="none"/>',
+   chart:'<path d="M3 17.5 8 12l3.5 3L21 6.5"/><path d="M15.5 6.5H21V12"/>',
+   cut:'<circle cx="6.5" cy="7" r="2.6"/><circle cx="6.5" cy="17" r="2.6"/><path d="M8.8 8.6 20 19M8.8 15.4 20 5"/>',
+   coach:'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.5c.6-2 2-3 3.5-3s2.9 1 3.5 3"/><circle cx="9.5" cy="10.5" r=".9" fill="'+color+'" stroke="none"/><circle cx="14.5" cy="10.5" r=".9" fill="'+color+'" stroke="none"/>'
+  };
+  return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+p[name]+'</svg>';
+}
+
+/* ---- the screen ---- */
+const GREEN='#00d632';
+const SCREEN=
+ sbar()
+ /* top row: gear · Day 84 pill · mic */
+ +'<div style="position:absolute;top:64px;left:22px;right:22px;display:flex;justify-content:space-between;align-items:center">'
+ +'<span style="opacity:.85">'+icon('gear','#fff')+'</span>'
+ +'<span style="border:1.5px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 16px;font-size:12px;font-weight:600;letter-spacing:1px;color:rgba(255,255,255,.85)">DAY 84</span>'
+ +'<span style="opacity:.85">'+icon('mic','#fff')+'</span></div>'
+ /* balance-as-hero */
+ +'<div style="position:absolute;top:118px;left:0;right:0;text-align:center">'
+ +'<div style="font-size:13px;letter-spacing:2px;color:rgba(255,255,255,.45);font-weight:600">BALANCE</div>'
+ +'<div style="font-size:96px;font-weight:800;letter-spacing:-4px;color:#fff;line-height:1.02;margin-top:2px">154<span style="font-size:44px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:-1px">.5 lb</span></div>'
+ +'<div style="margin-top:12px"><span style="background:rgba(0,214,50,.16);color:'+GREEN+';border-radius:999px;padding:7px 15px;font-size:13px;font-weight:700">▼ 1.4 lb this week</span></div>'
+ +'</div>'
+ /* pill verbs */
+ +'<div style="position:absolute;top:308px;left:22px;right:22px;display:flex;gap:12px">'
+ +'<div style="flex:1.4;background:'+GREEN+';border-radius:999px;padding:15px 0;text-align:center;font-size:16px;font-weight:800;color:#000;letter-spacing:-.2px">+ Weigh in</div>'
+ +'<div style="flex:1;border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:15px 0;text-align:center;font-size:16px;font-weight:700;color:#fff">Goal 150</div>'
+ +'</div>'
+ /* full-bleed chart */
+ +'<div style="position:absolute;top:392px;left:22px;right:22px;display:flex;justify-content:space-between;align-items:baseline">'
+ +'<span style="font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.45);font-weight:700">TREND</span>'
+ +'<span style="font-size:12px;color:'+GREEN+';font-weight:700">−8.1 lb · 30D</span></div>'
+ +'<div class="chart" style="position:absolute;left:0;right:0;top:418px;height:300px">'+cashChartSVG(390,300)+'</div>'
+ /* range segmented control */
+ +'<div style="position:absolute;top:724px;left:0;right:0;display:flex;justify-content:center">'
+ +'<div style="display:flex;background:rgba(255,255,255,.10);border-radius:999px;padding:4px">'
+ +'<span style="border-radius:999px;padding:8px 22px;font-size:13px;font-weight:700;color:rgba(255,255,255,.55)">1W</span>'
+ +'<span style="border-radius:999px;padding:8px 22px;font-size:13px;font-weight:800;color:#000;background:#fff">1M</span>'
+ +'<span style="border-radius:999px;padding:8px 22px;font-size:13px;font-weight:700;color:rgba(255,255,255,.55)">ALL</span>'
+ +'</div></div>'
+ /* chunky tab bar */
+ +'<div style="position:absolute;bottom:0;left:0;right:0;height:84px;background:#000;border-top:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-around;align-items:flex-start;padding-top:12px">'
+ +[['scale','Today',true],['chart','Progress',false],['cut','Cuts',false],['coach','Coach',false]].map(function(t){
+   var c=t[2]?GREEN:'rgba(255,255,255,.45)';
+   return '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+icon(t[0],c)+'<span style="font-size:10px;font-weight:'+(t[2]?'800':'600')+';color:'+c+'">'+t[1]+'</span></div>'}).join('')
+ +'</div>';
+
+/* ---- assembly ---- */
+const HTML=
+ '<section class="page">'
+ +'<div class="pleft"><div class="figcap">VARIANT 011</div>'
+ +'<div class="phonewrap" style="width:'+Math.round(412*0.64)+'px;height:'+Math.round(866*0.64)+'px">'
+ +'<div class="phone" style="transform:scale(0.64)"><div class="screen">'+SCREEN
+ +'<div class="island"></div></div>'
+ +'<div class="pbtn pbtn-mute"></div><div class="pbtn pbtn-v1"></div><div class="pbtn pbtn-v2"></div><div class="pbtn pbtn-pwr"></div>'
+ +'</div></div><div class="figcap">CASH CUT</div></div>'
+ +'<div class="pright"><div class="cnum">011 · GUEST CONCEPT</div>'
+ +'<h1>Cash Cut</h1><div class="ubar"></div>'
+ +'<div class="tag">If the Cash App team designed cut tracker</div>'
+ +'<h3>THE IDEA</h3>'
+ +'<p>Cash App treats money like a balance you check without ceremony: one giant number, two verbs, one chart, zero finance-app chrome. Apply that to weight and the whole app snaps into focus — your weight is your balance, weighing in is the only transaction, and the trend is just your statement.</p>'
+ +'<h3>WHY IT’S INTERESTING</h3><ul>'
+ +'<li>The balance metaphor reframes the daily number as an account you manage, not a measurement you fear — same psychology, friendlier stakes.</li>'
+ +'<li>Green-on-black is readable in gym lighting and instantly iconic; the chip (▼ 1.4 lb) borrows Cash App’s gain/loss pill verbatim.</li>'
+ +'<li>Two pill verbs put the single daily action at thumb reach — there is no ambiguity about what to do next.</li>'
+ +'<li>The segmented 1W / 1M / ALL control replaces custom windows with a pattern everyone already knows.</li></ul>'
+ +'<h3>PROGRESSIVE DISCLOSURE &amp; INTERACTIONS</h3><ul>'
+ +'<li>Tap “+ Weigh in” → numpad or voice sheet slides up; one tap and you’re done.</li>'
+ +'<li>Swipe the chart or tap the segment pills to change range; axis re-fits per range.</li>'
+ +'<li>Pull down on the balance to reveal the activity feed — weigh-ins styled like transactions (Today 154.5 · Yesterday 155.2).</li></ul>'
+ +'<h3>BORROWED FROM CASH APP</h3>'
+ +'<div class="borrowed"><div><b>Balance hero</b> — huge integer, smaller decimals</div>'
+ +'<div><b>Pill verbs</b> — one filled, one outlined</div>'
+ +'<div><b>Gain chip</b> — ▼ 1.4 lb like a stock move</div>'
+ +'<div><b>Segmented range</b> — 1W / 1M / ALL</div>'
+ +'<div><b>Chunky tab bar</b> — geometric icons, label tint</div>'
+ +'<div><b>Statement chart</b> — one glowing line, no chrome</div></div>'
+ +'<div class="dataline">SHOWN — weight balance, week chip, two verbs, glowing trend, range pills. HIDDEN — kcal math, projections (tap the trend), full history (pull down).</div>'
+ +'<div class="palette"><span class="sw" style="background:#000000"></span><span class="hex">#000000</span><span class="sw" style="background:#00d632"></span><span class="hex">#00d632</span><span class="sw" style="background:#ffffff"></span><span class="hex">#ffffff</span></div>'
+ +'<div class="pfoot"><span>CUT TRACKER — GUEST VARIANT · CASH APP TAKE</span><span>JUL 19, 2026 · DAY 84 DATA</span></div>'
+ +'</div></section>';
+
+document.getElementById('app').innerHTML=HTML;
+</script>
+</body>
+</html>
