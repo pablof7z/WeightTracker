@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cut Tracker — Ten First Screens · Design Dossier</title>
+<style>
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --serif:"New York",Georgia,"Times New Roman",serif;
+}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html,body{margin:0;padding:0}
+body{background:#d9d9de;font-family:var(--font)}
+@page{size:297mm 210mm;margin:0}
+.page{width:297mm;height:210mm;overflow:hidden;position:relative;background:#fff;display:flex;page-break-after:always}
+@media screen{.page{margin:28px auto;box-shadow:0 10px 44px rgba(0,0,0,.20)}}
+@media print{body{background:#fff}}
+
+/* ---------------- iPhone frame ---------------- */
+.phonewrap{position:relative;flex:none}
+.phone{position:absolute;top:0;left:0;width:412px;height:866px;transform-origin:top left;
+  background:linear-gradient(150deg,#33333a,#0a0a0c 60%);border-radius:64px;padding:11px;
+  box-shadow:0 34px 70px rgba(0,0,0,.38),inset 0 0 0 2px #45454c}
+.phone .screen{width:390px;height:844px;border-radius:53px;overflow:hidden;position:relative;background:#fff}
+.island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:33px;background:#000;border-radius:18px;z-index:70}
+.pbtn{position:absolute;background:#17171a;border-radius:2px}
+.pbtn-mute{left:-2px;top:118px;width:3px;height:30px}
+.pbtn-v1{left:-2px;top:172px;width:3px;height:54px}
+.pbtn-v2{left:-2px;top:236px;width:3px;height:54px}
+.pbtn-pwr{right:-2px;top:196px;width:3px;height:88px}
+.sbar{position:absolute;top:0;left:0;right:0;height:54px;display:flex;justify-content:space-between;align-items:flex-start;
+  padding:19px 34px 0 32px;font-weight:600;font-size:15px;z-index:60;letter-spacing:-.2px}
+.homeind{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;z-index:60}
+.chart{line-height:0}
+.chart svg{display:block}
+
+/* ---------------- cover ---------------- */
+.cover .cleft{flex:1;padding:17mm 10mm 14mm 18mm;display:flex;flex-direction:column}
+.cover .kicker{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:#999;margin-bottom:14px}
+.cover h1{font-size:82px;line-height:.96;letter-spacing:-3px;margin:0 0 18px;font-weight:800}
+.cover .lede{font-size:16px;line-height:1.55;color:#555;max-width:560px;margin:0 0 20px}
+.principles{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px}
+.principles span{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;border:1px solid #d7d7d7;border-radius:999px;padding:7px 13px;color:#666}
+.clist{display:grid;grid-template-columns:1fr 1fr;gap:9px 30px;max-width:700px}
+.clist .ci{display:flex;gap:12px;align-items:baseline;border-top:1px solid #ececec;padding-top:8px}
+.clist .cn{font-family:var(--mono);font-size:11px;color:#c00;font-weight:700}
+.clist .ct{font-size:14px;font-weight:650}
+.clist .cs{font-size:12.5px;color:#999}
+.cover .cright{width:102mm;background:#f1f1ee;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.figcap{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:#999;text-align:center}
+.coverfoot{margin-top:auto;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:#bbb;padding-top:18px}
+
+/* ---------------- concept page ---------------- */
+.concept .pleft{width:106mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#f1f1ee}
+.concept .pright{flex:1;padding:14mm 15mm 12mm 13mm;display:flex;flex-direction:column;position:relative}
+.cnum{position:absolute;top:13mm;right:15mm;font-family:var(--mono);font-size:12px;color:#bbb;letter-spacing:1px}
+.concept h1{font-size:44px;letter-spacing:-1.5px;margin:0;font-weight:800}
+.ubar{width:38px;height:4px;border-radius:2px;margin:12px 0 10px}
+.concept .tag{font-family:var(--serif);font-style:italic;font-size:17px;color:#8a8a8a;margin-bottom:6px}
+.concept h3{font-size:10.5px;letter-spacing:2px;color:#a3a3a3;margin:16px 0 6px;font-weight:700}
+.concept p{font-size:14px;line-height:1.5;color:#3d3d3d;margin:0}
+.concept ul{margin:0;padding-left:17px}
+.concept li{font-size:13.5px;line-height:1.42;color:#3d3d3d;margin:4px 0}
+.dataline{font-family:var(--mono);font-size:11px;line-height:1.55;background:#f6f6f3;padding:10px 13px;margin-top:16px;color:#555;border-left:3px solid #111}
+.palette{display:flex;align-items:center;gap:6px;margin-top:14px}
+.palette .sw{width:15px;height:15px;border-radius:8px;border:1px solid rgba(0,0,0,.12)}
+.palette .hex{font-family:var(--mono);font-size:9.5px;color:#aaa;margin-right:10px}
+.pfoot{position:absolute;bottom:9mm;left:13mm;right:15mm;display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:1.5px;color:#c2c2c2}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ================= live data from Day 84 (Jul 19, 2026) ================= */
+const DOTS =[162.6,162.7,162.5,162.3,161.4,161.8,161.2,161.9,160.8,160.6,160.9,160.3,160.2,160.5,160.1,158.9,159.4,159.1,158.3,158.0,157.9,158.4,157.3,156.9,157.2,156.3,155.4,156.1,155.2,154.5];
+const TREND=[162.6,162.6,162.5,162.3,162.0,161.7,161.5,161.3,161.0,160.7,160.4,160.2,160.1,160.0,159.7,159.3,159.0,158.6,158.3,158.1,157.9,157.7,157.4,157.0,156.6,156.2,155.9,155.9,155.9];
+const PROJ =[155.6,155.2,155.8,154.9,155.4,154.5,155.0,153.9,154.4,153.2,153.9,152.6,153.1,151.9,151.0,150.2];
+const DEFICIT=[690,720,760,810,640,880,745,790,705,860,730,775,800,746];
+const WEEK=[155.9,155.6,155.8,155.2,155.4,155.0,154.5];
+
+/* ================= svg helpers ================= */
+function xy(data,w,h,min,max,top,bottom){
+  top=top||0;bottom=bottom||0;const ih=h-top-bottom;
+  return data.map(function(v,i){return [+(i/(data.length-1)*w).toFixed(2),+(top+(max-v)/(max-min)*ih).toFixed(2)];});
+}
+function smoothPath(p){
+  var d='M'+p[0][0]+','+p[0][1];
+  for(var i=0;i<p.length-1;i++){
+    var p0=p[Math.max(0,i-1)],p1=p[i],p2=p[i+1],p3=p[Math.min(p.length-1,i+2)];
+    d+='C'+(p1[0]+(p2[0]-p0[0])/6).toFixed(1)+','+(p1[1]+(p2[1]-p0[1])/6).toFixed(1)+' '
+       +(p2[0]-(p3[0]-p1[0])/6).toFixed(1)+','+(p2[1]-(p3[1]-p1[1])/6).toFixed(1)+' '
+       +p2[0]+','+p2[1];
+  }
+  return d;
+}
+function linePath(p){return 'M'+p.map(function(q){return q[0]+','+q[1]}).join('L')}
+
+function chartSVG(w,h,o){
+  o=Object.assign({min:149,max:164,stroke:'#111',strokeW:3,dots:null,dotR:2.5,proj:false,projColor:'#999',projW:2,
+    grid:false,gridColor:'#eee',gridLabels:false,gridLabelColor:'#bbb',goal:false,goalColor:'#16a34a',goalLabel:null,
+    today:false,todayColor:'rgba(0,0,0,.15)',fill:null,fillOpacity:1,smooth:true,end:false,endColor:null},o||{});
+  var combined=TREND.concat(PROJ);
+  var P=xy(combined,w,h,o.min,o.max);
+  var tP=P.slice(0,TREND.length),pP=P.slice(TREND.length-1),dP=xy(DOTS,w,h,o.min,o.max);
+  var trendD=o.smooth?smoothPath(tP):linePath(tP);
+  var s='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">';
+  if(o.grid){[154,158,162].forEach(function(g){var y=((o.max-g)/(o.max-o.min)*h).toFixed(1);
+    s+='<line x1="0" y1="'+y+'" x2="'+w+'" y2="'+y+'" stroke="'+o.gridColor+'" stroke-width="1"/>';
+    if(o.gridLabels)s+='<text x="'+(w-8)+'" y="'+(y-6)+'" text-anchor="end" font-size="10" fill="'+o.gridLabelColor+'" font-family="-apple-system,Helvetica,sans-serif">'+g+'</text>';});}
+  if(o.goal){var gy=((o.max-150)/(o.max-o.min)*h).toFixed(1);
+    s+='<line x1="0" y1="'+gy+'" x2="'+w+'" y2="'+gy+'" stroke="'+o.goalColor+'" stroke-width="1.5" stroke-dasharray="5 5"/>';
+    if(o.goalLabel)s+='<text x="'+(w-8)+'" y="'+(gy-8)+'" text-anchor="end" font-size="10" font-weight="700" letter-spacing="1" fill="'+o.goalColor+'" font-family="-apple-system,Helvetica,sans-serif">'+o.goalLabel+'</text>';}
+  if(o.today){var tx=tP[tP.length-1][0];
+    s+='<line x1="'+tx+'" y1="0" x2="'+tx+'" y2="'+h+'" stroke="'+o.todayColor+'" stroke-width="1" stroke-dasharray="3 4"/>';}
+  if(o.fill)s+='<path d="'+trendD+'L'+tP[tP.length-1][0]+','+h+'L0,'+h+'Z" fill="'+o.fill+'" opacity="'+o.fillOpacity+'" stroke="none"/>';
+  if(o.dots)s+=dP.map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+o.dotR+'" fill="'+o.dots+'"/>'}).join('');
+  s+='<path d="'+trendD+'" fill="none" stroke="'+o.stroke+'" stroke-width="'+o.strokeW+'" stroke-linecap="round" stroke-linejoin="round"/>';
+  if(o.proj)s+='<path d="'+linePath(pP)+'" fill="none" stroke="'+o.projColor+'" stroke-width="'+o.projW+'" stroke-dasharray="6 6" stroke-linecap="round"/>';
+  if(o.end){var e=tP[tP.length-1];s+='<circle cx="'+e[0]+'" cy="'+e[1]+'" r="5" fill="'+(o.endColor||o.stroke)+'" stroke="#fff" stroke-width="2"/>';}
+  return s+'</svg>';
+}
+function deficitSVG(w,h){
+  var min=550,max=950,P=xy(DEFICIT,w,h,min,max,16,6),d=smoothPath(P);
+  var ty=(16+(max-750)/(max-min)*(h-22)).toFixed(1);
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">'
+   +'<defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(245,166,35,.5)"/><stop offset="1" stop-color="rgba(245,166,35,0)"/></linearGradient></defs>'
+   +'<path d="'+d+'L'+w+','+h+'L0,'+h+'Z" fill="url(#dg)" stroke="none"/>'
+   +'<path d="'+d+'" fill="none" stroke="#f5a623" stroke-width="2"/>'
+   +'<line x1="0" y1="'+ty+'" x2="'+w+'" y2="'+ty+'" stroke="rgba(245,166,35,.55)" stroke-width="1" stroke-dasharray="4 5"/>'
+   +'<text x="'+(w-8)+'" y="'+(ty-6)+'" text-anchor="end" font-size="9" letter-spacing="1" fill="rgba(245,166,35,.85)" font-family="Menlo,monospace">TARGET 750</text></svg>';
+}
+function terrainSVG(w,h){
+  var combined=TREND.concat(PROJ);
+  var back=xy(combined,w,h*0.86,147.5,166.5),front=xy(combined,w,h,149,164);
+  var bd=smoothPath(back)+'L'+w+','+h+'L0,'+h+'Z';
+  var fd=smoothPath(front)+'L'+w+','+h+'L0,'+h+'Z';
+  var f=front[front.length-4];
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">'
+   +'<path d="'+bd+'" fill="#14293f" stroke="none"/>'
+   +'<path d="'+fd+'" fill="#0a1626" stroke="none"/>'
+   +'<line x1="'+f[0]+'" y1="'+(f[1]-2)+'" x2="'+f[0]+'" y2="'+(f[1]-32)+'" stroke="#ffd9a0" stroke-width="2"/>'
+   +'<path d="M'+f[0]+','+(f[1]-32)+' l17,5.5 l-17,5.5 Z" fill="#ffd9a0"/>'
+   +'<text x="'+(f[0]-9)+'" y="'+(f[1]-19)+'" text-anchor="end" font-size="11.5" font-weight="700" fill="#ffd9a0" font-family="-apple-system,sans-serif">150</text></svg>';
+}
+function barsSVG(w,h){
+  var D=['M','T','W','T','F','S','S'],min=153.4,max=156.6,bw=w/7,s='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg">';
+  WEEK.forEach(function(v,i){var last=i===6,bh=((v-min)/(max-min))*(h-88),x=+(i*bw+7).toFixed(1),y=+(h-52-bh).toFixed(1);
+    s+='<rect x="'+x+'" y="'+y+'" width="'+(bw-14).toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="9" fill="'+(last?'#1f6bff':'#e8edf6')+'"/>';
+    s+='<text x="'+(x+(bw-14)/2)+'" y="'+(y-9)+'" text-anchor="middle" font-size="11.5" font-weight="600" fill="'+(last?'#1f6bff':'#a7b3c6')+'" font-family="-apple-system,sans-serif">'+v.toFixed(1)+'</text>';
+    s+='<text x="'+(x+(bw-14)/2)+'" y="'+(h-26)+'" text-anchor="middle" font-size="12.5" font-weight="'+(last?'700':'600')+'" fill="'+(last?'#111':'#a7b3c6')+'" font-family="-apple-system,sans-serif">'+D[i]+'</text>';});
+  return s+'</svg>';
+}
+function ring(size,sw,pct,color,track){
+  var r=(size-sw)/2,c=2*Math.PI*r,off=(c*(1-pct)).toFixed(1),cx=size/2;
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" xmlns="http://www.w3.org/2000/svg">'
+   +'<circle cx="'+cx+'" cy="'+cx+'" r="'+r+'" stroke="'+track+'" stroke-width="'+sw+'" fill="none"/>'
+   +'<circle cx="'+cx+'" cy="'+cx+'" r="'+r+'" stroke="'+color+'" stroke-width="'+sw+'" fill="none" stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off+'" transform="rotate(-90 '+cx+' '+cx+')"/></svg>';
+}
+
+/* ================= chrome bits ================= */
+function sbar(light){
+  var c=light?'#fff':'#111';
+  return '<div class="sbar" style="color:'+c+'"><span>10:20</span>'
+   +'<span style="display:flex;align-items:center;gap:6px">'
+   +'<svg width="17" height="11" viewBox="0 0 17 11" fill="'+c+'"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>'
+   +'<svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="'+c+'" stroke-width="1.6" stroke-linecap="round"><path d="M1.5 4.6a9.5 9.5 0 0 1 13 0"/><path d="M4.2 7.4a5.6 5.6 0 0 1 7.6 0"/><circle cx="8" cy="10.2" r="1.3" fill="'+c+'" stroke="none"/></svg>'
+   +'<svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="'+c+'" opacity=".45"/><rect x="2" y="2" width="15" height="8" rx="2" fill="'+c+'"/><path d="M23.2 4v4a2.1 2.1 0 0 0 0-4z" fill="'+c+'" opacity=".45"/></svg>'
+   +'</span></div>';
+}
+function homeind(light){return '<div class="homeind" style="background:'+(light?'rgba(255,255,255,.85)':'rgba(0,0,0,.32)')+'"></div>'}
+function micSvg(size,color){return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="'+color+'" stroke="none"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><line x1="12" y1="18" x2="12" y2="21.5"/></svg>'}
+
+/* ================= the ten concepts ================= */
+const CONCEPTS=[
+{id:'v1',num:'01',name:'The Answer',tag:'Progressive disclosure, taken all the way',
+ idea:'The screen answers the only question a daily check-in really asks — am I on track? — with two words and a sparkline. Every number you know today is still there, just stacked one tap deep instead of shouting at once.',
+ why:['Turns the app from a dashboard into a daily verdict: opening it takes under a second of reading.','The off-track state (“Slipping.”, amber) lands emotionally precisely because the screen is usually this quiet.','The four depth dots teach the drill-down path without a tutorial.'],
+ ix:['Tap the verdict → peel to trend → deficit → projection; swipe right to step back out.','Long-press the sparkline to scrub any day’s weight.','The wording adapts to reality: “On track.” / “Holding.” / “Slipping.”'],
+ data:'SHOWN — verdict · weight · week delta · sparkline. HIDDEN — deficit, pace, projection, countdown (1–3 taps deep).',
+ palette:['#ffffff','#22c55e','#111111'],
+ screen:
+  sbar(false)
+  +'<div style="position:absolute;top:104px;left:28px;font-size:12px;letter-spacing:1.6px;color:#9a9a9a;font-weight:600">SUNDAY · JUL 19 · DAY 84</div>'
+  +'<div style="position:absolute;top:252px;left:0;right:0;text-align:center">'
+  +'<div style="font-size:66px;font-weight:700;letter-spacing:-1.5px;color:#111">On track<span style="color:#22c55e">.</span></div>'
+  +'<div style="margin-top:16px;font-size:21px;color:#6b6b6b">154.5 lb</div>'
+  +'<div style="margin-top:14px;font-size:11px;letter-spacing:1.4px;color:#c4c4c4;font-weight:600">TAP FOR TREND · DEFICIT · PROJECTION</div></div>'
+  +'<div style="position:absolute;left:0;right:0;bottom:158px;text-align:center;font-size:13.5px;color:#22c55e;font-weight:600">−1.4 lb this week</div>'
+  +'<div style="position:absolute;bottom:138px;left:0;right:0;display:flex;justify-content:center;gap:6px">'
+  +'<span style="width:5px;height:5px;border-radius:3px;background:#22c55e"></span><span style="width:5px;height:5px;border-radius:3px;background:#d9d9d9"></span><span style="width:5px;height:5px;border-radius:3px;background:#d9d9d9"></span><span style="width:5px;height:5px;border-radius:3px;background:#d9d9d9"></span></div>'
+  +'<div class="chart" data-p="spark" style="position:absolute;left:0;right:0;bottom:0;height:130px"></div>'
+  +homeind(false)},
+
+{id:'v2',num:'02',name:'Chart Immersion',tag:'The chart is the app',
+ idea:'No chrome, no containers: the 30-day curve fills every pixel of the display, with the goal line and projection drawn straight onto the canvas. Weight, windows and scrubbing float on top as gestures and overlays.',
+ why:['Maximum data-ink: the curve you generated becomes the brand of the app.','Edge-to-edge makes 162→150 feel like terrain you are walking, not a report you are reading.','Status bar, numbers and window tabs all float — nothing steals a single pixel of height from the data.'],
+ ix:['Swipe horizontally: 7D → 30D → all-time; the curve re-scales with a spring.','Hold and drag to scrub any day; the floating number becomes that day’s value.','Pinch to zoom the y-axis around your current weight.'],
+ data:'SHOWN — curve, raw dots, projection, goal line, weight, week delta. HIDDEN — all kcal math (behind a tap on the number).',
+ palette:['#ffffff','#111111','#16a34a'],
+ screen:
+  '<div class="chart" data-p="full" style="position:absolute;inset:0"></div>'
+  +'<div style="position:absolute;top:0;left:0;right:0;height:220px;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,0))"></div>'
+  +'<div style="position:absolute;bottom:0;left:0;right:0;height:170px;background:linear-gradient(0deg,rgba(255,255,255,.95),rgba(255,255,255,0))"></div>'
+  +sbar(false)
+  +'<div style="position:absolute;top:86px;left:0;right:0;text-align:center">'
+  +'<div style="font-size:58px;font-weight:700;letter-spacing:-2px;color:#111">154.5</div>'
+  +'<div style="font-size:14px;color:#7a7a7a;margin-top:2px">−1.4 lb this week · avg 155.9</div></div>'
+  +'<div style="position:absolute;bottom:126px;left:26px;font-size:11px;color:#b5b5b5;letter-spacing:1px">JUN 19</div>'
+  +'<div style="position:absolute;bottom:66px;left:0;right:0;display:flex;justify-content:center;gap:36px;font-size:13px;font-weight:600;color:#b3b3b3">'
+  +'<span>7D</span><span style="color:#111;border-bottom:2px solid #111;padding-bottom:3px">30D</span><span>ALL</span></div>'
+  +'<div style="position:absolute;bottom:34px;left:0;right:0;text-align:center;font-size:9.5px;letter-spacing:1.6px;color:#c6c6c6;font-weight:600">HOLD + DRAG TO SCRUB · SWIPE FOR WINDOW</div>'
+  +homeind(false)},
+
+{id:'v3',num:'03',name:'Mission Clock',tag:'T-minus 33',bg:'#050807',
+ idea:'A dark HUD that treats the cut as a countdown mission: days-to-target is the hero, weight is demoted to telemetry, and a phosphor ring tracks percent complete. The chart survives only as a full-bleed strip along the bottom edge.',
+ why:['Countdown reframing: “33 days left” is a far stronger daily hook than “154.5 lb”.','Black + phosphor green makes the app feel like a cockpit instrument, not a spreadsheet.','Monospace telemetry rows are dense yet silent — information without a single card.'],
+ ix:['Tap the ring to cycle the countdown: days → pounds → kcal remaining.','Double-tap any telemetry row to expand its history full-screen.','After 9pm the whole HUD red-shifts to protect the night.'],
+ data:'SHOWN — countdown, ring %, weight/avg/rate/proj rows, strip chart. HIDDEN — history, goal editing, notes.',
+ palette:['#050807','#35ff7a','#0f2417'],
+ screen:
+  sbar(true)
+  +'<div style="position:absolute;top:88px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:11.5px;letter-spacing:3px;color:#3f6b50">CUT-084 // T-MINUS</div>'
+  +'<div style="position:absolute;top:118px;left:0;right:0;display:flex;justify-content:center"><div style="position:relative;width:250px;height:250px">'
+  +ring(250,7,.63,'#35ff7a','#0f2417')
+  +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
+  +'<div style="font-family:var(--mono);font-size:94px;font-weight:700;color:#35ff7a;line-height:1">33</div>'
+  +'<div style="font-family:var(--mono);font-size:10.5px;letter-spacing:2.5px;color:#4c7a5e;margin-top:8px">DAYS TO TARGET</div></div></div></div>'
+  +'<div style="position:absolute;top:402px;left:30px;right:30px;font-family:var(--mono);font-size:14px">'
+  +[['WT','154.5 LB'],['AVG-7','155.9 LB'],['RATE','746 KCAL·D'],['PROJ +30D','148.8 LB'],['GOAL','150.0 · AUG 21']].map(function(r){
+    return '<div style="display:flex;justify-content:space-between;padding:10px 2px;border-bottom:1px solid #0f2417"><span style="color:#3f6b50;letter-spacing:1px">'+r[0]+'</span><span style="color:#d7ffe4">'+r[1]+'</span></div>'}).join('')
+  +'</div>'
+  +'<div class="chart" data-p="strip" style="position:absolute;left:0;right:0;bottom:0;height:150px"></div>'
+  +'<div style="position:absolute;bottom:16px;right:18px;font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:#2f5a40">AUG 21 · 150.0 LB</div>'
+  +homeind(true)},
+
+{id:'v4',num:'04',name:'The Journal',tag:'A weigh-in, not a dashboard',bg:'#faf6ee',
+ idea:'Paper-calm editorial screen: the date, one serif numeral, and a single written sentence about your week. There is no chart at all until you lift the page — the numbers are recorded, not displayed.',
+ why:['Removes chart anxiety from the daily ritual; it reads like a note from a coach, not a terminal.','One written sentence (“four days ahead of schedule”) communicates more than four stat blocks.','Serif numerals give the number gravity — a journal entry, not a widget.'],
+ ix:['Lift the bottom edge → the full-bleed chart slides up like a folded page.','Tap the sentence to expand it into the full weekly summary.','Swipe left to leaf back through past days, journal-style.'],
+ data:'SHOWN — date, weight, one sentence. HIDDEN — literally everything else (one gesture away).',
+ palette:['#faf6ee','#1c1a15','#a39a86'],
+ screen:
+  sbar(false)
+  +'<div style="position:absolute;top:150px;left:0;right:0;text-align:center">'
+  +'<div style="font-size:12.5px;letter-spacing:2.4px;color:#a39a86;font-weight:600">SUNDAY, JULY 19 · DAY 84</div>'
+  +'<div style="width:44px;height:1px;background:#d8cfbd;margin:28px auto"></div>'
+  +'<div style="font-family:var(--serif);font-size:118px;color:#1c1a15;line-height:1">154.5</div>'
+  +'<div style="font-family:var(--serif);font-style:italic;font-size:20px;color:#8d8471;margin-top:8px">pounds</div>'
+  +'<div style="font-family:var(--serif);font-size:19.5px;line-height:1.55;color:#4a4438;max-width:292px;margin:36px auto 0">Down a pound and a half this week, and four days ahead of schedule — arriving around August 17.</div></div>'
+  +'<div style="position:absolute;bottom:46px;left:0;right:0;text-align:center">'
+  +'<div style="width:44px;height:1px;background:#d8cfbd;margin:0 auto 10px"></div>'
+  +'<div style="font-size:10.5px;letter-spacing:2px;color:#b3a98f;font-weight:600">LIFT FOR THE RECORD</div></div>'
+  +homeind(false)},
+
+{id:'v5',num:'05',name:'The Budget',tag:'Deficit is the leading indicator',bg:'#0b1120',
+ idea:'Weight is a lagging signal, so this screen demotes it to the corner and heroes the thing you actually control today: your calorie budget against pace, drawn as an amber ring over a night-navy field, with the 14-day deficit history bleeding off the bottom edge.',
+ why:['Behavioral: you can’t act on 154.5 — you can act on 746 kcal. The screen points at the lever.','Ring + full-bleed history makes day-to-day consistency visible at a glance.','Navy/amber fits when weigh-ins actually happen: early morning and late evening.'],
+ ix:['Tap the ring to swap heroes: budget ↔ weight (for the days you want the classic).','Swipe the history strip sideways to scroll back through weeks.','Miss a day and the ring doesn’t scold — it quietly re-budgets tomorrow.'],
+ data:'SHOWN — today’s kcal vs target, pace note, 14-day deficit area. HIDDEN — totals, projections, goal math.',
+ palette:['#0b1120','#f5a623','#aeb9cf'],
+ screen:
+  sbar(true)
+  +'<div style="position:absolute;top:90px;left:26px;font-family:var(--mono);font-size:12px;letter-spacing:1.5px;color:#5c6b86">154.5 LB</div>'
+  +'<div style="position:absolute;top:90px;right:26px;font-family:var(--mono);font-size:12px;letter-spacing:1.5px;color:#5c6b86">DAY 84</div>'
+  +'<div style="position:absolute;top:122px;left:0;right:0;display:flex;justify-content:center"><div style="position:relative;width:240px;height:240px">'
+  +ring(240,9,.99,'#f5a623','#1b2740')
+  +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
+  +'<div style="font-size:78px;font-weight:700;color:#f7f9ff;letter-spacing:-2px;line-height:1">746</div>'
+  +'<div style="font-family:var(--mono);font-size:10px;letter-spacing:2.4px;color:#8fa0bd;margin-top:10px">KCAL TODAY · TARGET 750</div></div></div></div>'
+  +'<div style="position:absolute;top:396px;left:0;right:0;text-align:center;font-size:14.5px;color:#aeb9cf">Pace for 150 lb by Aug 21 — <span style="color:#f5a623;font-weight:600">4 days early</span></div>'
+  +'<div style="position:absolute;bottom:172px;left:26px;font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:#5c6b86">DAILY DEFICIT · 14D</div>'
+  +'<div class="chart" data-p="deficit" style="position:absolute;left:0;right:0;bottom:0;height:170px"></div>'
+  +homeind(true)},
+
+{id:'v6',num:'06',name:'The Journey',tag:'63% of the way there',bg:'#171c47',
+ idea:'A full-bleed dawn gradient with a single vertical timeline from Day 1 to Aug 21. You are a glowing point on it, and the only numeral on screen is how far you have come — not how far is left.',
+ why:['Narrative framing: celebrates distance traveled instead of obsessing over what remains.','The gradient literally lightens toward the goal — the app has a horizon.','Almost nothing to read; it is a screen you feel rather than parse.'],
+ ix:['Drag along the timeline to revisit any day’s weight and note.','Tap the flag to edit date or target; the sky re-mixes around the new plan.','Tap “63%” to flip perspective to “37% to go” — half-full or half-empty, your pick.'],
+ data:'SHOWN — % complete, day markers, goal flag. HIDDEN — chart, kcal, projections (all in the timeline).',
+ palette:['#171c47','#b0517b','#f0a05a'],
+ screen:
+  '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#171c47 0%,#4a3576 42%,#b0517b 72%,#f0a05a 100%)"></div>'
+  +sbar(true)
+  +'<div style="position:absolute;left:70px;top:150px;bottom:144px;width:1.5px;background:rgba(255,255,255,.4)"></div>'
+  +'<div style="position:absolute;left:66px;top:146px;width:9px;height:9px;border-radius:5px;background:rgba(255,255,255,.85)"></div>'
+  +'<div style="position:absolute;left:92px;top:140px;font-size:11px;letter-spacing:1.8px;color:rgba(255,255,255,.75);font-weight:600">DAY 1 · APR 27</div>'
+  +'<div style="position:absolute;left:61px;top:490px;width:19px;height:19px;border-radius:11px;background:#fff;box-shadow:0 0 20px rgba(255,255,255,.95)"></div>'
+  +'<div style="position:absolute;left:92px;top:480px;font-size:13px;letter-spacing:1.5px;color:#fff;font-weight:700">DAY 84 — YOU ARE HERE</div>'
+  +'<div style="position:absolute;left:92px;top:501px;font-size:12px;color:rgba(255,255,255,.85)">154.5 lb · −1.4 this week</div>'
+  +'<div style="position:absolute;left:66px;top:695px;width:9px;height:9px;border-radius:5px;background:#ffd9a0"></div>'
+  +'<div style="position:absolute;left:92px;top:689px;font-size:11px;letter-spacing:1.8px;color:#ffd9a0;font-weight:600">AUG 21 · 150 LB — THE FLAG</div>'
+  +'<div style="position:absolute;right:28px;top:322px;text-align:right">'
+  +'<div style="font-size:118px;font-weight:800;color:rgba(255,255,255,.93);letter-spacing:-4px;line-height:1">63<span style="font-size:52px">%</span></div>'
+  +'<div style="font-size:14px;color:rgba(255,255,255,.82);margin-top:8px">of the way there</div></div>'
+  +'<div style="position:absolute;bottom:58px;left:0;right:0;text-align:center;font-size:13px;color:rgba(255,255,255,.85)">33 mornings left</div>'
+  +'<div style="position:absolute;bottom:34px;left:0;right:0;text-align:center;font-size:9.5px;letter-spacing:1.6px;color:rgba(255,255,255,.55);font-weight:600">DRAG THE LINE TO REVISIT ANY DAY</div>'
+  +homeind(true)},
+
+{id:'v7',num:'07',name:'The Coach',tag:'Open to a conversation',bg:'#f6f4ff',
+ idea:'The first screen is one message from your coach about today, with quick replies and a hold-to-talk button. Stats shrink to a single glance line — everything else is a question away.',
+ why:['Sells the app’s voice: it notices (“four days ahead”) before you ask anything.','Conversation is the ultimate progressive disclosure — any depth is one question down.','Pairs naturally with the existing mic; logging becomes talking, not typing.'],
+ ix:['Tap a chip (“Today’s targets”) to continue the thread; history scrolls up.','Touch the glance line and it expands into the classic stat sheet.','The message is generated from your data every morning — never a generic greeting.'],
+ data:'SHOWN — one insight, glance line, mic. HIDDEN — everything, one question away.',
+ palette:['#f6f4ff','#6d4aff','#221c47'],
+ screen:
+  sbar(false)
+  +'<div style="position:absolute;top:92px;left:26px;font-size:11px;letter-spacing:1.8px;color:#a8a3c4;font-weight:600">COACH · DAY 84</div>'
+  +'<div style="position:absolute;top:126px;left:22px;right:64px;background:#ece7ff;border-radius:20px;border-bottom-left-radius:6px;padding:18px 20px;font-size:17.5px;line-height:1.5;color:#221c47">Four days ahead of schedule. Keep protein high today and the trend takes care of itself — want today’s targets?</div>'
+  +'<div style="position:absolute;top:284px;left:22px;display:flex;gap:8px;flex-wrap:wrap">'
+  +['Today’s targets','Why am I up?','Log food by voice'].map(function(c){return '<span style="border:1.5px solid #6d4aff;color:#6d4aff;border-radius:999px;padding:8px 15px;font-size:13px;font-weight:600">'+c+'</span>'}).join('')+'</div>'
+  +'<div style="position:absolute;top:520px;left:0;right:0;text-align:center">'
+  +'<div style="font-size:13.5px;color:#7d78a0">154.5 lb · −1.4 lb this week · 33 days left</div>'
+  +'<div style="font-size:10px;letter-spacing:1.6px;color:#b9b4d6;font-weight:600;margin-top:8px">TAP TO EXPAND</div></div>'
+  +'<div style="position:absolute;bottom:76px;left:50%;transform:translateX(-50%);text-align:center">'
+  +'<div style="width:68px;height:68px;border-radius:34px;background:#6d4aff;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px rgba(109,74,255,.4)">'+micSvg(26,'#fff')+'</div>'
+  +'<div style="font-size:10.5px;letter-spacing:1.4px;color:#a8a3c4;font-weight:600;margin-top:10px">HOLD TO TALK</div></div>'
+  +homeind(false)},
+
+{id:'v8',num:'08',name:'Horizon',tag:'Your cut, as a landscape',bg:'#0a1c38',
+ idea:'An ambient sunrise: the sky lightens as you progress, the sun sits at your percent-complete, and the terrain beneath it is your actual weight curve — with a flag planted at 150. Glanceable art that repaints itself every morning.',
+ why:['Zero reading required — the sun’s position is the progress bar.','The terrain is the real data silhouette: beautiful, and it cannot lie.','Makes the daily open a moment instead of a chore; people will screenshot this.'],
+ ix:['Tap the sun to reveal exact numbers in a thin overlay; tap anywhere to dismiss.','Drag across the ridge to walk back through any day.','The sky’s palette shifts with the actual time of your weigh-in.'],
+ data:'SHOWN — sun position (%), terrain (curve), goal flag. HIDDEN — every numeral (one tap).',
+ palette:['#0a1c38','#e8784a','#f7c46a'],
+ screen:
+  '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#0a1c38 0%,#1d3f6e 34%,#7a4a63 55%,#e8784a 74%,#f7c46a 100%)"></div>'
+  +'<div style="position:absolute;left:calc(63% - 43px);top:36%;width:86px;height:86px;border-radius:50%;background:radial-gradient(circle,#fff8e8 0%,#ffe9b0 34%,rgba(255,200,110,.55) 60%,rgba(255,190,100,0) 78%)"></div>'
+  +sbar(true)
+  +'<div style="position:absolute;top:94px;left:0;right:0;text-align:center">'
+  +'<div style="font-size:46px;font-weight:700;color:#fff;letter-spacing:-1px">154.5</div>'
+  +'<div style="font-size:14px;color:rgba(255,255,255,.88);margin-top:4px">33 sunrises to the flag</div></div>'
+  +'<div class="chart" data-p="terrain" style="position:absolute;left:0;right:0;bottom:0;height:320px"></div>'
+  +'<div style="position:absolute;bottom:34px;left:0;right:0;text-align:center;font-size:9.5px;letter-spacing:1.6px;color:rgba(255,255,255,.6);font-weight:600">TAP THE SUN FOR NUMBERS · DRAG THE RIDGE FOR ANY DAY</div>'
+  +homeind(true)},
+
+{id:'v9',num:'09',name:'This Week',tag:'Nothing exists beyond Sunday',
+ idea:'Radical time-boxing: the screen shows only the last seven days as full-bleed bars and the week’s delta as the hero. No goal date, no projection, no 52,685 — just the week you can still influence.',
+ why:['Kills goal-anxiety: Aug 21 is invisible until you deliberately choose the Progress tab.','The weekly delta (−1.4) is the most honest single number in a cut — noise-cancelling by design.','Full-bleed bars make daily weigh-ins read as steps, not scatter.'],
+ ix:['Swipe right to walk back week by week; the hero number re-computes per week.','Tap any bar for that day’s note and weigh-in time.','Pull down to peek at the goal — it snaps back out of sight when released.'],
+ data:'SHOWN — 7 daily bars, week delta, today’s weight. HIDDEN — goal, pace, totals, projections.',
+ palette:['#ffffff','#1f6bff','#e8edf6'],
+ screen:
+  sbar(false)
+  +'<div style="position:absolute;top:94px;left:0;right:0;text-align:center;font-size:11px;letter-spacing:1.8px;color:#a0a0a0;font-weight:600">WEEK 12 OF 17 · DAY 84</div>'
+  +'<div style="position:absolute;top:130px;left:0;right:0;text-align:center">'
+  +'<div style="font-size:102px;font-weight:800;color:#1f6bff;letter-spacing:-4px;line-height:1">−1.4</div>'
+  +'<div style="font-size:16px;color:#8a8a8a;margin-top:6px">lb this week</div>'
+  +'<div style="font-size:13px;color:#b5b5b5;margin-top:10px">154.5 lb this morning</div></div>'
+  +'<div class="chart" data-p="bars" style="position:absolute;left:0;right:0;bottom:34px;height:330px"></div>'
+  +homeind(false)},
+
+{id:'v10',num:'10',name:'The Instrument',tag:'Brutalist telemetry',
+ idea:'A lab instrument: monospace tabular numbers, 2px rules, red ink, and a raw unsmoothed step-chart bleeding off the bottom. No rounding to friendly, no smoothing to pretty — the sheet shows exactly what the sensor said.',
+ why:['Trust through honesty: raw dots and 154.500 signal that nothing is being hidden or flattered.','A distinctive anti-design look that reads instantly in bright gym sunlight.','Dense but perfectly flat — everything on one sheet, zero cards, zero nesting.'],
+ ix:['Tap any row to expand its full history full-screen.','Toggle RAW / TREND to switch the chart between raw dots and the smoothed line.','Triple-tap exports the day as CSV. Obviously.'],
+ data:'SHOWN — everything, but raw and flat. HIDDEN — nothing; density is the point.',
+ palette:['#ffffff','#111111','#e5231b'],
+ screen:
+  sbar(false)
+  +'<div style="position:absolute;top:64px;left:0;right:0;border-top:2px solid #111;border-bottom:2px solid #111;padding:9px 22px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1px"><span>CUT-TRACKER</span><span>DAY 084</span><span>UNIT LB</span></div>'
+  +'<div style="position:absolute;top:112px;left:22px;right:22px">'
+  +'<div style="font-family:var(--mono);font-size:74px;font-weight:700;letter-spacing:-2px;color:#111">154.500</div>'
+  +'<div style="font-family:var(--mono);font-size:14px;color:#e5231b;font-weight:700;margin-top:4px">▼ 1.4 / WK · AVG-7 155.9</div>'
+  +'<div style="margin-top:24px">'
+  +[['RATE-14D','746 KCAL·D⁻¹'],['Σ-DEFICIT','52,685 KCAL'],['PROJ-30D','148.8 (148.6–149.0)'],['T-MINUS','33 D → AUG 21'],['GOAL','150.0']].map(function(r){
+    return '<div style="display:flex;justify-content:space-between;padding:9px 2px;border-bottom:1px solid #111;font-family:var(--mono);font-size:13.5px"><span style="color:#777">'+r[0]+'</span><span style="font-weight:700">'+r[1]+'</span></div>'}).join('')
+  +'</div></div>'
+  +'<div class="chart" data-p="raw" style="position:absolute;left:0;right:0;bottom:0;height:172px"></div>'
+  +'<div style="position:absolute;bottom:14px;right:12px;font-family:var(--mono);font-size:9px;letter-spacing:1px;color:#b0b0b0">RAW · UNSMOOTHED</div>'
+  +homeind(false)}
+];
+
+/* ================= chart painters ================= */
+const PAINTERS={
+ spark:function(el){el.innerHTML=chartSVG(390,130,{stroke:'#22c55e',strokeW:2.5,fill:'rgba(34,197,94,.13)',proj:true,projColor:'rgba(34,197,94,.45)',projW:1.8,end:true,endColor:'#22c55e'})},
+ full:function(el){el.innerHTML=chartSVG(390,844,{min:148,max:165,stroke:'#111',strokeW:3,dots:'#d3d3d3',proj:true,projColor:'#a3a3a3',grid:true,gridColor:'rgba(0,0,0,.055)',gridLabels:true,goal:true,goalLabel:'GOAL 150 · AUG 21',today:true,end:true})},
+ strip:function(el){el.innerHTML=chartSVG(390,150,{stroke:'#35ff7a',strokeW:2,fill:'rgba(53,255,122,.10)',proj:true,projColor:'rgba(53,255,122,.35)',projW:1.5})},
+ raw:function(el){el.innerHTML=chartSVG(390,172,{stroke:'#e5231b',strokeW:1.6,smooth:false,dots:'#e5231b',dotR:1.5,proj:true,projColor:'rgba(229,35,27,.45)',projW:1.2,grid:true,gridColor:'rgba(0,0,0,.10)',gridLabels:true,gridLabelColor:'#aaa'})},
+ deficit:function(el){el.innerHTML=deficitSVG(390,170)},
+ terrain:function(el){el.innerHTML=terrainSVG(390,320)},
+ bars:function(el){el.innerHTML=barsSVG(390,330)}
+};
+
+/* ================= assembly ================= */
+function phone(inner,extraStyle){
+  return '<div class="phonewrap" style="width:'+Math.round(412*0.64)+'px;height:'+Math.round(866*0.64)+'px">'
+   +'<div class="phone" style="transform:scale(0.64)"><div class="screen" style="'+(extraStyle||'')+'">'+inner
+   +'<div class="island"></div></div>'
+   +'<div class="pbtn pbtn-mute"></div><div class="pbtn pbtn-v1"></div><div class="pbtn pbtn-v2"></div><div class="pbtn pbtn-pwr"></div>'
+   +'</div></div>';
+}
+function pageHTML(c){
+  var acc=c.palette[1];
+  return '<section class="page concept">'
+   +'<div class="pleft"><div class="figcap">FIG. '+c.num+'</div>'+phone(c.screen,'background:'+(c.bg||'#fff'))+'<div class="figcap">'+c.name.toUpperCase()+'</div></div>'
+   +'<div class="pright"><div class="cnum">'+c.num+' / 10</div>'
+   +'<h1>'+c.name+'</h1><div class="ubar" style="background:'+acc+'"></div>'
+   +'<div class="tag">'+c.tag+'</div>'
+   +'<h3>THE IDEA</h3><p>'+c.idea+'</p>'
+   +'<h3>WHY IT’S INTERESTING</h3><ul>'+c.why.map(function(w){return '<li>'+w+'</li>'}).join('')+'</ul>'
+   +'<h3>PROGRESSIVE DISCLOSURE &amp; INTERACTIONS</h3><ul>'+c.ix.map(function(w){return '<li>'+w+'</li>'}).join('')+'</ul>'
+   +'<div class="dataline" style="border-color:'+acc+'">'+c.data+'</div>'
+   +'<div class="palette">'+c.palette.map(function(p){return '<span class="sw" style="background:'+p+'"></span><span class="hex">'+p+'</span>'}).join('')+'</div>'
+   +'<div class="pfoot"><span>CUT TRACKER — FIRST-SCREEN DOSSIER</span><span>JUL 19, 2026 · DAY 84 DATA</span></div>'
+   +'</div></section>';
+}
+const BASELINE=phone('<img src="s.png" style="width:100%;height:100%;object-fit:cover;display:block">','background:#000');
+const COVER='<section class="page cover"><div class="cleft">'
+ +'<div class="kicker">CUT TRACKER · DESIGN DOSSIER · JUL 19, 2026</div>'
+ +'<h1>Ten First<br>Screens</h1>'
+ +'<p class="lede">Ten radically different answers to the same question: what greets you when the app opens on Day 84? Every concept runs on the live numbers from today — 154.5 lb, 33 days to goal, 746 kcal/day pace — and every chart is full-bleed. No cards anywhere.</p>'
+ +'<div class="principles"><span>PROGRESSIVE DISCLOSURE OVER DASHBOARDS</span><span>FULL-BLEED CHARTS — NO CARDS</span><span>ONE HERO PER SCREEN</span></div>'
+ +'<div class="clist">'+CONCEPTS.map(function(c){return '<div class="ci"><span class="cn">'+c.num+'</span><span><span class="ct">'+c.name+'</span> <span class="cs">— '+c.tag+'</span></span></div>'}).join('')+'</div>'
+ +'<div class="coverfoot">BASELINE SCREEN SHOWN AT RIGHT FOR REFERENCE · ALL MOCKUPS AT 390×844</div>'
+ +'</div><div class="cright"><div class="figcap">FIG. 00</div>'+BASELINE+'<div class="figcap">THE BASELINE — WHAT SHIPS TODAY</div></div></section>';
+
+document.getElementById('app').innerHTML=COVER+CONCEPTS.map(pageHTML).join('');
+document.querySelectorAll('[data-p]').forEach(function(el){PAINTERS[el.dataset.p](el)});
+</script>
+</body>
+</html>
