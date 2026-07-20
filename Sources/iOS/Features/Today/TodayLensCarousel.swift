@@ -110,6 +110,10 @@ struct TodayLensCarousel: View {
 
     @Binding var selection: TodayLens
 
+    /// Per-lens daily photo backdrop. Observed here so each page can pull its own
+    /// deterministic photo (and so enabling/adding photos re-renders the pages).
+    @ObservedObject private var photoStore = DailyPhotoStore.shared
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let heroDate: DateFormatter = {
@@ -125,6 +129,7 @@ struct TodayLensCarousel: View {
             ForEach(lenses) { lens in
                 TodayLensPage(
                     rendered: builder.render(lens),
+                    photo: photoStore.dailyImage(for: lens),
                     hasEntryToday: hasEntryToday,
                     pageIndicator: AnyView(pageIndicator),
                     currentWeightHero: lens == .currentWeight ? currentWeightHero : nil,
@@ -202,6 +207,8 @@ struct TodayLensCarousel: View {
 
 private struct TodayLensPage: View {
     let rendered: RenderedLens
+    /// The day's per-lens photo backdrop, or nil for the accent-gradient mode.
+    var photo: UIImage? = nil
     let hasEntryToday: Bool
     let pageIndicator: AnyView
     var currentWeightHero: CurrentWeightHero? = nil
@@ -222,10 +229,13 @@ private struct TodayLensPage: View {
     }
 
     var body: some View {
-        // The page is transparent: the ONE continuous canvas background lives at
-        // the screen level (behind the nav bar too) and stays spatially stable
-        // while pages slide, so the hero, chart, dots, and de-carded metrics all
-        // sit over the same gradient with no seam.
+        // The lens page is one composite: the hero, page dots, and de-carded
+        // metrics are laid out in a VStack, and the ONE decorative-masked canvas
+        // (system background → masked photo/accent → chart marks) is drawn behind
+        // them, spanning the whole page. The empty middle slot reserves the chart
+        // region and reports its rect via an anchor preference, so the canvas
+        // draws the marks — and reveals the decorative layer below the curve — in
+        // exactly the measured plot rect.
         VStack(spacing: 0) {
             hero
                 .padding(.horizontal, 22)
@@ -235,31 +245,87 @@ private struct TodayLensPage: View {
                 .padding(.top, 12)
                 .padding(.bottom, 2)
 
-            LensPlot(
-                spec: rendered.plot,
-                scrubPoints: rendered.scrub?.points ?? [],
-                scrubCallouts: rendered.scrub?.callouts ?? [],
-                scrubIndex: $scrubIndex,
-                onScrubbingChanged: { active in
-                    isScrubbing?.wrappedValue = active
-                }
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-            // A short tap still opens the detail chart; only a deliberate hold
-            // starts a scrub.
-            .onTapGesture { onOpenDetail() }
-            // Light selection tick on each point change only — never continuous.
-            .sensoryFeedback(.selection, trigger: scrubIndex)
+            chartSlot
 
             metricsRow
                 .padding(.horizontal, 22)
                 .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .backgroundPreferenceValue(PlotRectKey.self) { anchor in
+            GeometryReader { proxy in
+                LensBackdrop(
+                    spec: rendered.plot,
+                    photo: photo,
+                    accent: rendered.lens.accent,
+                    decorativeColors: rendered.lens.decorativeColors,
+                    plotRect: anchor.map { proxy[$0] } ?? .zero,
+                    scrubIndex: scrubIndex,
+                    scrubPoints: rendered.scrub?.points ?? [],
+                    scrubCallouts: rendered.scrub?.callouts ?? []
+                )
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(rendered.accessibilitySummary)
         .accessibilityHint("Swipe left or right for another perspective. Double tap the chart to open the detailed view.")
+    }
+
+    /// The transparent chart region. It reserves the flexible middle space, owns
+    /// the tap-to-open-detail and hold-to-scrub gestures, and reports its bounds
+    /// (via the anchor preference) so `LensBackdrop` draws the chart there.
+    private var chartSlot: some View {
+        GeometryReader { g in
+            Color.clear
+                .contentShape(Rectangle())
+                // A short tap still opens the detail chart; only a deliberate
+                // hold starts a scrub.
+                .onTapGesture { onOpenDetail() }
+                .highPriorityGesture(scrubGesture(size: g.size))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .anchorPreference(key: PlotRectKey.self, value: .bounds) { $0 }
+        // Light selection tick on each point change only — never continuous.
+        .sensoryFeedback(.selection, trigger: scrubIndex)
+    }
+
+    // MARK: Scrub gesture + hit testing
+    //
+    // Sequencing a long press before a zero-distance drag keeps the finger
+    // stationary during recognition (so the pager never starts paging); once the
+    // press succeeds this high-priority gesture owns every horizontal move.
+
+    private func scrubGesture(size: CGSize) -> some Gesture {
+        LongPressGesture(minimumDuration: 0.28, maximumDistance: 12)
+            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local))
+            .onChanged { value in
+                guard case .second(true, let drag) = value else { return }
+                isScrubbing?.wrappedValue = true
+                guard let drag else { return }
+                let index = nearestScrubIndex(toX: drag.location.x, size: size)
+                if index != scrubIndex { scrubIndex = index }
+            }
+            .onEnded { _ in
+                scrubIndex = nil
+                isScrubbing?.wrappedValue = false
+            }
+    }
+
+    /// Nearest primary-series point to the finger's x, using the same inner-rect
+    /// mapping `LensBackdrop` draws with (the slot's local origin matches the
+    /// canvas's x origin, so only x is needed).
+    private func nearestScrubIndex(toX x: CGFloat, size: CGSize) -> Int? {
+        let points = rendered.scrub?.points ?? []
+        guard !points.isEmpty else { return nil }
+        let inner = lensChartInner(CGRect(origin: .zero, size: size))
+        let map = LensPlotMap(x: rendered.plot.xDomain, y: rendered.plot.yDomain, rect: inner)
+        var best = 0
+        var bestDistance = CGFloat.greatestFiniteMagnitude
+        for (i, p) in points.enumerated() {
+            let d = abs(map.px(p.date) - x)
+            if d < bestDistance { bestDistance = d; best = i }
+        }
+        return best
     }
 
     // Hero: one large centered number + unit, then a single clarifier line. No
@@ -368,6 +434,20 @@ private struct TodayLensPage: View {
     }
 }
 
+// MARK: - Chart-slot geometry
+
+/// Carries the chart slot's bounds up to the page background so `LensBackdrop`
+/// can draw its marks — and the decorative curve modulation — in exactly the
+/// rect the layout gave the chart. An anchor resolves synchronously during
+/// layout, so it works under `ImageRenderer` (snapshots) without a state
+/// round-trip.
+private struct PlotRectKey: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = value ?? nextValue()
+    }
+}
+
 // MARK: - Previews
 
 #if DEBUG
@@ -447,30 +527,31 @@ enum LensPreviewFixture {
 /// artifacts match what previews show.
 @MainActor
 func makeLensSnapshotView(_ lens: TodayLens, unit: WeightUnit) -> some View {
-    ZStack {
-        LensCanvasBackground(lens: lens)
-        TodayLensPage(
-            rendered: LensPreviewFixture.builder(unit).render(lens),
-            hasEntryToday: true,
-            pageIndicator: AnyView(EmptyView()),
-            onToggleUnit: {}, onLog: {}, onOpenDetail: {}
-        )
-    }
+    // The page draws its own decorative-masked backdrop over the system
+    // background; photo mode is off here so snapshots exercise the deterministic
+    // accent-gradient path.
+    TodayLensPage(
+        rendered: LensPreviewFixture.builder(unit).render(lens),
+        photo: nil,
+        hasEntryToday: true,
+        pageIndicator: AnyView(EmptyView()),
+        onToggleUnit: {}, onLog: {}, onOpenDetail: {}
+    )
     .frame(width: 393, height: 640)
+    .background(Color(.systemBackground))
 }
 
 @MainActor
 private func lensPreview(_ lens: TodayLens, _ unit: WeightUnit) -> some View {
-    ZStack {
-        LensCanvasBackground(lens: lens)
-        TodayLensPage(
-            rendered: LensPreviewFixture.builder(unit).render(lens),
-            hasEntryToday: true,
-            pageIndicator: AnyView(EmptyView()),
-            onToggleUnit: {}, onLog: {}, onOpenDetail: {}
-        )
-    }
+    TodayLensPage(
+        rendered: LensPreviewFixture.builder(unit).render(lens),
+        photo: nil,
+        hasEntryToday: true,
+        pageIndicator: AnyView(EmptyView()),
+        onToggleUnit: {}, onLog: {}, onOpenDetail: {}
+    )
     .frame(height: 560)
+    .background(Color(.systemBackground))
 }
 
 #Preview("1 · Current Weight · lb") { lensPreview(.currentWeight, .lbs) }

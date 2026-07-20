@@ -138,13 +138,14 @@ struct TodayLensBuilder {
         let trendInDomain = dp(chart.trailing7.filter { $0.date >= xLower && $0.date <= xUpper })
 
         var spec = LensPlotSpec(xDomain: xDomain, yDomain: yDomain)
-        spec.fills = [.init(points: rawInDomain, baseline: .plotBottom, color: fillColor, topOpacity: 0.20)]
         // Observed data only — one dominant white line with a trailing trend as
-        // the quiet secondary. Projection lives in the Forecast lens.
+        // the quiet secondary. Projection lives in the Forecast lens. The
+        // decorative background is revealed below this raw line.
         spec.series = [
             .init(points: trendInDomain, color: trendColor, lineWidth: 1.6, smooth: true),
             .init(points: rawInDomain, color: lineColor, lineWidth: 2.6, smooth: true, haloColor: lineHalo),
         ]
+        spec.maskBoundary = rawInDomain
         spec.markerSets = [.init(points: rawInDomain, color: markerColor, radius: 2)]
         if let last = rawInDomain.last {
             spec.endpoint = .init(point: last, color: endpointColor, radius: 5, haloColor: accent)
@@ -208,12 +209,12 @@ struct TodayLensBuilder {
         let yDomain = disp(lowerLb)...disp(upperLb)
 
         var spec = LensPlotSpec(xDomain: xDomain, yDomain: yDomain)
-        spec.fills = [.init(points: cumD, baseline: .value(0), color: fillColor, topOpacity: 0.20)]
         spec.references = [
             .init(kind: .horizontal(0), color: gridColor, dash: [2, 4]),
             .init(kind: .horizontal(disp(goalLossLb)), color: gridColor, dash: [2, 5], label: "Goal", labelColor: labelColor),
         ]
         spec.series = [.init(points: cumD, color: lineColor, lineWidth: 2.6, smooth: true, haloColor: lineHalo)]
+        spec.maskBoundary = cumD
         spec.markerSets = [.init(points: cumD, color: markerColor, radius: 1.8)]
         if let last = cumD.last {
             spec.endpoint = .init(point: last, color: endpointColor, radius: 5, haloColor: accent)
@@ -260,8 +261,8 @@ struct TodayLensBuilder {
         var spec = LensPlotSpec(xDomain: xDomain, yDomain: yDomain)
         spec.references = [.init(kind: .horizontal(0), color: gridColor, dash: [2, 4], label: nil)]
         if pts.count >= 2 {
-            spec.fills = [.init(points: pts, baseline: .value(0), color: fillColor, topOpacity: 0.20)]
             spec.series = [.init(points: pts, color: lineColor, lineWidth: 2.6, smooth: true, haloColor: lineHalo)]
+            spec.maskBoundary = pts
         }
         spec.markerSets = [.init(points: pts, color: markerColor, radius: 2.6)]
         if let last = pts.last {
@@ -319,8 +320,8 @@ struct TodayLensBuilder {
         let yDomain = lo...max(lo + 1, hi)
 
         var spec = LensPlotSpec(xDomain: xDomain, yDomain: yDomain)
-        spec.fills = [.init(points: avgD, baseline: .plotBottom, color: fillColor, topOpacity: 0.18)]
         spec.series = [.init(points: avgD, color: lineColor, lineWidth: 2.6, smooth: true, haloColor: lineHalo)]
+        spec.maskBoundary = avgD
         // Completed weeks are filled dots; the current week-to-date point is the
         // distinct outlined endpoint.
         let completed = visible.filter { !$0.isWeekToDate }.map { DatedValue(date: $0.weekStart, value: $0.averageWeight) }
@@ -386,15 +387,12 @@ struct TodayLensBuilder {
         let requiredNowD = disp(pace.requiredNow)
 
         var spec = LensPlotSpec(xDomain: xDomain, yDomain: yDomain)
-        // The meaningful shaded region is the gap between actual and required.
-        if actualInDomain.count >= 2 {
-            spec.fills = [.init(points: actualInDomain, baseline: .value(requiredNowD), color: fillColor, topOpacity: 0.16)]
-        }
         spec.references = [
             .init(kind: .horizontal(0), color: gridColor, dash: [2, 4]),
             .init(kind: .horizontal(requiredNowD), color: gridColor, dash: [4, 3], label: "Required", labelColor: labelColor),
         ]
         spec.series = [.init(points: actualInDomain, color: lineColor, lineWidth: 2.6, smooth: true, haloColor: lineHalo)]
+        if actualInDomain.count >= 2 { spec.maskBoundary = actualInDomain }
         if let last = actualInDomain.last {
             spec.endpoint = .init(point: last, color: endpointColor, radius: 5, haloColor: accent)
         }
@@ -471,6 +469,10 @@ struct TodayLensBuilder {
         if typical.count >= 2 {
             spec.series.append(.init(points: dp(typical), color: lineColor, lineWidth: 2.4, dash: [5, 4], smooth: true, haloColor: lineHalo))
         }
+        // One continuous observed→projected boundary the decorative reveal
+        // follows, matching the drawn history + typical lines.
+        let boundary = dp(history) + dp(typical.filter { $0.date > anchor.date })
+        if boundary.count >= 2 { spec.maskBoundary = boundary }
         spec.references = [.init(kind: .horizontal(disp(chart.targetWeightLb)), color: gridColor, dash: [2, 5], label: "Target", labelColor: labelColor)]
         spec.endpoint = .init(point: DatedValue(date: anchor.date, value: disp(anchor.value)), color: endpointColor, radius: 5, haloColor: accent)
         spec.dateLabels = [
@@ -496,7 +498,7 @@ struct TodayLensBuilder {
 
         // Inspect observed history, then the typical projection — one continuous
         // left-to-right series across the anchor, deduped where they meet.
-        let combined = dp(history) + dp(typical.filter { $0.date > anchor.date })
+        let combined = boundary
         let targetDisplay = disp(chart.targetWeightLb)
         let scrub = scrubModel(
             points: combined,
@@ -534,7 +536,6 @@ struct TodayLensBuilder {
         let trendD = dp(chart.trailing7)
 
         var spec = LensPlotSpec(xDomain: xDomain, yDomain: yDomain)
-        spec.fills = [.init(points: rawD, baseline: .plotBottom, color: fillColor, topOpacity: 0.18)]
         spec.references = [
             .init(kind: .horizontal(disp(chart.targetWeightLb)), color: gridColor, dash: [2, 5], label: "Target", labelColor: labelColor)
         ]
@@ -542,6 +543,7 @@ struct TodayLensBuilder {
             .init(points: trendD, color: trendColor, lineWidth: 1.6, smooth: true),
             .init(points: rawD, color: lineColor, lineWidth: 2.6, smooth: true, haloColor: lineHalo),
         ]
+        spec.maskBoundary = rawD
         spec.markerSets = [.init(points: rawD, color: markerColor, radius: 1.6)]
         if let last = rawD.last {
             spec.endpoint = .init(point: last, color: endpointColor, radius: 5, haloColor: accent)
@@ -608,6 +610,7 @@ struct TodayLensBuilder {
             )
         }
         spec.series = [.init(points: avgD, color: lineColor, lineWidth: 2.6, smooth: true, haloColor: lineHalo)]
+        spec.maskBoundary = avgD
         spec.markerSets = [.init(points: avgD, color: .white.opacity(0.85), radius: 2.6)]
         if let last = avgD.last {
             spec.endpoint = .init(point: last, color: endpointColor, radius: 5, haloColor: accent)

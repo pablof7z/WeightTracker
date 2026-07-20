@@ -1,17 +1,14 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Plot spec
 
 /// A declarative description of one full-bleed Today lens chart. Every visible
-/// line and its area fill are generated from the *same* points with the *same*
-/// interpolation, so the fill boundary can never diverge from the line. Fills
-/// are gradients anchored to the whole plot rectangle — not to a mark's local
-/// data bounds — which is what keeps them atmospheric instead of a compressed
-/// slab of color.
+/// line is generated from the same points with the same interpolation as the
+/// decorative mask boundary, so the reveal edge can never diverge from the line.
 struct LensPlotSpec {
     var xDomain: ClosedRange<Date>
     var yDomain: ClosedRange<Double>
-    var fills: [Fill] = []
     var bands: [Band] = []
     var references: [Reference] = []
     var bars: [BarSet] = []
@@ -20,6 +17,14 @@ struct LensPlotSpec {
     var series: [Series] = []
     var endpoint: Endpoint?
     var dateLabels: [DateLabel] = []
+
+    /// The lens's primary line, expressed in exactly the same points/domain the
+    /// primary `Series` draws with. The decorative background is revealed below
+    /// this curve and capped above it. `nil` for lenses without a single
+    /// meaningful boundary (e.g. the weekly-loss bars) — those fall back to the
+    /// base vertical ramp with no curve modulation.
+    var maskBoundary: [DatedValue]? = nil
+    var maskBoundarySmooth: Bool = true
 
     struct Series: Identifiable {
         let id = UUID()
@@ -31,22 +36,8 @@ struct LensPlotSpec {
         var opacity: Double = 1
         /// Optional dark halo stroked underneath the line so a white primary
         /// series stays legible over both the pale top and the navy floor of
-        /// the atmospheric background.
+        /// the decorative background.
         var haloColor: Color? = nil
-    }
-
-    /// Area between a line and a baseline, filled with a plot-rect gradient.
-    struct Fill {
-        var points: [DatedValue]
-        var baseline: Baseline
-        var color: Color
-        var topOpacity: Double = 0.26
-        var smooth: Bool = true
-    }
-
-    enum Baseline: Equatable {
-        case value(Double)
-        case plotBottom
     }
 
     /// Area between two lines (forecast lower/upper). Zero-width at the anchor,
@@ -120,217 +111,231 @@ struct LensPlotSpec {
     }
 }
 
-// MARK: - The renderer
+// MARK: - Shared geometry (line ⇄ mask boundary)
 
-/// Full-bleed, edge-to-edge lens chart. No card, no rounded container, no
-/// left y-axis gutter. A small internal inset keeps line caps and markers from
-/// clipping while the canvas itself still reads to the screen edges.
-struct LensPlot: View {
+/// The data→plot coordinate mapping. One instance is shared by the decorative
+/// mask boundary, the chart stroke, and the scrub hit-test so all three place
+/// points identically.
+struct LensPlotMap {
+    let x: ClosedRange<Date>
+    let y: ClosedRange<Double>
+    let rect: CGRect
+
+    func point(_ dv: DatedValue) -> CGPoint { CGPoint(x: px(dv.date), y: py(dv.value)) }
+    func px(_ date: Date) -> CGFloat {
+        let span = x.upperBound.timeIntervalSince(x.lowerBound)
+        guard span > 0 else { return rect.minX }
+        let t = date.timeIntervalSince(x.lowerBound) / span
+        return rect.minX + CGFloat(t) * rect.width
+    }
+    func py(_ value: Double) -> CGFloat {
+        let span = y.upperBound - y.lowerBound
+        guard span > 0 else { return rect.midY }
+        let t = (value - y.lowerBound) / span
+        return rect.maxY - CGFloat(t) * rect.height
+    }
+}
+
+/// Internal data insets (points), matching the historical `LensPlot` values so
+/// the chart still reaches the edges. Leading is 0 (the line reaches the very
+/// left edge); the right keeps a hair of room for the endpoint ring; top/bottom
+/// are tight so the curve fills the plot rather than floating.
+enum LensPlotInsets {
+    static let leading: CGFloat = 0
+    static let trailing: CGFloat = 7
+    static let top: CGFloat = 8
+    static let bottom: CGFloat = 14
+}
+
+/// The actual plot drawing rect: the measured chart slot inset by the data
+/// insets. Shared by the backdrop renderer and the scrub hit-test.
+func lensChartInner(_ slot: CGRect) -> CGRect {
+    CGRect(
+        x: slot.minX + LensPlotInsets.leading,
+        y: slot.minY + LensPlotInsets.top,
+        width: max(1, slot.width - LensPlotInsets.leading - LensPlotInsets.trailing),
+        height: max(1, slot.height - LensPlotInsets.top - LensPlotInsets.bottom)
+    )
+}
+
+/// One generator for every line and every mask boundary. Catmull-Rom when
+/// smoothing, straight segments otherwise. Because the mask re-invokes this with
+/// the identical points, the boundary geometry is guaranteed to match the line.
+func lensLinePath(_ points: [CGPoint], smooth: Bool) -> Path {
+    var path = Path()
+    guard let first = points.first else { return path }
+    path.move(to: first)
+    lensAppendSegments(to: &path, points: points, smooth: smooth)
+    return path
+}
+
+/// Appends the segments for `points` to `path`, continuing from its current
+/// point (no `move`). Catmull-Rom when smoothing, straight otherwise.
+func lensAppendSegments(to path: inout Path, points: [CGPoint], smooth: Bool) {
+    guard points.count > 1 else { return }
+    if !smooth {
+        for p in points.dropFirst() { path.addLine(to: p) }
+        return
+    }
+    for i in 0..<(points.count - 1) {
+        let p0 = points[max(0, i - 1)]
+        let p1 = points[i]
+        let p2 = points[i + 1]
+        let p3 = points[min(points.count - 1, i + 2)]
+        let c1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6.0, y: p1.y + (p2.y - p0.y) / 6.0)
+        let c2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6.0, y: p2.y - (p3.y - p1.y) / 6.0)
+        path.addCurve(to: p2, control1: c1, control2: c2)
+    }
+}
+
+// MARK: - The unified backdrop + chart renderer
+
+/// One `Canvas` spanning the whole lens page. It draws, in order:
+///   1. the semantic system background (opaque base),
+///   2. a decorative layer (the day's photo, or an accent gradient) revealed
+///      ONLY through an alpha mask — a page-height vertical ramp, capped to a
+///      faint flat value above the plotted curve and left at the strong ramp
+///      value below it,
+///   3. the chart marks (references, bars, whiskers, markers, the primary line,
+///      endpoint, labels, scrub) unmasked, over the reveal boundary.
+///
+/// The mask boundary and the visible line come from the same `spec.maskBoundary`
+/// points, `LensPlotMap`, and `lensLinePath` interpolation, so they cannot
+/// diverge. No image-dependent blend modes, no hardcoded white/black overlays,
+/// no parent-view opacity, no opaque card — the composite is deterministic and
+/// dark-mode-safe because the base is `Color(.systemBackground)`.
+struct LensBackdrop: View {
     let spec: LensPlotSpec
-    /// Reduce Motion swaps the draw-on animation for a plain crossfade. The
-    /// value flows in from the environment at the call site.
-    var animateProgress: Double = 1
-
-    // MARK: Scrubbing (point inspection)
-    //
-    // The primary inspectable series for this lens, already in the plot's
-    // display unit and domain, plus a parallel callout string per point. The
-    // plot owns hit-testing because it owns the data↔plot coordinate mapping;
-    // the hovered index is published upward so the hero can morph.
+    var photo: UIImage? = nil
+    var accent: Color
+    var decorativeColors: [Color]
+    /// The chart slot rect in this view's own coordinate space (resolved from
+    /// the page via an anchor preference). `.zero`/empty until first layout, in
+    /// which case the curve modulation and chart marks are skipped and only the
+    /// base ramp shows — never a blank frame.
+    var plotRect: CGRect = .zero
+    var scrubIndex: Int? = nil
     var scrubPoints: [DatedValue] = []
     var scrubCallouts: [String] = []
-    @Binding var scrubIndex: Int?
-    /// Fires when a hold-then-drag begins/ends so the carousel can suppress
-    /// paging for the duration of the scrub.
-    var onScrubbingChanged: (Bool) -> Void = { _ in }
-
-    // Internal data insets (points). Leading is 0 so the line/fill reach the
-    // very left edge (the round cap's clipped half is imperceptible); the right
-    // keeps a hair of room for the endpoint ring, and top/bottom are tight so
-    // the curve fills the canvas rather than floating in dead space.
-    private let insetLeading: CGFloat = 0
-    private let insetTrailing: CGFloat = 7
-    private let insetTop: CGFloat = 8
-    private let insetBottom: CGFloat = 14
 
     var body: some View {
-        GeometryReader { geo in
-            Canvas(opaque: false, rendersAsynchronously: false) { ctx, size in
-                let plot = plotRect(for: size)
-                let map = PlotMap(x: spec.xDomain, y: spec.yDomain, rect: plot)
+        Canvas(opaque: false, rendersAsynchronously: false) { ctx, size in
+            let full = CGRect(origin: .zero, size: size)
 
-                drawFills(ctx, map: map, plot: plot)
-                drawBands(ctx, map: map)
-                drawBars(ctx, map: map, plot: plot)
-                drawReferences(ctx, map: map, plot: plot)
-                drawWhiskers(ctx, map: map)
-                drawMarkers(ctx, map: map)
-                drawSeries(ctx, map: map)
-                drawEndpoint(ctx, map: map)
-                drawDateLabels(ctx, map: map, plot: plot)
-                drawScrub(ctx, map: map, plot: plot)
+            // 1. Semantic base. Everything above is revealed over THIS, so where
+            // the mask is 0 the viewer sees pure system background in both light
+            // and dark.
+            ctx.fill(Path(full), with: .color(Color(.systemBackground)))
+
+            let hasPlot = plotRect.width > 1 && plotRect.height > 1
+            let inner = hasPlot ? lensChartInner(plotRect) : .null
+            let map = LensPlotMap(x: spec.xDomain, y: spec.yDomain, rect: inner)
+
+            // 2. Decorative layer, drawn into its own layer and clipped by the
+            // composite alpha field so the base ctx (and the chart marks below)
+            // stay untouched by the mask.
+            ctx.drawLayer { deco in
+                deco.clipToLayer { mask in
+                    // Base vertical ramp over the whole page height.
+                    mask.fill(
+                        Path(full),
+                        with: .linearGradient(
+                            Gradient(stops: LensMask.rampStops),
+                            startPoint: CGPoint(x: full.midX, y: full.minY),
+                            endPoint: CGPoint(x: full.midX, y: full.maxY)
+                        )
+                    )
+                    // Curve modulation: above the plotted curve, override the ramp
+                    // with min(ramp, cap) — a true 10% ceiling that still fades to
+                    // nothing through the top, so the reveal is faint above the
+                    // curve with a hard edge at it and no seam against the system
+                    // background. Below the curve the strong ramp is left intact.
+                    if hasPlot,
+                       let boundary = spec.maskBoundary,
+                       boundary.count >= 2 {
+                        let pts = boundary.map(map.point)
+                        var above = lensLinePath(pts, smooth: spec.maskBoundarySmooth)
+                        above.addLine(to: CGPoint(x: pts.last!.x, y: inner.minY))
+                        above.addLine(to: CGPoint(x: pts.first!.x, y: inner.minY))
+                        above.closeSubpath()
+                        mask.blendMode = .copy
+                        mask.fill(
+                            above,
+                            with: .linearGradient(
+                                Gradient(stops: LensMask.cappedRampStops),
+                                startPoint: CGPoint(x: full.midX, y: full.minY),
+                                endPoint: CGPoint(x: full.midX, y: full.maxY)
+                            )
+                        )
+                        mask.blendMode = .normal
+                    }
+                }
+
+                // Decorative content, revealed by the mask alpha.
+                if let photo {
+                    let image = deco.resolve(Image(uiImage: photo))
+                    deco.draw(image, in: aspectFillRect(image.size, in: full))
+                    // Deterministic source-over accent tint — fixed opacity,
+                    // independent of the photo's luminance (no blend mode).
+                    deco.fill(Path(full), with: .color(accent.opacity(photoAccentTint)))
+                } else {
+                    deco.fill(
+                        Path(full),
+                        with: .linearGradient(
+                            Gradient(colors: decorativeColors),
+                            startPoint: CGPoint(x: full.midX, y: full.minY),
+                            endPoint: CGPoint(x: full.midX, y: full.maxY)
+                        )
+                    )
+                }
             }
-            .frame(width: geo.size.width, height: geo.size.height)
-            // The scrub must win the touch over the carousel's paging swipe.
-            // Sequencing a long press *before* a zero-distance drag means the
-            // finger is stationary during recognition (so the pager never
-            // starts), and once the press succeeds this high-priority gesture
-            // owns every subsequent horizontal movement.
-            .highPriorityGesture(scrubGesture(size: geo.size))
+
+            // 3. Chart marks, unmasked, over the reveal boundary.
+            guard hasPlot else { return }
+            drawBands(ctx, map: map)
+            drawBars(ctx, map: map, plot: inner)
+            drawReferences(ctx, map: map, plot: inner)
+            drawWhiskers(ctx, map: map)
+            drawMarkers(ctx, map: map)
+            drawSeries(ctx, map: map)
+            drawEndpoint(ctx, map: map)
+            drawDateLabels(ctx, map: map, plot: inner)
+            drawScrub(ctx, map: map, plot: inner)
         }
-        .accessibilityHidden(true) // The hero + supporting figures carry the data.
+        .accessibilityHidden(true)
     }
 
-    private func plotRect(for size: CGSize) -> CGRect {
-        CGRect(
-            x: insetLeading,
-            y: insetTop,
-            width: max(1, size.width - insetLeading - insetTrailing),
-            height: max(1, size.height - insetTop - insetBottom)
-        )
-    }
+    /// The lens accent's fixed photo tint opacity — a deterministic source-over
+    /// wash applied at a constant strength regardless of the photo's luminance.
+    private var photoAccentTint: Double { 0.60 }
 
-    // MARK: Scrub gesture + hit testing
-
-    private func scrubGesture(size: CGSize) -> some Gesture {
-        LongPressGesture(minimumDuration: 0.28, maximumDistance: 12)
-            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local))
-            .onChanged { value in
-                guard case .second(true, let drag) = value else { return }
-                onScrubbingChanged(true)
-                // `minimumDistance: 0` delivers the touch location immediately
-                // after the press succeeds, so the marker lands under the finger
-                // without waiting for movement.
-                guard let drag else { return }
-                let index = nearestIndex(toX: drag.location.x, size: size)
-                if index != scrubIndex { scrubIndex = index }
-            }
-            .onEnded { _ in
-                scrubIndex = nil
-                onScrubbingChanged(false)
-            }
-    }
-
-    /// Nearest point in the primary inspectable series to the finger's x, using
-    /// the same mapping the renderer draws with.
-    private func nearestIndex(toX x: CGFloat, size: CGSize) -> Int? {
-        guard !scrubPoints.isEmpty else { return nil }
-        let map = PlotMap(x: spec.xDomain, y: spec.yDomain, rect: plotRect(for: size))
-        var best = 0
-        var bestDistance = CGFloat.greatestFiniteMagnitude
-        for (i, p) in scrubPoints.enumerated() {
-            let d = abs(map.px(p.date) - x)
-            if d < bestDistance { bestDistance = d; best = i }
-        }
-        return best
-    }
-
-    // MARK: Coordinate mapping
-
-    private struct PlotMap {
-        let x: ClosedRange<Date>
-        let y: ClosedRange<Double>
-        let rect: CGRect
-
-        func point(_ dv: DatedValue) -> CGPoint {
-            CGPoint(x: px(dv.date), y: py(dv.value))
-        }
-        func px(_ date: Date) -> CGFloat {
-            let span = x.upperBound.timeIntervalSince(x.lowerBound)
-            guard span > 0 else { return rect.minX }
-            let t = date.timeIntervalSince(x.lowerBound) / span
-            return rect.minX + CGFloat(t) * rect.width
-        }
-        func py(_ value: Double) -> CGFloat {
-            let span = y.upperBound - y.lowerBound
-            guard span > 0 else { return rect.midY }
-            let t = (value - y.lowerBound) / span
-            return rect.maxY - CGFloat(t) * rect.height
-        }
-    }
-
-    // MARK: Path generation (shared by line and fill)
-
-    /// One generator for every line and every fill boundary. Catmull-Rom when
-    /// smoothing, straight segments otherwise. Because the fill re-invokes this
-    /// with the identical points, the boundary geometry is guaranteed to match.
-    private func linePath(_ points: [CGPoint], smooth: Bool) -> Path {
-        var path = Path()
-        guard let first = points.first else { return path }
-        path.move(to: first)
-        appendSegments(to: &path, points: points, smooth: smooth)
-        return path
-    }
-
-    /// Appends the segments for `points` to `path`, continuing from its current
-    /// point (no `move`). Used to trace a band's return boundary as one
-    /// continuous subpath. Catmull-Rom when smoothing, straight otherwise.
-    private func appendSegments(to path: inout Path, points: [CGPoint], smooth: Bool) {
-        guard points.count > 1 else { return }
-        if !smooth {
-            for p in points.dropFirst() { path.addLine(to: p) }
-            return
-        }
-        for i in 0..<(points.count - 1) {
-            let p0 = points[max(0, i - 1)]
-            let p1 = points[i]
-            let p2 = points[i + 1]
-            let p3 = points[min(points.count - 1, i + 2)]
-            let c1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6.0, y: p1.y + (p2.y - p0.y) / 6.0)
-            let c2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6.0, y: p2.y - (p3.y - p1.y) / 6.0)
-            path.addCurve(to: p2, control1: c1, control2: c2)
-        }
+    /// Aspect-fill `imageSize` into `rect`, centered — the Canvas equivalent of
+    /// `scaledToFill`. Any overflow is clipped by the mask/frame.
+    private func aspectFillRect(_ imageSize: CGSize, in rect: CGRect) -> CGRect {
+        guard imageSize.width > 0, imageSize.height > 0 else { return rect }
+        let scale = max(rect.width / imageSize.width, rect.height / imageSize.height)
+        let w = imageSize.width * scale
+        let h = imageSize.height * scale
+        return CGRect(x: rect.midX - w / 2, y: rect.midY - h / 2, width: w, height: h)
     }
 
     // MARK: Draw passes
 
-    private func drawFills(_ ctx: GraphicsContext, map: PlotMap, plot: CGRect) {
-        for fill in spec.fills {
-            let pts = fill.points.map(map.point)
-            guard pts.count >= 2 else { continue }
-            let baselineY: CGFloat
-            switch fill.baseline {
-            case .value(let v): baselineY = map.py(v)
-            case .plotBottom: baselineY = plot.maxY
-            }
-            var area = linePath(pts, smooth: fill.smooth)
-            area.addLine(to: CGPoint(x: pts.last!.x, y: baselineY))
-            area.addLine(to: CGPoint(x: pts.first!.x, y: baselineY))
-            area.closeSubpath()
-
-            // Gradient anchored to the FULL plot rectangle, strongest at the top
-            // and fading to transparent deeper in the plot — never compressed to
-            // the mark's own bounds.
-            let shading = GraphicsContext.Shading.linearGradient(
-                Gradient(colors: [
-                    fill.color.opacity(fill.topOpacity),
-                    fill.color.opacity(fill.topOpacity * 0.35),
-                    fill.color.opacity(0),
-                ]),
-                startPoint: CGPoint(x: plot.midX, y: plot.minY),
-                endPoint: CGPoint(x: plot.midX, y: plot.maxY)
-            )
-            ctx.fill(area, with: shading)
-        }
-    }
-
-    private func drawBands(_ ctx: GraphicsContext, map: PlotMap) {
+    private func drawBands(_ ctx: GraphicsContext, map: LensPlotMap) {
         for band in spec.bands {
             let upper = band.upper.map(map.point)
             let lower = band.lower.map(map.point)
             guard upper.count >= 2, lower.count >= 2 else { continue }
-            // One continuous polygon: forward along the upper boundary, down to
-            // the lower boundary's end, back along the lower boundary, close.
-            var path = linePath(upper, smooth: band.smooth)
+            var path = lensLinePath(upper, smooth: band.smooth)
             let reverseLower = Array(lower.reversed())
             path.addLine(to: reverseLower.first!)
-            appendSegments(to: &path, points: reverseLower, smooth: band.smooth)
+            lensAppendSegments(to: &path, points: reverseLower, smooth: band.smooth)
             path.closeSubpath()
             ctx.fill(path, with: .color(band.color.opacity(band.opacity)))
         }
     }
 
-    private func drawReferences(_ ctx: GraphicsContext, map: PlotMap, plot: CGRect) {
+    private func drawReferences(_ ctx: GraphicsContext, map: LensPlotMap, plot: CGRect) {
         for ref in spec.references {
             var path = Path()
             var labelPoint = CGPoint.zero
@@ -367,10 +372,9 @@ struct LensPlot: View {
         }
     }
 
-    /// Columns from the baseline to each point's value. A vertical gradient
-    /// anchored to the bar itself keeps them atmospheric rather than flat slabs,
-    /// matching how the area fills read.
-    private func drawBars(_ ctx: GraphicsContext, map: PlotMap, plot: CGRect) {
+    /// Columns from the baseline to each point's value, with a vertical gradient
+    /// anchored to the bar itself.
+    private func drawBars(_ ctx: GraphicsContext, map: LensPlotMap, plot: CGRect) {
         for set in spec.bars {
             let baseY = map.py(set.baseline)
             for p in set.points {
@@ -379,7 +383,6 @@ struct LensPlot: View {
                 let top = min(baseY, valueY)
                 let height = max(1, abs(valueY - baseY))
                 let rect = CGRect(x: x - set.width / 2, y: top, width: set.width, height: height)
-                // Keep bars inside the plot so an outlier never bleeds off-canvas.
                 let clipped = rect.intersection(plot.insetBy(dx: -set.width / 2, dy: 0))
                 guard !clipped.isNull else { continue }
                 let path = Path(roundedRect: clipped, cornerRadius: min(set.cornerRadius, set.width / 2))
@@ -396,8 +399,7 @@ struct LensPlot: View {
         }
     }
 
-    /// Per-point low→high segments with subtle end caps.
-    private func drawWhiskers(_ ctx: GraphicsContext, map: PlotMap) {
+    private func drawWhiskers(_ ctx: GraphicsContext, map: LensPlotMap) {
         for w in spec.whiskers {
             let x = map.px(w.date)
             let yLow = map.py(min(w.low, w.high))
@@ -418,7 +420,7 @@ struct LensPlot: View {
         }
     }
 
-    private func drawMarkers(_ ctx: GraphicsContext, map: PlotMap) {
+    private func drawMarkers(_ ctx: GraphicsContext, map: LensPlotMap) {
         for set in spec.markerSets {
             for p in set.points {
                 let c = map.point(p)
@@ -433,11 +435,11 @@ struct LensPlot: View {
         }
     }
 
-    private func drawSeries(_ ctx: GraphicsContext, map: PlotMap) {
+    private func drawSeries(_ ctx: GraphicsContext, map: LensPlotMap) {
         for s in spec.series {
             let pts = s.points.map(map.point)
             guard pts.count >= 1 else { continue }
-            let path = linePath(pts, smooth: s.smooth)
+            let path = lensLinePath(pts, smooth: s.smooth)
             if let halo = s.haloColor {
                 ctx.stroke(
                     path,
@@ -463,13 +465,10 @@ struct LensPlot: View {
         }
     }
 
-    private func drawEndpoint(_ ctx: GraphicsContext, map: PlotMap) {
+    private func drawEndpoint(_ ctx: GraphicsContext, map: LensPlotMap) {
         guard let e = spec.endpoint else { return }
         let c = map.point(e.point)
         let r = e.radius
-        // Restrained current marker over the dark canvas: a subtle accent halo,
-        // a thin ring, and a small solid inner dot — no oversized bubble and no
-        // opaque background fill that would punch a hole in the gradient.
         if e.haloColor != .clear {
             let hr = r + 6
             ctx.fill(
@@ -487,9 +486,8 @@ struct LensPlot: View {
     }
 
     /// Selected-point indicator: a thin light vertical rule, an enlarged clean
-    /// marker on the line, and a small legible callout over the gradient. No
-    /// tooltip chrome — white text with a soft shadow is enough.
-    private func drawScrub(_ ctx: GraphicsContext, map: PlotMap, plot: CGRect) {
+    /// marker on the line, and a small legible callout.
+    private func drawScrub(_ ctx: GraphicsContext, map: LensPlotMap, plot: CGRect) {
         guard let i = scrubIndex, scrubPoints.indices.contains(i) else { return }
         let dv = scrubPoints[i]
         let c = map.point(dv)
@@ -499,8 +497,6 @@ struct LensPlot: View {
         rule.addLine(to: CGPoint(x: c.x, y: plot.maxY))
         ctx.stroke(rule, with: .color(.white.opacity(0.45)), style: StrokeStyle(lineWidth: 1))
 
-        // Enlarged marker: soft halo, solid core, thin dark outline so it stays
-        // readable against both the pale top and the navy floor.
         let halo: CGFloat = 13
         ctx.fill(
             Path(ellipseIn: CGRect(x: c.x - halo, y: c.y - halo, width: halo * 2, height: halo * 2)),
@@ -518,8 +514,6 @@ struct LensPlot: View {
                 .foregroundStyle(.white)
         )
         let textSize = resolved.measure(in: CGSize(width: plot.width, height: plot.height))
-        // Sit above the marker, flipping below when it would clip the top, and
-        // clamp horizontally so it never runs off either edge.
         let above = c.y - r - 8 - textSize.height / 2
         let y = above - textSize.height / 2 < plot.minY ? c.y + r + 8 + textSize.height / 2 : above
         let halfW = textSize.width / 2
@@ -530,14 +524,12 @@ struct LensPlot: View {
         }
     }
 
-    private func drawDateLabels(_ ctx: GraphicsContext, map: PlotMap, plot: CGRect) {
+    private func drawDateLabels(_ ctx: GraphicsContext, map: LensPlotMap, plot: CGRect) {
         for label in spec.dateLabels {
             let x = map.px(label.date)
             let text = ctx.resolve(
                 Text(label.text).font(.system(size: 9, weight: .medium)).foregroundStyle(label.color)
             )
-            // Edge labels anchor to the edges so they never clip now that the
-            // plot runs to x = 0; interior labels stay centered on their date.
             let anchor: UnitPoint
             let drawX: CGFloat
             if x <= plot.minX + 2 {

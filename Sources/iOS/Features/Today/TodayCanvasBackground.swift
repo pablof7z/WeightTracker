@@ -5,7 +5,7 @@ import UIKit
 
 extension Color {
     /// Linear RGB blend toward `other` by `amount` (0…1). Used to derive the
-    /// per-lens atmospheric depth gradient from a single categorical accent.
+    /// per-lens decorative gradient from a single categorical accent.
     func mixed(with other: Color, amount: Double) -> Color {
         let a = UIColor(self)
         let b = UIColor(other)
@@ -22,93 +22,99 @@ extension Color {
     }
 }
 
-// MARK: - Per-lens atmospheric depth gradient
+// MARK: - Decorative palette
 
 extension TodayLens {
-    /// Shared deep anchor so every lens bottom reads as the same immersive
-    /// navy family, differentiated only by the accent tint mixed into it.
+    /// Shared deep anchor so every lens floor reads as the same immersive navy
+    /// family, differentiated only by the accent tint mixed into it. The mask —
+    /// not this color — is what fades the decorative layer to the semantic
+    /// system background toward the top, so this content is scheme-independent.
     static let depthNavy = Color(red: 0.055, green: 0.075, blue: 0.145)
 
-    /// Top→bottom depth stops for the full-canvas background. Top is a very pale
-    /// wash of the accent (in light) or a soft dark tint (in dark); it deepens
-    /// through a medium accent into a near-navy floor. Scheme-aware so the seam
-    /// under the hero stays soft in both appearances.
-    func depthStops(for scheme: ColorScheme) -> [Color] {
-        let base = accent
-        if scheme == .dark {
-            return [
-                base.mixed(with: Self.depthNavy, amount: 0.58),
-                base.mixed(with: Self.depthNavy, amount: 0.74),
-                base.mixed(with: Self.depthNavy, amount: 0.92),
-            ]
-        } else {
-            return [
-                base.mixed(with: .white, amount: 0.60),
-                base.mixed(with: Self.depthNavy, amount: 0.34),
-                base.mixed(with: Self.depthNavy, amount: 0.80),
-            ]
-        }
+    /// Top→bottom colors for the accent decorative layer (photo mode off). It is
+    /// only ever seen through the alpha mask, which keeps it near-absent at the
+    /// top and reveals it toward the bottom, so the floor deepens into navy to
+    /// keep the light supporting figures legible in both appearances.
+    /// Deterministic and independent of appearance by design.
+    var decorativeColors: [Color] {
+        [
+            accent.mixed(with: .white, amount: 0.06),
+            accent,
+            accent.mixed(with: Self.depthNavy, amount: 0.80),
+        ]
     }
+
+    /// Fixed source-over tint laid over a daily photo so it reads as quiet
+    /// atmosphere unified with the lens — deterministic, applied at a constant
+    /// opacity regardless of the photograph's luminance (no blend mode).
+    var photoTintOpacity: Double { 0.60 }
 }
 
-// MARK: - Continuous canvas background
+// MARK: - Base decorative alpha mask
 
-/// The single background layer behind the entire lower visualization: an
-/// atmospheric depth gradient by default, or an optional daily photo backdrop
-/// (aspect-fill + accent monochrome overlay + bottom vignette) when enabled.
-/// It bleeds to the bottom safe-area edge and sits behind the chart, metrics,
-/// and page dots so there is never a white gap.
-struct LensCanvasBackground: View {
-    let lens: TodayLens
-    var photo: UIImage? = nil
+/// The vertical alpha field the decorative background is revealed through, plus
+/// the flat cap used above the plotted curve. Extracted as pure math so the
+/// ramp is unit-testable and the gradient stops that drive the `Canvas` mask are
+/// generated from the same anchors the tests assert.
+///
+/// `t` is the normalized vertical position over the whole page: 0 at the top,
+/// 1 at the bottom. The decorative layer is essentially absent through the upper
+/// ~30% (so the top is literally the system background), climbs through the
+/// middle to ~0.5 at the vertical midpoint, and is strongest toward the bottom.
+enum LensMask {
+    /// Top of the page stays pure system background up to here.
+    static let systemBackgroundTop: Double = 0.30
+    /// Vertical midpoint reveal.
+    static let midpoint: Double = 0.50
+    static let midpointAlpha: Double = 0.50
+    /// Reveal at the very bottom of the page.
+    static let bottomAlpha: Double = 0.85
+    /// Decorative opacity is capped to this flat value above the plotted curve,
+    /// no matter how strong the base ramp is there.
+    static let aboveCurveCap: Double = 0.10
 
-    @Environment(\.colorScheme) private var scheme
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                if let photo {
-                    Image(uiImage: photo)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .clipped()
-                    // Monochrome accent wash to unify the photo with the lens.
-                    // Held high deliberately: the photograph is atmosphere, not
-                    // content, so it stays recognizable through the center while
-                    // the data keeps visual primacy.
-                    lens.accent
-                        .blendMode(.color)
-                        .opacity(0.78)
-                    // Soft light scrim at the top (behind the hero seam) and a
-                    // darker bottom vignette so dates + metrics stay legible.
-                    LinearGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: Color.black.opacity(0.18), location: 0.0),
-                            .init(color: Color.black.opacity(0.08), location: 0.30),
-                            .init(color: Color.black.opacity(0.40), location: 0.72),
-                            .init(color: Color.black.opacity(0.74), location: 1.0),
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    // Keep the accent alive underneath as a faint tint floor.
-                    LinearGradient(
-                        colors: [.clear, lens.accent.mixed(with: TodayLens.depthNavy, amount: 0.6).opacity(0.48)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                } else {
-                    LinearGradient(
-                        gradient: Gradient(colors: lens.depthStops(for: scheme)),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                }
-            }
-            .frame(width: geo.size.width, height: geo.size.height)
+    /// Piecewise-linear base reveal. Monotonic non-decreasing in `t`.
+    static func baseAlpha(normalizedY t: Double) -> Double {
+        let y = min(1, max(0, t))
+        if y <= systemBackgroundTop { return 0 }
+        if y <= midpoint {
+            let f = (y - systemBackgroundTop) / (midpoint - systemBackgroundTop)
+            return f * midpointAlpha
         }
-        .accessibilityHidden(true)
+        let f = (y - midpoint) / (1.0 - midpoint)
+        return midpointAlpha + f * (bottomAlpha - midpointAlpha)
+    }
+
+    /// The gradient stops that reproduce `baseAlpha` exactly inside a `Canvas`
+    /// alpha mask (white opacity == alpha). Because the anchors are shared with
+    /// `baseAlpha`, the drawn ramp and the tested math cannot diverge.
+    static var rampStops: [Gradient.Stop] {
+        [
+            .init(color: .white.opacity(0), location: 0),
+            .init(color: .white.opacity(0), location: systemBackgroundTop),
+            .init(color: .white.opacity(midpointAlpha), location: midpoint),
+            .init(color: .white.opacity(bottomAlpha), location: 1.0),
+        ]
+    }
+
+    /// The normalized vertical position at which `baseAlpha` first reaches the
+    /// above-curve cap, i.e. `baseAlpha(cappedAt) == aboveCurveCap`.
+    static var cappedAt: Double {
+        systemBackgroundTop + (aboveCurveCap / midpointAlpha) * (midpoint - systemBackgroundTop)
+    }
+
+    /// Gradient stops for the reveal ABOVE the plotted curve: `min(baseAlpha, cap)`.
+    /// It follows the base ramp until it hits the cap and then plateaus, so it is
+    /// a true ceiling — the decorative layer stays faint above the curve AND
+    /// still fades to nothing through the top (no hard seam against the system
+    /// background). Shared anchors keep it consistent with `baseAlpha`.
+    static var cappedRampStops: [Gradient.Stop] {
+        [
+            .init(color: .white.opacity(0), location: 0),
+            .init(color: .white.opacity(0), location: systemBackgroundTop),
+            .init(color: .white.opacity(aboveCurveCap), location: cappedAt),
+            .init(color: .white.opacity(aboveCurveCap), location: 1.0),
+        ]
     }
 }
 

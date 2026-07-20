@@ -29,7 +29,6 @@ struct TodayView: View {
     @State private var showCutHistory = false
     @State private var showMealPlanEditor = false
     @ObservedObject private var pinnedNoteStore = TodayPinnedNoteStore.shared
-    @ObservedObject private var photoStore = DailyPhotoStore.shared
     @State private var dismissTask: Task<Void, Never>?
     @State private var weightInputActive = false
     /// The active Today lens. Not persisted: every cold launch opens on Current
@@ -153,13 +152,13 @@ struct TodayView: View {
     @ViewBuilder
     private var portraitContent: some View {
         ZStack(alignment: .top) {
-            // The ONE continuous canvas. As a real ZStack layer that ignores the
-            // safe area (not a `.background`, which clips to the content frame
-            // below the bars), it fills the entire screen — including behind the
-            // status bar — and stays stable while pages slide.
-            LensCanvasBackground(lens: lensSelection, photo: photoStore.dailyImage(for: lensSelection))
+            // The semantic base for the whole screen — behind the status bar and
+            // the custom top bar too. Each lens page draws its own decorative
+            // masked layer over this same system background, so the top of the
+            // screen is always pure system background (correct in light and dark)
+            // and there is never a white seam under the bars.
+            Color(.systemBackground)
                 .ignoresSafeArea()
-                .animation(.easeInOut(duration: 0.3), value: lensSelection)
 
             // The Today controls are a custom row that is simply the first
             // content of the canvas, so the gradient genuinely runs behind the

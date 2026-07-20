@@ -238,6 +238,7 @@
 		DC635217767E7DC1B0035169 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DEFAF53CA2B8A1F5B842182 /* NotificationService.swift */; };
 		DD26112DCB99E574187D5B08 /* ActivityHealthKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E88F08E4DB02DC8CA983C57 /* ActivityHealthKit.swift */; };
 		DD6F51C3784DB4AF71F888AB /* CutChartModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C964BCD801DC5B289726569 /* CutChartModelTests.swift */; };
+		AA11BB22CC33DD44EE55F010 /* LensMaskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55F011 /* LensMaskTests.swift */; };
 		158A4B0EC8824681997A4CF9 /* CoachConversationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE99C06E082E4C038AEC816B /* CoachConversationTests.swift */; };
 		8C8A7B8D5E7B44F4B3116675 /* TodayLensSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F778775B1D0E465F96F93147 /* TodayLensSnapshotTests.swift */; };
 		AA11BB22CC33DD44EE55F001 /* LensScrubModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55F002 /* LensScrubModelTests.swift */; };
@@ -419,6 +420,7 @@
 		8BF023B3584346FE97754C3B /* CoachConversationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachConversationModel.swift; sourceTree = "<group>"; };
 		CC98CF074BB04D61B591D80A /* TodayLensModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayLensModel.swift; sourceTree = "<group>"; };
 		7C964BCD801DC5B289726569 /* CutChartModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CutChartModelTests.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55F011 /* LensMaskTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LensMaskTests.swift; sourceTree = "<group>"; };
 		FE99C06E082E4C038AEC816B /* CoachConversationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachConversationTests.swift; sourceTree = "<group>"; };
 		F778775B1D0E465F96F93147 /* TodayLensSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayLensSnapshotTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55F002 /* LensScrubModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LensScrubModelTests.swift; sourceTree = "<group>"; };
@@ -862,6 +864,7 @@
 			isa = PBXGroup;
 			children = (
 				7C964BCD801DC5B289726569 /* CutChartModelTests.swift */,
+				AA11BB22CC33DD44EE55F011 /* LensMaskTests.swift */,
 				FE99C06E082E4C038AEC816B /* CoachConversationTests.swift */,
 				F778775B1D0E465F96F93147 /* TodayLensSnapshotTests.swift */,
 				AA11BB22CC33DD44EE55F002 /* LensScrubModelTests.swift */,
@@ -1467,6 +1470,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DD6F51C3784DB4AF71F888AB /* CutChartModelTests.swift in Sources */,
+				AA11BB22CC33DD44EE55F010 /* LensMaskTests.swift in Sources */,
 				158A4B0EC8824681997A4CF9 /* CoachConversationTests.swift in Sources */,
 				8C8A7B8D5E7B44F4B3116675 /* TodayLensSnapshotTests.swift in Sources */,
 				AA11BB22CC33DD44EE55F001 /* LensScrubModelTests.swift in Sources */,
