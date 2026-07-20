@@ -12,6 +12,49 @@ public struct DatedValue: Identifiable, Equatable, Sendable {
     }
 }
 
+/// One canonical observation per calendar day, in the app's storage unit.
+///
+/// Manual entries win when a day contains more than one source. Remaining
+/// same-day values are averaged. The series never fills missing dates.
+public struct CanonicalDailyWeight: Equatable, Sendable {
+    public let date: Date
+    public let weightKg: Double
+
+    public init(date: Date, weightKg: Double) {
+        self.date = date
+        self.weightKg = weightKg
+    }
+}
+
+public enum CanonicalDailyWeightSeries {
+    public static func prepare(
+        readings: [Reading],
+        from startDate: Date? = nil,
+        through endDate: Date? = nil,
+        calendar: Calendar = .current
+    ) -> [CanonicalDailyWeight] {
+        let start = startDate.map { calendar.startOfDay(for: $0) }
+        let end = endDate.map { calendar.startOfDay(for: $0) }
+        let eligible = readings.filter { reading in
+            let day = calendar.startOfDay(for: reading.date)
+            let isAfterStart = start.map { day >= $0 } ?? true
+            let isBeforeEnd = end.map { day <= $0 } ?? true
+            return isAfterStart && isBeforeEnd
+        }
+        let groups = Dictionary(grouping: eligible) {
+            calendar.startOfDay(for: $0.date)
+        }
+
+        return groups.map { day, values in
+            let manual = values.filter { $0.source == .manual }
+            let preferred = manual.isEmpty ? values : manual
+            let mean = preferred.map(\.weightKg).reduce(0, +) / Double(preferred.count)
+            return CanonicalDailyWeight(date: day, weightKg: mean)
+        }
+        .sorted { $0.date < $1.date }
+    }
+}
+
 /// Canonical, unit-stable input shared by every active-cut chart.
 ///
 /// Weight values are always pounds here. Views may convert the fully
@@ -74,8 +117,10 @@ public extension CutChartModel {
     ) -> CutChartModel {
         let start = calendar.startOfDay(for: active.startDate)
         let target = calendar.startOfDay(for: active.targetEndDate)
-        let canonical = canonicalDailyReadings(
-            readings.filter { calendar.startOfDay(for: $0.date) >= start },
+        let canonical = CanonicalDailyWeightSeries.prepare(
+            readings: readings,
+            from: start,
+            through: target,
             calendar: calendar
         )
         let raw = canonical.map {
@@ -157,20 +202,6 @@ public extension CutChartModel {
         guard duration > 0 else { return targetWeight }
         let progress = min(1, max(0, date.timeIntervalSince(startDate) / duration))
         return startWeight + progress * (targetWeight - startWeight)
-    }
-
-    private static func canonicalDailyReadings(
-        _ readings: [Reading],
-        calendar: Calendar
-    ) -> [(date: Date, weightKg: Double)] {
-        let groups = Dictionary(grouping: readings) { calendar.startOfDay(for: $0.date) }
-        return groups.map { day, values in
-            let manual = values.filter { $0.source == .manual }
-            let preferred = manual.isEmpty ? values : manual
-            let mean = preferred.map(\.weightKg).reduce(0, +) / Double(preferred.count)
-            return (date: day, weightKg: mean)
-        }
-        .sorted { $0.date < $1.date }
     }
 
     private static func dailyDates(from start: Date, through end: Date, calendar: Calendar) -> [Date] {

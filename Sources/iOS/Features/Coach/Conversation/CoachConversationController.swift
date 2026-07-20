@@ -19,6 +19,11 @@ final class CoachConversationController: NSObject, ObservableObject {
     @Published private(set) var capturedImage: UIImage? = nil
     @Published var inputText: String = ""
 
+    /// The conversation these turns belong to. Persisted notes are tagged with
+    /// this so the unified conversations list can group them. `nil` → the
+    /// default "Coach" conversation.
+    var conversationID: UUID?
+
     let stt: ElevenLabsRealtimeSTT
     private let agentSession: CoachAgentSession
     private let auditStore: CoachAuditStore?
@@ -71,7 +76,11 @@ final class CoachConversationController: NSObject, ObservableObject {
     // MARK: - Send turn
 
     func sendTurn() async {
+        // If the mic was used, capture the recording so the user message renders
+        // as an audio bubble (with transcript when available).
+        var audioDraftID: UUID?
         if stt.isRecording || stt.isStarting {
+            audioDraftID = stt.currentRecordingID
             let text = await stt.stop()
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty { inputText = trimmed }
@@ -80,7 +89,7 @@ final class CoachConversationController: NSObject, ObservableObject {
         let textToSend = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         let imageForTurn = capturedImage
 
-        guard !textToSend.isEmpty || imageForTurn != nil else {
+        guard !textToSend.isEmpty || imageForTurn != nil || audioDraftID != nil else {
             state = .failed(message: "Nothing to send. Type a message or record your voice first.")
             return
         }
@@ -89,10 +98,14 @@ final class CoachConversationController: NSObject, ObservableObject {
         inputText = ""
 
         let messageText = textToSend.isEmpty
-            ? "(no text message — see attached photo)"
+            ? (audioDraftID != nil ? "(voice message)" : "(no text message — see attached photo)")
             : textToSend
 
-        persistUserNote(text: textToSend.isEmpty ? "(photo sent)" : textToSend)
+        // A voice message with no transcript persists as an audio-only note.
+        let noteText = textToSend.isEmpty
+            ? (audioDraftID != nil ? "" : "(photo sent)")
+            : textToSend
+        persistUserNote(text: noteText, audioDraftID: audioDraftID)
 
         let userMessage = buildUserMessage(text: messageText, image: imageForTurn)
 
@@ -148,8 +161,10 @@ final class CoachConversationController: NSObject, ObservableObject {
 
     // MARK: - Private helpers
 
-    private func persistUserNote(text: String) {
-        guard let auditStore, !text.isEmpty else { return }
+    private func persistUserNote(text: String, audioDraftID: UUID? = nil) {
+        guard let auditStore else { return }
+        // Allow an empty transcript only when audio is attached (audio-only msg).
+        guard !text.isEmpty || audioDraftID != nil else { return }
         let cutStart = ActiveCutStore.load()?.startDate
         auditStore.appendNote(
             source: .user,
@@ -157,7 +172,9 @@ final class CoachConversationController: NSObject, ObservableObject {
             visibility: .userVisible,
             cutStartDate: cutStart,
             day: Date(),
-            text: text
+            text: text,
+            audioDraftID: audioDraftID,
+            conversationID: conversationID
         )
     }
 
@@ -170,7 +187,8 @@ final class CoachConversationController: NSObject, ObservableObject {
             visibility: .userVisible,
             cutStartDate: cutStart,
             day: Date(),
-            text: text
+            text: text,
+            conversationID: conversationID
         )
         NotificationCenter.default.post(name: .coachProposalDidChange, object: nil)
     }

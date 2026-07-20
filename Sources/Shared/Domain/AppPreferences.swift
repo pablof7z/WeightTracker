@@ -7,8 +7,15 @@ public enum AppPrefKey {
     public static let theme = "theme"
     public static let onboardingComplete = "onboardingComplete"
     public static let lastChartRangeDays = "lastChartRangeDays"
-    public static let todayChartVariation = "todayChartVariation"
-    public static let todayChartVariationOrder = "todayChartVariationOrder"
+    /// Today carousel arrangement. `todayLensOrder` is a comma-separated list of
+    /// `TodayLens` raw values; `todayLensHidden` is the comma-separated set the
+    /// user has switched off. Both are decoded through `TodayLensOrder`, which
+    /// drops unknown values and backfills missing ones.
+    public static let todayLensOrder = "today.lensOrder"
+    public static let todayLensHidden = "today.lensHidden"
+    /// Optional personal photo backdrop for the Today canvas.
+    public static let todayPhotoEnabled = "today.photoBackdropEnabled"
+    public static let todayPhotoFiles = "today.photoBackdropFiles"
     public static let icloudSyncEnabled = "icloudSyncEnabled"
     public static let autoExportEnabled = "autoExportEnabled"
     public static let activeCutJSON = "activeCutJSON"
