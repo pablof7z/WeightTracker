@@ -36,11 +36,18 @@ struct TodayView: View {
     @State private var lensSelection: TodayLens = .launchDefault
     @State private var showLogSheet = false
     @State private var showDetailChart = false
+    /// Hovered scrub index, owned here so the page's scrub gesture and the single
+    /// top-level decorative backdrop (which draws the selected lens's curve +
+    /// scrub marks) share one source of truth.
+    @State private var scrubIndex: Int? = nil
+
+    /// Drives the per-lens daily photo backdrop and re-renders when photos change.
+    @ObservedObject private var photoStore = DailyPhotoStore.shared
 
     private var isLandscape: Bool { vSizeClass == .compact }
 
     /// The enabled lenses in the saved order. Guaranteed non-empty: hiding every
-    /// lens falls back to Current Weight rather than an empty carousel.
+    /// lens falls back to Progress rather than an empty carousel.
     private var enabledLenses: [TodayLens] {
         TodayLensOrder.enabled(orderRaw: lensOrderRaw, hiddenRaw: lensHiddenRaw)
     }
@@ -48,11 +55,11 @@ struct TodayView: View {
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lbs }
     private var bodyUnit: BodyUnit { BodyUnit(rawValue: bodyUnitRaw) ?? .inches }
 
-    /// Subtitle showing the 7-day EMA in the active display unit, or "—" when not enough history.
-    private var emaSubtitle: String {
-        guard let kg = viewModel.ema7Kg else { return "7-day avg —" }
+    /// Subtitle showing the canonical seven-calendar-day trend.
+    private var trendSubtitle: String {
+        guard let kg = viewModel.trend7Kg else { return "7-day trend —" }
         let display = UnitConvert.displayWeight(kg: kg, in: weightUnit)
-        return String(format: "7-day avg %.1f %@", display, weightUnit.symbol)
+        return String(format: "7-day trend %.1f %@", display, weightUnit.symbol)
     }
 
     var body: some View {
@@ -86,7 +93,7 @@ struct TodayView: View {
                     viewModel.loadForDate(Date(), repository: services.repository, unit: weightUnit, bodyUnit: bodyUnit, cycleStarts: services.cycleStarts, milestoneStore: services.milestoneStore)
                     weightInputActive = false
                     didLoad = true
-                    // Cold launch always opens on the same lens — Current Weight
+                    // Cold launch always opens on the same lens — Progress
                     // when enabled, otherwise the first enabled one. The choice
                     // is retained for the session but never persisted.
                     lensSelection = TodayLensOrder.launchLens(in: enabledLenses)
@@ -153,22 +160,28 @@ struct TodayView: View {
     private var portraitContent: some View {
         ZStack(alignment: .top) {
             // The semantic base for the whole screen — behind the status bar and
-            // the custom top bar too. Each lens page draws its own decorative
-            // masked layer over this same system background, so the top of the
-            // screen is always pure system background (correct in light and dark)
-            // and there is never a white seam under the bars.
+            // the custom top bar too. The single top-level `.lensBackdrop` draws
+            // its own system-background base over this, so the fallback is only
+            // ever seen before the first lens renders.
             Color(.systemBackground)
                 .ignoresSafeArea()
 
-            // The Today controls are a custom row that is simply the first
-            // content of the canvas, so the gradient genuinely runs behind the
-            // status bar. Fighting the system navigation bar's background
-            // (toolbarBackground(.hidden)) did not survive on-device; hiding the
-            // bar outright removes the white band at the source.
-            VStack(spacing: 0) {
-                topBar
-                todayContent
-            }
+            // The Today controls sit in the TOP safe-area inset, and the ONE
+            // decorative backdrop is attached as a `.lensBackdrop` background of
+            // this SAME safe-area-inset host. A background of the view that
+            // carries the `.safeAreaInset` bleeds behind the inset bar (and, via
+            // `ignoresSafeArea`, the status bar and home indicator too) — so the
+            // gradient / photo runs continuously to every screen edge, never a
+            // white band under the bars. The backdrop is driven by the currently
+            // selected lens and reads the centered page's chart-slot rect through
+            // `PlotRectKey`, so the plotted curve still lands in its slot.
+            todayContent
+                .safeAreaInset(edge: .top, spacing: 0) { topBar }
+                .lensBackdrop(
+                    rendered: renderedSelection,
+                    photo: photoStore.dailyImage(for: lensSelection),
+                    scrubIndex: scrubIndex
+                )
 
             // Save confirmation floats above the canvas and auto-dismisses.
             if let saved = viewModel.lastSaved {
@@ -252,7 +265,7 @@ struct TodayView: View {
                     unit: weightUnit,
                     date: viewModel.date,
                     hasEntry: viewModel.hasEntry,
-                    subtitle: emaSubtitle,
+                    subtitle: trendSubtitle,
                     onUnitTap: toggleUnit,
                     onSave: {
                         Task { @MainActor in
@@ -348,36 +361,44 @@ struct TodayView: View {
         .accessibilityLabel("Selected date \(subtitleText)\(cutDayNumber.map { ", day \($0) of the cut" } ?? ""). Tap to pick a date.")
     }
 
+    /// The rendered lens the top-level backdrop draws — the currently selected
+    /// one, built from the same canonical models (and the same `TodayLensBuilder`)
+    /// the carousel pages use, so the backdrop's curve matches the page exactly.
+    /// `nil` when there is no active cut, driving the plain system-background
+    /// fallback.
+    private var renderedSelection: RenderedLens? {
+        guard let active = viewModel.activeCut,
+              let analytics = viewModel.analyticsModel,
+              let weekly = viewModel.weeklyChartModel else { return nil }
+        let builder = TodayLensBuilder(
+            active: active,
+            analytics: analytics,
+            weekly: weekly,
+            unit: weightUnit,
+            dayNumber: todayCutDayNumber
+        )
+        return builder.render(lensSelection)
+    }
+
     @ViewBuilder
     private var todayContent: some View {
         ZStack(alignment: .top) {
             if let active = viewModel.activeCut,
-               let chartModel = viewModel.chartModel,
-               let domains = viewModel.chartDomains,
-               let weekly = viewModel.weeklyChartModel,
-               let pace = viewModel.paceModel,
-               let thisWeek = viewModel.thisWeekModel,
-               let projection = viewModel.projection {
+               let analytics = viewModel.analyticsModel,
+               let weekly = viewModel.weeklyChartModel {
                 TodayLensCarousel(
                     active: active,
-                    projection: projection,
-                    chart: chartModel,
-                    domains: domains,
+                    analytics: analytics,
                     weekly: weekly,
-                    pace: pace,
-                    thisWeek: thisWeek,
                     unit: weightUnit,
                     hasEntryToday: hasReadingToday,
                     dayNumber: todayCutDayNumber,
-                    selectedDate: viewModel.date,
-                    selectedDayValue: viewModel.displayValue,
-                    selectedDayLogged: viewModel.hasEntry,
-                    selectedDayNumber: cutDayNumber,
                     lenses: enabledLenses,
                     onToggleUnit: toggleUnit,
                     onLog: { showLogSheet = true },
                     onOpenDetail: { showDetailChart = true },
-                    selection: $lensSelection
+                    selection: $lensSelection,
+                    scrubIndex: $scrubIndex
                 )
                 .animation(.easeInOut(duration: 0.35), value: viewModel.inCutReadings.count)
             } else {
@@ -426,7 +447,10 @@ struct TodayView: View {
     /// Whether a reading exists for today specifically (independent of the
     /// browsed date), driving the "Log today" affordance in the hero.
     private var hasReadingToday: Bool {
-        viewModel.allReadings.contains { Calendar.current.isDateInToday($0.date) }
+        let key = Reading.civilDayKey(for: Date())
+        return viewModel.allReadings.contains {
+            ($0.civilDayKey ?? Reading.civilDayKey(for: $0.date)) == key
+        }
     }
 
     /// Cut day number for *today*, used for the hero clarifier.
@@ -483,9 +507,9 @@ struct TodayView: View {
 
     // MARK: - Date navigation
     //
-    // Date navigation lives entirely in the title/date-picker control now. The
-    // horizontal swipe belongs to the lens carousel, so there is one
-    // unambiguous meaning for a left/right drag across the Today canvas.
+    // Date navigation lives entirely in the title/date-picker control. Today
+    // screens use explicit arrows, leaving horizontal chart movement exclusively
+    // available for inspecting data points.
 
     private func selectDate(_ d: Date) {
         let day = Reading.dayStart(of: d)

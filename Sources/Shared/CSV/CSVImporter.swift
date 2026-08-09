@@ -151,6 +151,7 @@ public enum CSVImporter {
         struct RawRow {
             let line: Int
             let date: Date
+            let civilDayKey: String
             let weight: Double
             let hips: Double?
             let waist: Double?
@@ -213,7 +214,7 @@ public enum CSVImporter {
                 }
             }
 
-            rawRows.append(RawRow(line: lineNumber, date: date, weight: weight, hips: hipsVal, waist: waistVal))
+            rawRows.append(RawRow(line: lineNumber, date: date, civilDayKey: dateStr, weight: weight, hips: hipsVal, waist: waistVal))
         }
 
         guard !rawRows.isEmpty else {
@@ -249,6 +250,7 @@ public enum CSVImporter {
         struct Candidate {
             let line: Int
             let dayStart: Date
+            let civilDayKey: String
             let weightKg: Double
             let hipsCm: Double?
             let waistCm: Double?
@@ -260,7 +262,8 @@ public enum CSVImporter {
             let waistCm: Double? = row.waist.map { (bodyUnit == .inches) ? UnitConvert.inchToCm($0) : $0 }
             return Candidate(
                 line: row.line,
-                dayStart: Reading.dayStart(of: row.date),
+                dayStart: Reading.date(fromCivilDayKey: row.civilDayKey) ?? Reading.dayStart(of: row.date),
+                civilDayKey: row.civilDayKey,
                 weightKg: kg,
                 hipsCm: hipsCm,
                 waistCm: waistCm
@@ -293,7 +296,8 @@ public enum CSVImporter {
                 weightKg: c.weightKg,
                 hipsCm: c.hipsCm,
                 waistCm: c.waistCm,
-                source: .importCSV
+                source: .importCSV,
+                civilDayKey: c.civilDayKey
             )
         }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Categorical lens accents
 
@@ -7,15 +8,9 @@ extension TodayLens {
     /// the user. No color implies success or failure.
     var accent: Color {
         switch self {
-        case .currentWeight: return Color(red: 0.20, green: 0.48, blue: 0.86) // cool blue
-        case .totalLost:     return Color(red: 0.26, green: 0.53, blue: 0.39) // forest / sage
-        case .thisWeek:      return Color(red: 0.90, green: 0.56, blue: 0.16) // amber
-        case .weeklyAverage: return Color(red: 0.42, green: 0.47, blue: 0.45) // sage / charcoal
-        case .pace:          return Color(red: 0.46, green: 0.37, blue: 0.82) // violet / indigo
-        case .forecast:      return Color(red: 0.38, green: 0.41, blue: 0.83) // blue-violet
-        case .fullCut:       return Color(red: 0.16, green: 0.50, blue: 0.55) // deep teal
-        case .weeklyRange:   return Color(red: 0.53, green: 0.35, blue: 0.55) // plum
-        case .weeklyLoss:    return Color(red: 0.72, green: 0.40, blue: 0.30) // clay / terracotta
+        case .progress: return Color(red: 0.20, green: 0.48, blue: 0.86)
+        case .recentTrend: return Color(red: 0.46, green: 0.37, blue: 0.82)
+        case .weeklySummary: return Color(red: 0.26, green: 0.53, blue: 0.39)
         }
     }
 }
@@ -26,18 +21,6 @@ struct LensStat: Identifiable {
     let id = UUID()
     let label: String
     let value: String
-}
-
-/// Date-aware hero override for the Current Weight lens. Shows the *selected
-/// day's* logged weight, or a muted placeholder (most-recent reading) with a
-/// tap-to-log cue when that day has no entry.
-struct CurrentWeightHero: Equatable {
-    let valueText: String
-    let unit: String
-    /// Nil when there's nothing worth stating in words: today's unlogged state
-    /// is already carried by the muted value color, so no caption is shown.
-    let context: String?
-    let logged: Bool
 }
 
 /// What the hero shows for one hovered point while the user scrubs. Built by
@@ -84,24 +67,13 @@ struct RenderedLens {
 
 struct TodayLensCarousel: View {
     let active: ActiveCut
-    let projection: CutProjectionResult
-    let chart: CutChartModel
-    let domains: CutChartDomainState
+    let analytics: TodayAnalyticsModel
     let weekly: WeeklyCutChartModel
-    let pace: PaceLensModel
-    let thisWeek: ThisWeekModel
     let unit: WeightUnit
     let hasEntryToday: Bool
     let dayNumber: Int?
-    /// The day the user is viewing (defaults to today), its logged value in the
-    /// display unit, whether that day has an entry, and its cut-day number —
-    /// all drive the date-aware Current Weight hero.
-    let selectedDate: Date
-    let selectedDayValue: Double
-    let selectedDayLogged: Bool
-    let selectedDayNumber: Int?
     /// The enabled lenses in the user's saved Settings order. Never empty — the
-    /// all-hidden case is resolved to Current Weight upstream by
+    /// all-hidden case is resolved to Progress upstream by
     /// `TodayLensOrder.enabled`.
     let lenses: [TodayLens]
     var onToggleUnit: () -> Void
@@ -109,78 +81,86 @@ struct TodayLensCarousel: View {
     var onOpenDetail: () -> Void
 
     @Binding var selection: TodayLens
-
-    /// Per-lens daily photo backdrop. Observed here so each page can pull its own
-    /// deterministic photo (and so enabling/adding photos re-renders the pages).
-    @ObservedObject private var photoStore = DailyPhotoStore.shared
+    /// The hovered scrub index, lifted to `TodayView` so the page's scrub gesture
+    /// and the single top-level `LensBackdrop` (which draws the curve + scrub
+    /// marks for the selected lens) share one source of truth.
+    @Binding var scrubIndex: Int?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let heroDate: DateFormatter = {
-        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("MMM d, yyyy"); return f
-    }()
-
-    /// True while a hold-then-drag point inspection owns the touch. Paging is
-    /// suppressed for the duration so the scrub never flips lenses.
-    @State private var isScrubbing = false
-
     var body: some View {
-        TabView(selection: $selection) {
-            ForEach(lenses) { lens in
-                TodayLensPage(
-                    rendered: builder.render(lens),
-                    photo: photoStore.dailyImage(for: lens),
-                    hasEntryToday: hasEntryToday,
-                    pageIndicator: AnyView(pageIndicator),
-                    currentWeightHero: lens == .currentWeight ? currentWeightHero : nil,
-                    isScrubbing: $isScrubbing,
-                    onToggleUnit: onToggleUnit,
-                    onLog: onLog,
-                    onOpenDetail: onOpenDetail
-                )
-                .tag(lens)
+        ZStack(alignment: .top) {
+            TodayLensPage(
+                rendered: builder.render(selection),
+                hasEntryToday: hasEntryToday,
+                pageIndicator: AnyView(pageIndicator),
+                scrubIndex: $scrubIndex,
+                heroHorizontalPadding: 58,
+                onToggleUnit: onToggleUnit,
+                onLog: onLog,
+                onOpenDetail: onOpenDetail
+            )
+
+            HStack {
+                navigationButton(direction: .previous, target: previousLens)
+                Spacer()
+                navigationButton(direction: .next, target: nextLens)
             }
+            .padding(.horizontal, 8)
+            .padding(.top, 6)
+            .frame(height: 104)
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
         .ignoresSafeArea(.container, edges: .bottom)
-        // Belt-and-braces with the chart's high-priority gesture: the pager is
-        // also told to stand down for the duration of a scrub.
-        .scrollDisabled(isScrubbing)
         .sensoryFeedback(.selection, trigger: selection)
     }
 
-    private var currentWeightHero: CurrentWeightHero {
-        let value = String(format: "%.1f", selectedDayValue)
-        let isToday = Calendar.current.isDateInToday(selectedDate)
-        let dateStr = Self.heroDate.string(from: selectedDate)
-        let context: String?
-        if selectedDayLogged {
-            if let n = selectedDayNumber {
-                context = "\(dateStr) · Day \(n)"
-            } else {
-                context = dateStr
+    private var selectionIndex: Int {
+        lenses.firstIndex(of: selection) ?? 0
+    }
+
+    private var previousLens: TodayLens? {
+        let index = selectionIndex - 1
+        return lenses.indices.contains(index) ? lenses[index] : nil
+    }
+
+    private var nextLens: TodayLens? {
+        let index = selectionIndex + 1
+        return lenses.indices.contains(index) ? lenses[index] : nil
+    }
+
+    private enum NavigationDirection {
+        case previous
+        case next
+
+        var symbol: String { self == .previous ? "chevron.left" : "chevron.right" }
+        var label: String { self == .previous ? "Previous screen" : "Next screen" }
+    }
+
+    private func navigationButton(direction: NavigationDirection, target: TodayLens?) -> some View {
+        Button {
+            guard let target else { return }
+            scrubIndex = nil
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+                selection = target
             }
-        } else if isToday {
-            // The muted value color already says "not logged"; a tap anywhere
-            // on the hero logs it, so no caption is needed.
-            context = nil
-        } else {
-            // Still muted-color-implies-unlogged; the date is real information
-            // (which day is being browsed), so it stays.
-            context = dateStr
+        } label: {
+            Image(systemName: direction.symbol)
+                .font(.system(size: 17, weight: .semibold))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
-        return CurrentWeightHero(valueText: value, unit: unit.symbol, context: context, logged: selectedDayLogged)
+        .buttonStyle(.plain)
+        .foregroundStyle(Color.primary.opacity(target == nil ? 0.12 : 0.34))
+        .disabled(target == nil)
+        .accessibilityLabel(direction.label)
+        .accessibilityValue(target?.accessibilityName ?? "Unavailable")
     }
 
     private var builder: TodayLensBuilder {
         TodayLensBuilder(
             active: active,
-            projection: projection,
-            chart: chart,
-            domains: domains,
+            analytics: analytics,
             weekly: weekly,
-            pace: pace,
-            thisWeek: thisWeek,
             unit: unit,
             dayNumber: dayNumber
         )
@@ -207,38 +187,42 @@ struct TodayLensCarousel: View {
 
 private struct TodayLensPage: View {
     let rendered: RenderedLens
-    /// The day's per-lens photo backdrop, or nil for the accent-gradient mode.
-    var photo: UIImage? = nil
     let hasEntryToday: Bool
     let pageIndicator: AnyView
-    var currentWeightHero: CurrentWeightHero? = nil
-    /// Lifted to the carousel so the pager can be gated while scrubbing.
-    var isScrubbing: Binding<Bool>? = nil
+    /// Hovered point index during a scrub, shared with the top-level backdrop so
+    /// the curve's scrub marker and this page's hero readout stay in lockstep.
+    /// Read-only: it never changes the globally selected date or any stored data.
+    var scrubIndex: Binding<Int?> = .constant(nil)
+    /// Whether this page contributes its chart-slot rect to the shared
+    /// `PlotRectKey` preference (only the centered page does).
+    var publishesRect: Bool = true
+    /// Leaves room for the screen-switching arrows in the live carousel while
+    /// keeping standalone previews and snapshots at their original width.
+    var heroHorizontalPadding: CGFloat = 22
+    /// `ImageRenderer` cannot render a UIKit gesture recognizer host and draws
+    /// a warning placeholder in its place. Snapshot/previews disable only that
+    /// transparent interaction layer; the chart geometry remains identical.
+    var allowsChartInteraction: Bool = true
     var onToggleUnit: () -> Void
     var onLog: () -> Void
     var onOpenDetail: () -> Void
 
-    /// Hovered point index during a scrub. Per-page and read-only: it never
-    /// changes the globally selected date or any stored data.
-    @State private var scrubIndex: Int? = nil
-
     /// The readout for the currently hovered point, or nil when not scrubbing.
     private var scrubInfo: LensScrubInfo? {
-        guard let index = scrubIndex, let model = rendered.scrub else { return nil }
+        guard let index = scrubIndex.wrappedValue, let model = rendered.scrub else { return nil }
         return model.info(at: index)
     }
 
     var body: some View {
-        // The lens page is one composite: the hero, page dots, and de-carded
-        // metrics are laid out in a VStack, and the ONE decorative-masked canvas
-        // (system background → masked photo/accent → chart marks) is drawn behind
-        // them, spanning the whole page. The empty middle slot reserves the chart
-        // region and reports its rect via an anchor preference, so the canvas
-        // draws the marks — and reveals the decorative layer below the curve — in
-        // exactly the measured plot rect.
+        // The lens page is the foreground composite only: the hero, page dots, a
+        // transparent chart slot (which owns the gestures and publishes its rect),
+        // and the de-carded metrics, laid out in a VStack. The ONE decorative
+        // masked canvas + chart is drawn by the top-level `LensBackdrop` in
+        // `TodayView`, so it can bleed behind the status bar and the custom top
+        // bar — a per-page background is clipped below the top bar and cannot.
         VStack(spacing: 0) {
             hero
-                .padding(.horizontal, 22)
+                .padding(.horizontal, heroHorizontalPadding)
                 .padding(.top, 6)
 
             pageIndicator
@@ -252,23 +236,9 @@ private struct TodayLensPage: View {
                 .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .backgroundPreferenceValue(PlotRectKey.self) { anchor in
-            GeometryReader { proxy in
-                LensBackdrop(
-                    spec: rendered.plot,
-                    photo: photo,
-                    accent: rendered.lens.accent,
-                    decorativeColors: rendered.lens.decorativeColors,
-                    plotRect: anchor.map { proxy[$0] } ?? .zero,
-                    scrubIndex: scrubIndex,
-                    scrubPoints: rendered.scrub?.points ?? [],
-                    scrubCallouts: rendered.scrub?.callouts ?? []
-                )
-            }
-        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(rendered.accessibilitySummary)
-        .accessibilityHint("Swipe left or right for another perspective. Double tap the chart to open the detailed view.")
+        .accessibilityHint("Use the arrows beside the headline for another perspective. Double tap the chart to open the detailed view.")
     }
 
     /// The transparent chart region. It reserves the flexible middle space, owns
@@ -276,40 +246,35 @@ private struct TodayLensPage: View {
     /// (via the anchor preference) so `LensBackdrop` draws the chart there.
     private var chartSlot: some View {
         GeometryReader { g in
-            Color.clear
-                .contentShape(Rectangle())
-                // A short tap still opens the detail chart; only a deliberate
-                // hold starts a scrub.
-                .onTapGesture { onOpenDetail() }
-                .highPriorityGesture(scrubGesture(size: g.size))
+            // Scrub is driven by a UIKit UILongPressGestureRecognizer so a brief
+            // hold can become a continuous horizontal point inspection without
+            // competing with any screen-level swipe navigation. Once begun it
+            // keeps reporting the finger location, which we map to the nearest
+            // point. A short tap still opens the detail chart.
+            Group {
+                if allowsChartInteraction {
+                    ScrubGestureView(
+                        onTap: { onOpenDetail() },
+                        onBegan: { p in
+                            updateScrub(toX: p.x, size: g.size)
+                        },
+                        onChanged: { p in updateScrub(toX: p.x, size: g.size) },
+                        onEnded: {
+                            scrubIndex.wrappedValue = nil
+                        }
+                    )
+                } else {
+                    Color.clear
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .anchorPreference(key: PlotRectKey.self, value: .bounds) { $0 }
+        .anchorPreference(key: PlotRectKey.self, value: .bounds) { publishesRect ? $0 : nil }
         // Light selection tick on each point change only — never continuous.
-        .sensoryFeedback(.selection, trigger: scrubIndex)
+        .sensoryFeedback(.selection, trigger: scrubIndex.wrappedValue)
     }
 
-    // MARK: Scrub gesture + hit testing
-    //
-    // Sequencing a long press before a zero-distance drag keeps the finger
-    // stationary during recognition (so the pager never starts paging); once the
-    // press succeeds this high-priority gesture owns every horizontal move.
-
-    private func scrubGesture(size: CGSize) -> some Gesture {
-        LongPressGesture(minimumDuration: 0.28, maximumDistance: 12)
-            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .local))
-            .onChanged { value in
-                guard case .second(true, let drag) = value else { return }
-                isScrubbing?.wrappedValue = true
-                guard let drag else { return }
-                let index = nearestScrubIndex(toX: drag.location.x, size: size)
-                if index != scrubIndex { scrubIndex = index }
-            }
-            .onEnded { _ in
-                scrubIndex = nil
-                isScrubbing?.wrappedValue = false
-            }
-    }
+    // MARK: Hit testing
 
     /// Nearest primary-series point to the finger's x, using the same inner-rect
     /// mapping `LensBackdrop` draws with (the slot's local origin matches the
@@ -328,25 +293,23 @@ private struct TodayLensPage: View {
         return best
     }
 
+    /// Maps the finger's x to the nearest point and updates the scrub index.
+    private func updateScrub(toX x: CGFloat, size: CGSize) {
+        let index = nearestScrubIndex(toX: x, size: size)
+        if index != scrubIndex.wrappedValue { scrubIndex.wrappedValue = index }
+    }
+
     // Hero: one large centered number + unit, then a single clarifier line. No
     // uppercase heading — the value is self-explanatory. Tap toggles the unit;
     // long-press opens weight entry.
     private var hero: some View {
-        // Current Weight reflects the *selected day's* logged weight: full
-        // opacity when that day is logged, or a muted placeholder (the most
-        // recent reading) with a tap-to-log cue when it is not — so the screen
-        // never presents an old reading as if it were today's. Other lenses keep
-        // their aggregate headline.
         // While scrubbing, the hovered point owns the headline on every lens —
-        // value, date clarifier, and a contextual comparison — and the live
-        // placeholder/muting rules are suspended. Release restores all of it.
+        // value, date clarifier, and a contextual comparison. Release restores
+        // the canonical aggregate headline.
         let scrub = scrubInfo
-        let cw = currentWeightHero
-        let valueText = scrub?.heroValue ?? cw?.valueText ?? rendered.heroValue
-        let unitText = scrub?.heroUnit ?? cw?.unit ?? rendered.heroUnit
-        let context = scrub?.heroContext ?? cw?.context ?? rendered.heroContext
-        let muted = scrub == nil ? (cw.map { !$0.logged } ?? false) : false
-        let tapLogs = muted
+        let valueText = scrub?.heroValue ?? rendered.heroValue
+        let unitText = scrub?.heroUnit ?? rendered.heroUnit
+        let context = scrub?.heroContext ?? rendered.heroContext
 
         return VStack(spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -356,22 +319,20 @@ private struct TodayLensPage: View {
                     .minimumScaleFactor(0.4)
                     .lineLimit(1)
                     .foregroundStyle(.primary)
-                    .opacity(muted ? 0.34 : 1)
                 Text(unitText)
                     .font(.system(size: 25, weight: .semibold, design: .rounded))
                     .foregroundStyle(.secondary)
-                    .opacity(muted ? 0.6 : 1)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
             .contentShape(Rectangle())
-            .onTapGesture { tapLogs ? onLog() : onToggleUnit() }
+            .onTapGesture { onToggleUnit() }
             .onLongPressGesture(minimumDuration: 0.35) { onLog() }
 
             if let context {
                 Text(context)
-                    .font(.system(size: 16, weight: muted || scrub != nil ? .semibold : .regular))
-                    .foregroundStyle(muted ? rendered.lens.accent : Color.secondary)
+                    .font(.system(size: 16, weight: scrub != nil ? .semibold : .regular))
+                    .foregroundStyle(Color.secondary)
                     .monospacedDigit()
             }
 
@@ -386,9 +347,7 @@ private struct TodayLensPage: View {
                     .padding(.top, 2)
             }
 
-            // Aggregate lenses keep a discrete "Log today" affordance; Current
-            // Weight's muted placeholder already carries the tap-to-log cue.
-            if scrub == nil, cw == nil, !hasEntryToday {
+            if scrub == nil, !hasEntryToday {
                 Button(action: onLog) {
                     Label("Log today", systemImage: "plus.circle.fill")
                         .font(.subheadline.weight(.semibold))
@@ -434,6 +393,73 @@ private struct TodayLensPage: View {
     }
 }
 
+// MARK: - Scrub gesture (UIKit)
+
+/// A transparent overlay whose scrub is driven by a `UILongPressGestureRecognizer`.
+/// It begins after a brief near-stationary hold, then keeps reporting `location`
+/// as the finger moves, which is exactly what point inspection needs. A separate
+/// tap recognizer opens the detail chart.
+struct ScrubGestureView: UIViewRepresentable {
+    var onTap: () -> Void
+    var onBegan: (CGPoint) -> Void
+    var onChanged: (CGPoint) -> Void
+    var onEnded: () -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+
+        let press = UILongPressGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handlePress(_:))
+        )
+        press.minimumPressDuration = 0.28
+        press.allowableMovement = 12
+        press.delegate = context.coordinator
+        view.addGestureRecognizer(press)
+
+        let tap = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTap(_:))
+        )
+        tap.delegate = context.coordinator
+        view.addGestureRecognizer(tap)
+
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.parent = self
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var parent: ScrubGestureView
+        init(_ parent: ScrubGestureView) { self.parent = parent }
+
+        @objc func handlePress(_ g: UILongPressGestureRecognizer) {
+            let location = g.location(in: g.view)
+            switch g.state {
+            case .began: parent.onBegan(location)
+            case .changed: parent.onChanged(location)
+            case .ended, .cancelled, .failed: parent.onEnded()
+            default: break
+            }
+        }
+
+        @objc func handleTap(_ g: UITapGestureRecognizer) {
+            if g.state == .ended { parent.onTap() }
+        }
+
+        // Keep the tap and press recognizers cooperative with ancestor gestures.
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+        ) -> Bool { true }
+    }
+}
+
 // MARK: - Chart-slot geometry
 
 /// Carries the chart slot's bounds up to the page background so `LensBackdrop`
@@ -441,10 +467,45 @@ private struct TodayLensPage: View {
 /// rect the layout gave the chart. An anchor resolves synchronously during
 /// layout, so it works under `ImageRenderer` (snapshots) without a state
 /// round-trip.
-private struct PlotRectKey: PreferenceKey {
+struct PlotRectKey: PreferenceKey {
     static let defaultValue: Anchor<CGRect>? = nil
     static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
         value = value ?? nextValue()
+    }
+}
+
+// MARK: - Top-level decorative backdrop host
+
+extension View {
+    /// Hosts the single decorative backdrop + chart for one rendered lens as a
+    /// full-screen background that bleeds behind EVERY safe area — the status
+    /// bar, the custom top control row, and the home indicator. It resolves the
+    /// chart-slot rect published by the centered page via `PlotRectKey` inside a
+    /// full-screen proxy, so the plotted curve lands in the on-screen slot even
+    /// though the backdrop itself is hosted above the top bar (where a per-page
+    /// `.background` would be clipped). Pass `rendered == nil` for the no-lens
+    /// fallback (plain system background).
+    @ViewBuilder
+    func lensBackdrop(rendered: RenderedLens?, photo: UIImage?, scrubIndex: Int?) -> some View {
+        backgroundPreferenceValue(PlotRectKey.self) { anchor in
+            GeometryReader { proxy in
+                if let rendered {
+                    LensBackdrop(
+                        spec: rendered.plot,
+                        photo: photo,
+                        accent: rendered.lens.accent,
+                        decorativeColors: rendered.lens.decorativeColors,
+                        plotRect: anchor.map { proxy[$0] } ?? .zero,
+                        scrubIndex: scrubIndex,
+                        scrubPoints: rendered.scrub?.points ?? [],
+                        scrubCallouts: rendered.scrub?.callouts ?? []
+                    )
+                } else {
+                    Color(.systemBackground)
+                }
+            }
+            .ignoresSafeArea()
+        }
     }
 }
 
@@ -514,12 +575,11 @@ enum LensPreviewFixture {
     }
     static var domains: CutChartDomainState { .resolved(for: chart, calendar: calendar) }
     static var weekly: WeeklyCutChartModel { .prepare(active: active, readings: readings, asOf: asOf, calendar: calendar) }
-    static var pace: PaceLensModel { .prepare(active: active, readings: readings, projection: projection, asOf: asOf, calendar: calendar) }
-    static var thisWeek: ThisWeekModel { .prepare(active: active, readings: readings, asOf: asOf, calendar: calendar) }
+    static var analytics: TodayAnalyticsModel { .prepare(active: active, readings: readings, asOf: asOf, calendar: calendar) }
 
     static func builder(_ unit: WeightUnit) -> TodayLensBuilder {
-        TodayLensBuilder(active: active, projection: projection, chart: chart, domains: domains,
-                         weekly: weekly, pace: pace, thisWeek: thisWeek, unit: unit, dayNumber: 81, calendar: calendar)
+        TodayLensBuilder(active: active, analytics: analytics, weekly: weekly,
+                         unit: unit, dayNumber: 81, calendar: calendar)
     }
 }
 
@@ -527,68 +587,59 @@ enum LensPreviewFixture {
 /// artifacts match what previews show.
 @MainActor
 func makeLensSnapshotView(_ lens: TodayLens, unit: WeightUnit) -> some View {
-    // The page draws its own decorative-masked backdrop over the system
-    // background; photo mode is off here so snapshots exercise the deterministic
-    // accent-gradient path.
-    TodayLensPage(
-        rendered: LensPreviewFixture.builder(unit).render(lens),
-        photo: nil,
+    // The decorative-masked backdrop now lives in a top-level `.lensBackdrop`
+    // modifier so it can bleed behind the bars in the app; the snapshot composes
+    // the same modifier over the page. Photo mode is off here so snapshots
+    // exercise the deterministic accent-gradient path.
+    let rendered = LensPreviewFixture.builder(unit).render(lens)
+    return TodayLensPage(
+        rendered: rendered,
         hasEntryToday: true,
         pageIndicator: AnyView(EmptyView()),
+        allowsChartInteraction: false,
         onToggleUnit: {}, onLog: {}, onOpenDetail: {}
     )
     .frame(width: 393, height: 640)
+    .lensBackdrop(rendered: rendered, photo: nil, scrubIndex: nil)
     .background(Color(.systemBackground))
 }
 
 @MainActor
 private func lensPreview(_ lens: TodayLens, _ unit: WeightUnit) -> some View {
-    TodayLensPage(
-        rendered: LensPreviewFixture.builder(unit).render(lens),
-        photo: nil,
+    let rendered = LensPreviewFixture.builder(unit).render(lens)
+    return TodayLensPage(
+        rendered: rendered,
         hasEntryToday: true,
         pageIndicator: AnyView(EmptyView()),
+        allowsChartInteraction: false,
         onToggleUnit: {}, onLog: {}, onOpenDetail: {}
     )
     .frame(height: 560)
+    .lensBackdrop(rendered: rendered, photo: nil, scrubIndex: nil)
     .background(Color(.systemBackground))
 }
 
-#Preview("1 · Current Weight · lb") { lensPreview(.currentWeight, .lbs) }
-#Preview("2 · Total Lost · lb") { lensPreview(.totalLost, .lbs) }
-#Preview("3 · This Week · lb") { lensPreview(.thisWeek, .lbs) }
-#Preview("4 · Weekly Average · lb") { lensPreview(.weeklyAverage, .lbs) }
-#Preview("5 · Pace · lb") { lensPreview(.pace, .lbs) }
-#Preview("6 · Forecast · lb") { lensPreview(.forecast, .lbs) }
-#Preview("7 · Full Cut · lb") { lensPreview(.fullCut, .lbs) }
-#Preview("8 · Weekly Range · lb") { lensPreview(.weeklyRange, .lbs) }
-#Preview("9 · Weekly Loss · lb") { lensPreview(.weeklyLoss, .lbs) }
+#Preview("1 · Progress vs Plan · lb") { lensPreview(.progress, .lbs) }
+#Preview("2 · Recent Trend · lb") { lensPreview(.recentTrend, .lbs) }
+#Preview("3 · Weekly Summary · lb") { lensPreview(.weeklySummary, .lbs) }
 
-#Preview("Current Weight · dark · kg") { lensPreview(.currentWeight, .kg).preferredColorScheme(.dark) }
-#Preview("Total Lost · dark · kg") { lensPreview(.totalLost, .kg).preferredColorScheme(.dark) }
-#Preview("Pace · dark · kg") { lensPreview(.pace, .kg).preferredColorScheme(.dark) }
-#Preview("Forecast · dark · kg") { lensPreview(.forecast, .kg).preferredColorScheme(.dark) }
+#Preview("Progress · dark · kg") { lensPreview(.progress, .kg).preferredColorScheme(.dark) }
+#Preview("Recent Trend · dark · kg") { lensPreview(.recentTrend, .kg).preferredColorScheme(.dark) }
 
 #Preview("Carousel") {
-    @Previewable @State var selection: TodayLens = .currentWeight
+    @Previewable @State var selection: TodayLens = .progress
+    @Previewable @State var scrubIndex: Int? = nil
     return TodayLensCarousel(
         active: LensPreviewFixture.active,
-        projection: LensPreviewFixture.projection,
-        chart: LensPreviewFixture.chart,
-        domains: LensPreviewFixture.domains,
+        analytics: LensPreviewFixture.analytics,
         weekly: LensPreviewFixture.weekly,
-        pace: LensPreviewFixture.pace,
-        thisWeek: LensPreviewFixture.thisWeek,
         unit: .lbs,
         hasEntryToday: true,
         dayNumber: 81,
-        selectedDate: LensPreviewFixture.asOf,
-        selectedDayValue: 156.2,
-        selectedDayLogged: true,
-        selectedDayNumber: 81,
         lenses: TodayLens.allCases,
         onToggleUnit: {}, onLog: {}, onOpenDetail: {},
-        selection: $selection
+        selection: $selection,
+        scrubIndex: $scrubIndex
     )
 }
 #endif

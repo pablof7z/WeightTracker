@@ -30,8 +30,8 @@ final class LensScrubModelTests: XCTestCase {
     /// Scrub readouts are built in the display unit, so switching units must
     /// change the rendered value strings rather than silently reusing pounds.
     func testScrubValuesFollowTheDisplayUnit() throws {
-        let lbs = try XCTUnwrap(LensPreviewFixture.builder(.lbs).render(.currentWeight).scrub)
-        let kg = try XCTUnwrap(LensPreviewFixture.builder(.kg).render(.currentWeight).scrub)
+        let lbs = try XCTUnwrap(LensPreviewFixture.builder(.lbs).render(.progress).scrub)
+        let kg = try XCTUnwrap(LensPreviewFixture.builder(.kg).render(.progress).scrub)
         XCTAssertEqual(lbs.points.count, kg.points.count)
         let i = lbs.points.count / 2
         XCTAssertNotEqual(lbs.info[i].heroValue, kg.info[i].heroValue)

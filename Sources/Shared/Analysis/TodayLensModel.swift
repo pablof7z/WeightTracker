@@ -1,66 +1,263 @@
 import Foundation
 
-/// The curated set of Today "lenses" — each a single mathematical perspective
-/// on the active cut. Order is deliberate and fixed; the carousel is curated,
-/// not exhaustive. Every lens consumes the one canonical daily pipeline
-/// (`CanonicalDailyWeightSeries` / `CutChartModel`) so no view recomputes
-/// observations, trends, pace, forecasts, or domains.
-///
-/// Overlapping transforms from the previous carousel (pounds-remaining, goal
-/// completion percent, ahead/behind pace as its own page, weekly-loss bars)
-/// are intentionally *not* separate lenses — they are affine restatements of
-/// Current Weight / Total Lost, supporting figures inside Pace, or content for
-/// the deeper weekly detail screen.
+/// The three distinct questions Today answers. Old preferences containing any
+/// of the retired nine-lens raw values decode safely to this canonical order.
 public enum TodayLens: String, CaseIterable, Identifiable, Sendable {
-    case currentWeight
-    case totalLost
-    case thisWeek
-    case weeklyAverage
-    case pace
-    case forecast
-    case fullCut
-    case weeklyRange
-    case weeklyLoss
+    case progress
+    case recentTrend
+    case weeklySummary
 
     public var id: String { rawValue }
 
     /// The lens shown on every cold launch. The current lens is retained for
     /// the session but never persisted across launches, so a deeply secondary
     /// lens can't become the default opening experience.
-    public static let launchDefault: TodayLens = .currentWeight
+    public static let launchDefault: TodayLens = .progress
 
     /// Small factual label rendered above the hero number.
     public var label: String {
         switch self {
-        case .currentWeight: return "Current weight"
-        case .totalLost: return "Total lost"
-        case .thisWeek: return "This week"
-        case .weeklyAverage: return "Weekly average"
-        case .pace: return "Pace"
-        case .forecast: return "Forecast"
-        case .fullCut: return "Full cut"
-        case .weeklyRange: return "Weekly range"
-        case .weeklyLoss: return "Weekly loss"
+        case .progress: return "Progress vs Plan"
+        case .recentTrend: return "Recent Trend"
+        case .weeklySummary: return "Weekly Average + Range"
         }
     }
 
     /// One-line explanation used by Settings so the list is self-describing.
     public var detail: String {
         switch self {
-        case .currentWeight: return "Latest weight over the last 30 days with its trailing trend"
-        case .totalLost: return "Cumulative pounds lost since the cut began, against the goal"
-        case .thisWeek: return "Signed change so far this calendar week"
-        case .weeklyAverage: return "Weekly mean weight and the change versus the prior week"
-        case .pace: return "Rolling loss rate per week against the rate still required"
-        case .forecast: return "Projected weight on the target date with its uncertainty band"
-        case .fullCut: return "Absolute weight across the entire cut, start to target date"
-        case .weeklyRange: return "Weekly average with the observed minimum and maximum each week"
-        case .weeklyLoss: return "Week-over-week change as bars against the required weekly rate"
+        case .progress: return "Raw readings, current trend, plan, target, and fitted forecast"
+        case .recentTrend: return "Fourteen-day fitted pace compared with what is needed now"
+        case .weeklySummary: return "Monday-based means, observed range, and reading coverage"
         }
     }
 
     /// Spoken lens name for the VoiceOver summary.
     public var accessibilityName: String { label }
+}
+
+// MARK: - Canonical Today analytics
+
+public struct RecentPaceFit: Equatable, Sendable {
+    /// Conventional signed weight slope. Negative means weight is falling.
+    public let slopeLbPerDay: Double
+    public let observationCount: Int
+    public let windowStart: Date
+    public let windowEnd: Date
+    public let fittedLine: [DatedValue]
+    public let slopeStandardErrorLbPerDay: Double
+    public let residualStandardDeviationLb: Double
+
+    public var signedLbPerWeek: Double { slopeLbPerDay * 7 }
+    public var lossMagnitudeLbPerWeek: Double { -signedLbPerWeek }
+}
+
+public enum NeededPace: Equatable, Sendable {
+    /// Positive magnitude in pounds/week for a loss target.
+    case available(Double)
+    case goalReached
+    case deadlinePassed
+    case insufficientData
+}
+
+public struct TodayTrendForecast: Equatable, Sendable {
+    public let anchor: DatedValue
+    public let targetDate: Date
+    public let projectedTargetWeightLb: Double
+    public let lowerTargetWeightLb: Double
+    public let upperTargetWeightLb: Double
+    public let centerLine: [DatedValue]
+    public let lowerLine: [DatedValue]
+    public let upperLine: [DatedValue]
+}
+
+/// One source of truth for every number and line on Today. It deliberately does
+/// not consume the historical-cut/bootstrap or physiology forecast engines:
+/// the displayed forecast follows from the same recent fit the user can inspect.
+public struct TodayAnalyticsModel: Equatable, Sendable {
+    public static let trendWindowDays = 7
+    public static let paceWindowDays = 14
+
+    public let asOfDate: Date
+    public let startDate: Date
+    public let targetDate: Date
+    public let startWeightLb: Double
+    public let targetWeightLb: Double
+    public let observations: [DatedValue]
+    public let trend: [DatedValue]
+    public let trendObservationCounts: [Int]
+    public let plannedTrajectory: [DatedValue]
+    public let latestObservation: DatedValue?
+    public let currentTrend: DatedValue?
+    public let currentTrendObservationCount: Int
+    public let plannedWeightAsOfLb: Double
+    /// Current trend minus planned weight. Positive means above the loss plan.
+    public let trendMinusPlanLb: Double?
+    public let originalPlannedLossLbPerWeek: Double
+    public let neededNow: NeededPace
+    public let recentPace: RecentPaceFit?
+    public let forecast: TodayTrendForecast?
+
+    public static func prepare(
+        active: ActiveCut,
+        readings: [Reading],
+        asOf: Date = Date(),
+        calendar: Calendar = .current
+    ) -> TodayAnalyticsModel {
+        let start = calendar.startOfDay(for: active.startDate)
+        let target = calendar.startOfDay(for: active.targetEndDate)
+        let asOfDay = calendar.startOfDay(for: asOf)
+        let canonical = CanonicalDailyWeightSeries.prepare(
+            readings: readings,
+            from: start,
+            through: asOfDay,
+            calendar: calendar
+        )
+        let observations = canonical.map {
+            DatedValue(date: $0.date, value: UnitConvert.kgToLb($0.weightKg))
+        }
+
+        var trend: [DatedValue] = []
+        var trendCounts: [Int] = []
+        for point in observations {
+            let lower = calendar.date(byAdding: .day, value: -(trendWindowDays - 1), to: point.date) ?? point.date
+            let window = observations.filter { $0.date >= lower && $0.date <= point.date }
+            let mean = window.map(\.value).reduce(0, +) / Double(window.count)
+            trend.append(DatedValue(date: point.date, value: mean))
+            trendCounts.append(window.count)
+        }
+
+        let startLb = UnitConvert.kgToLb(active.startWeightKg)
+        let targetLb = UnitConvert.kgToLb(active.targetWeightKg)
+        let plannedTrajectory = [
+            DatedValue(date: start, value: startLb),
+            DatedValue(date: target, value: targetLb),
+        ]
+        let plannedWeight = CutChartModel.requiredPace(
+            at: min(max(asOfDay, start), target),
+            startDate: start,
+            targetDate: target,
+            startWeight: startLb,
+            targetWeight: targetLb,
+            calendar: calendar
+        )
+        let totalDays = max(1, calendar.dateComponents([.day], from: start, to: target).day ?? 1)
+        let originalPlanned = (startLb - targetLb) / (Double(totalDays) / 7)
+        let currentTrend = trend.last
+        let currentCount = trendCounts.last ?? 0
+
+        let neededNow: NeededPace = {
+            guard let currentTrend else { return .insufficientData }
+            if currentTrend.value <= targetLb { return .goalReached }
+            let remaining = calendar.dateComponents([.day], from: asOfDay, to: target).day ?? 0
+            guard remaining > 0 else { return .deadlinePassed }
+            return .available(max(0, (currentTrend.value - targetLb) / (Double(remaining) / 7)))
+        }()
+
+        let recent = recentPaceFit(observations: observations, calendar: calendar)
+        let forecast = makeForecast(
+            currentTrend: currentTrend,
+            recentPace: recent,
+            asOf: asOfDay,
+            targetDate: target,
+            calendar: calendar
+        )
+
+        return TodayAnalyticsModel(
+            asOfDate: asOfDay,
+            startDate: start,
+            targetDate: target,
+            startWeightLb: startLb,
+            targetWeightLb: targetLb,
+            observations: observations,
+            trend: trend,
+            trendObservationCounts: trendCounts,
+            plannedTrajectory: plannedTrajectory,
+            latestObservation: observations.last,
+            currentTrend: currentTrend,
+            currentTrendObservationCount: currentCount,
+            plannedWeightAsOfLb: plannedWeight,
+            trendMinusPlanLb: currentTrend.map { $0.value - plannedWeight },
+            originalPlannedLossLbPerWeek: originalPlanned,
+            neededNow: neededNow,
+            recentPace: recent,
+            forecast: forecast
+        )
+    }
+
+    static func recentPaceFit(
+        observations: [DatedValue],
+        calendar: Calendar
+    ) -> RecentPaceFit? {
+        guard let latest = observations.last else { return nil }
+        let lower = calendar.date(byAdding: .day, value: -(paceWindowDays - 1), to: latest.date) ?? latest.date
+        let points = observations.filter { $0.date >= lower && $0.date <= latest.date }
+        guard points.count >= 3, let first = points.first else { return nil }
+        let span = calendar.dateComponents([.day], from: first.date, to: latest.date).day ?? 0
+        guard span >= 7 else { return nil }
+
+        let xs = points.map { Double(calendar.dateComponents([.day], from: first.date, to: $0.date).day ?? 0) }
+        let ys = points.map(\.value)
+        let n = Double(points.count)
+        let meanX = xs.reduce(0, +) / n
+        let meanY = ys.reduce(0, +) / n
+        let sxx = xs.reduce(0) { $0 + pow($1 - meanX, 2) }
+        guard sxx > 0 else { return nil }
+        let sxy = zip(xs, ys).reduce(0) { $0 + ($1.0 - meanX) * ($1.1 - meanY) }
+        let slope = sxy / sxx
+        let intercept = meanY - slope * meanX
+        let residuals = zip(xs, ys).map { $0.1 - (intercept + slope * $0.0) }
+        let degrees = max(1, points.count - 2)
+        let residualVariance = residuals.reduce(0) { $0 + $1 * $1 } / Double(degrees)
+        let residualSD = sqrt(max(0, residualVariance))
+        let slopeSE = sqrt(max(0, residualVariance / sxx))
+        let lastX = xs.last ?? 0
+
+        return RecentPaceFit(
+            slopeLbPerDay: slope,
+            observationCount: points.count,
+            windowStart: first.date,
+            windowEnd: latest.date,
+            fittedLine: [
+                DatedValue(date: first.date, value: intercept),
+                DatedValue(date: latest.date, value: intercept + slope * lastX),
+            ],
+            slopeStandardErrorLbPerDay: slopeSE,
+            residualStandardDeviationLb: residualSD
+        )
+    }
+
+    private static func makeForecast(
+        currentTrend: DatedValue?,
+        recentPace: RecentPaceFit?,
+        asOf: Date,
+        targetDate: Date,
+        calendar: Calendar
+    ) -> TodayTrendForecast? {
+        guard let currentTrend, let recentPace else { return nil }
+        let days = calendar.dateComponents([.day], from: asOf, to: targetDate).day ?? 0
+        guard days > 0 else { return nil }
+        let horizon = Double(days)
+        let projected = currentTrend.value + recentPace.slopeLbPerDay * horizon
+        let levelSE = recentPace.residualStandardDeviationLb / sqrt(Double(recentPace.observationCount))
+        let slopeSEAtTarget = recentPace.slopeStandardErrorLbPerDay * horizon
+        let halfWidth = 1.96 * sqrt(levelSE * levelSE + slopeSEAtTarget * slopeSEAtTarget)
+        guard halfWidth.isFinite, halfWidth <= 8 else { return nil }
+        let anchor = DatedValue(date: asOf, value: currentTrend.value)
+        let end = DatedValue(date: targetDate, value: projected)
+        let lowerEnd = DatedValue(date: targetDate, value: projected - halfWidth)
+        let upperEnd = DatedValue(date: targetDate, value: projected + halfWidth)
+        return TodayTrendForecast(
+            anchor: anchor,
+            targetDate: targetDate,
+            projectedTargetWeightLb: projected,
+            lowerTargetWeightLb: lowerEnd.value,
+            upperTargetWeightLb: upperEnd.value,
+            centerLine: [anchor, end],
+            lowerLine: [anchor, lowerEnd],
+            upperLine: [anchor, upperEnd]
+        )
+    }
 }
 
 // MARK: - Carousel order + visibility
@@ -104,7 +301,7 @@ public enum TodayLensOrder {
     }
 
     /// The lenses the carousel should actually render, in the saved order.
-    /// Never empty: hiding everything falls back to Current Weight rather than
+    /// Never empty: hiding everything falls back to Progress rather than
     /// producing an empty pager.
     public static func enabled(orderRaw: String, hiddenRaw: String) -> [TodayLens] {
         let hidden = decodeHidden(hiddenRaw)
@@ -112,7 +309,7 @@ public enum TodayLensOrder {
         return visible.isEmpty ? [TodayLens.launchDefault] : visible
     }
 
-    /// The lens a cold launch opens on: Current Weight when it is enabled,
+    /// The lens a cold launch opens on: Progress when it is enabled,
     /// otherwise the first enabled lens.
     public static func launchLens(in enabled: [TodayLens]) -> TodayLens {
         if enabled.contains(TodayLens.launchDefault) { return .launchDefault }

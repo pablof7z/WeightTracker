@@ -10,7 +10,7 @@ public enum CSVExporter {
 
         var out = "Date,Hips,Waist,Weight\n"
         for r in sorted {
-            let dateStr = isoDate(r.date)
+            let dateStr = r.civilDayKey ?? Reading.civilDayKey(for: r.date)
 
             let hipsStr: String
             if let hips = r.hipsCm {
@@ -41,25 +41,12 @@ public enum CSVExporter {
     /// Filename `Measurement-Summary-{firstISO}-to-{lastISO}.csv`.
     /// If readings are empty, falls back to today's date for both ends.
     public static func suggestedFilename(for readings: [Reading]) -> String {
-        let dates = readings.map { $0.date }.sorted()
-        let first = dates.first ?? Date()
-        let last = dates.last ?? Date()
-        return "Measurement-Summary-\(isoDate(first))-to-\(isoDate(last)).csv"
+        let keys = readings.map { $0.civilDayKey ?? Reading.civilDayKey(for: $0.date) }.sorted()
+        let today = Reading.civilDayKey(for: Date())
+        return "Measurement-Summary-\(keys.first ?? today)-to-\(keys.last ?? today).csv"
     }
 
     // MARK: - Helpers
-
-    private static let isoFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
-    private static func isoDate(_ date: Date) -> String {
-        isoFormatter.string(from: date)
-    }
 
     private static let oneDecimalFormatter: NumberFormatter = {
         let f = NumberFormatter()

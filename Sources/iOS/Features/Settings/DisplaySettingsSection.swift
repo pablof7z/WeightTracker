@@ -69,7 +69,7 @@ struct DisplaySettingsSection: View {
         } header: {
             Text("Today charts")
         } footer: {
-            Text("Tap Edit to arrange the swipe order. Switch off any chart you don't want in the carousel. Today always opens on Current weight when it is on. Turning everything off falls back to Current weight.")
+            Text("Tap Edit to arrange the screen order. Today opens on Progress vs Plan. Turning everything off falls back to Progress vs Plan.")
         }
         .onAppear {
             lensOrder = TodayLensOrder.decode(lensOrderRaw)
@@ -145,33 +145,22 @@ private struct LensSwatch: View {
                 let w = geo.size.width
                 let h = geo.size.height
                 ZStack {
-                    if lens == .weeklyLoss {
+                    if lens == .weeklySummary {
                         Path { p in
-                            p.addRect(CGRect(x: w * 0.14, y: h * 0.44, width: 6, height: h * 0.30))
-                            p.addRect(CGRect(x: w * 0.42, y: h * 0.28, width: 6, height: h * 0.46))
-                            p.addRect(CGRect(x: w * 0.70, y: h * 0.52, width: 6, height: h * 0.22))
-                        }
-                        .fill(lens.accent.opacity(0.85))
-                    } else {
-                        if lens == .weeklyRange {
-                            Path { p in
-                                for x in [w * 0.18, w * 0.46, w * 0.74] {
-                                    p.move(to: CGPoint(x: x, y: h * 0.22))
-                                    p.addLine(to: CGPoint(x: x, y: h * 0.78))
-                                }
+                            for x in [w * 0.18, w * 0.46, w * 0.74] {
+                                p.move(to: CGPoint(x: x, y: h * 0.22))
+                                p.addLine(to: CGPoint(x: x, y: h * 0.78))
                             }
-                            .stroke(lens.accent.opacity(0.45), lineWidth: 1)
                         }
-                        Path { p in
-                            p.move(to: CGPoint(x: 5, y: h * 0.30))
-                            p.addCurve(
-                                to: CGPoint(x: w - 5, y: h * 0.70),
-                                control1: CGPoint(x: w * 0.34, y: h * 0.36),
-                                control2: CGPoint(x: w * 0.58, y: h * 0.64)
-                            )
-                        }
-                        .stroke(lens.accent.opacity(0.9), style: StrokeStyle(lineWidth: 1.7, lineCap: .round))
+                        .stroke(lens.accent.opacity(0.45), lineWidth: 1)
                     }
+                    Path { p in
+                        p.move(to: CGPoint(x: 5, y: h * 0.30))
+                        p.addLine(to: CGPoint(x: w * 0.34, y: h * 0.42))
+                        p.addLine(to: CGPoint(x: w * 0.62, y: h * 0.55))
+                        p.addLine(to: CGPoint(x: w - 5, y: h * 0.70))
+                    }
+                    .stroke(lens.accent.opacity(0.9), style: StrokeStyle(lineWidth: 1.7, lineCap: .round))
                 }
             }
         }

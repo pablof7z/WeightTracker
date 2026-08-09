@@ -127,7 +127,8 @@ public struct WeeklyCutChartModel: Equatable, Sendable {
                     startDate: cutStart,
                     targetDate: cutEnd,
                     startWeight: startWeight,
-                    targetWeight: targetWeight
+                    targetWeight: targetWeight,
+                    calendar: weeklyCalendar
                 )
             }
             let plannedAverage = mean(plannedValues)

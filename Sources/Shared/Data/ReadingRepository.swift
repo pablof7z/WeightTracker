@@ -50,17 +50,26 @@ public final class SwiftDataReadingRepository: ReadingRepository {
     }
 
     public func reading(on date: Date) -> Reading? {
-        // Match within ±12h of the day-start rather than requiring an exact
-        // timestamp. Readings are stored at `dayStart` in the device's current
-        // timezone, so a near-midnight reading saved under a different
-        // timezone/DST offset lands on a slightly different instant; exact
-        // equality used to miss it and let duplicates accumulate. Distinct
-        // calendar days are 24h apart, so a 24h-wide window centered on midnight
-        // still resolves to a single day; pick the reading nearest the boundary.
+        // New records have an explicit civil-day identity, so timezone or DST
+        // changes cannot make Aug 8 appear as Aug 7/9 during lookup.
+        let civilKey = Reading.civilDayKey(for: date)
+        let keyedPredicate = #Predicate<Reading> { $0.civilDayKey == civilKey }
+        var keyedDescriptor = FetchDescriptor<Reading>(predicate: keyedPredicate)
+        keyedDescriptor.fetchLimit = 1
+        if let keyed = (try? context.fetch(keyedDescriptor))?.first {
+            return keyed
+        }
+
+        // Legacy records may not have a key after lightweight migration. Match
+        // those within ±12h of the requested day-start so the historical DST
+        // round-trip cleanup behavior remains available without overriding a
+        // keyed record from an adjacent civil day.
         let day = Reading.dayStart(of: date)
         let lo = day.addingTimeInterval(-12 * 3600)
         let hi = day.addingTimeInterval(12 * 3600)
-        let predicate = #Predicate<Reading> { $0.date > lo && $0.date < hi }
+        let predicate = #Predicate<Reading> {
+            $0.civilDayKey == nil && $0.date > lo && $0.date < hi
+        }
         let descriptor = FetchDescriptor<Reading>(predicate: predicate)
         let candidates = (try? context.fetch(descriptor)) ?? []
         return candidates.min {

@@ -58,28 +58,33 @@ extension TodayLens {
 /// generated from the same anchors the tests assert.
 ///
 /// `t` is the normalized vertical position over the whole page: 0 at the top,
-/// 1 at the bottom. The decorative layer is essentially absent through the upper
-/// ~30% (so the top is literally the system background), climbs through the
-/// middle to ~0.5 at the vertical midpoint, and is strongest toward the bottom.
+/// 1 at the bottom. The decorative layer is held at a stable faint value
+/// (`aboveCurveCap`) through the upper part of the page — the same opacity used
+/// above the plotted curve, so the top of the app never fades to nothing — then
+/// climbs through the middle to ~0.5 at the vertical midpoint and is strongest
+/// toward the bottom. Everything above the chart line (the hero region included)
+/// stays at that faint flat value; only below the line does it reveal.
 enum LensMask {
-    /// Top of the page stays pure system background up to here.
-    static let systemBackgroundTop: Double = 0.30
+    /// Below this normalized height the reveal holds at its faint floor value
+    /// rather than ramping — so the top of the screen is stable, not transparent.
+    static let floorThreshold: Double = 0.30
     /// Vertical midpoint reveal.
     static let midpoint: Double = 0.50
     static let midpointAlpha: Double = 0.50
     /// Reveal at the very bottom of the page.
     static let bottomAlpha: Double = 0.85
-    /// Decorative opacity is capped to this flat value above the plotted curve,
-    /// no matter how strong the base ramp is there.
+    /// The stable faint opacity held above the plotted curve AND across the whole
+    /// upper page — the top of the app matches this, it never goes to 0.
     static let aboveCurveCap: Double = 0.10
 
-    /// Piecewise-linear base reveal. Monotonic non-decreasing in `t`.
+    /// Piecewise-linear base reveal. Floors at `aboveCurveCap` through the top,
+    /// then climbs. Monotonic non-decreasing in `t`.
     static func baseAlpha(normalizedY t: Double) -> Double {
         let y = min(1, max(0, t))
-        if y <= systemBackgroundTop { return 0 }
+        if y <= floorThreshold { return aboveCurveCap }
         if y <= midpoint {
-            let f = (y - systemBackgroundTop) / (midpoint - systemBackgroundTop)
-            return f * midpointAlpha
+            let f = (y - floorThreshold) / (midpoint - floorThreshold)
+            return aboveCurveCap + f * (midpointAlpha - aboveCurveCap)
         }
         let f = (y - midpoint) / (1.0 - midpoint)
         return midpointAlpha + f * (bottomAlpha - midpointAlpha)
@@ -90,30 +95,10 @@ enum LensMask {
     /// `baseAlpha`, the drawn ramp and the tested math cannot diverge.
     static var rampStops: [Gradient.Stop] {
         [
-            .init(color: .white.opacity(0), location: 0),
-            .init(color: .white.opacity(0), location: systemBackgroundTop),
+            .init(color: .white.opacity(aboveCurveCap), location: 0),
+            .init(color: .white.opacity(aboveCurveCap), location: floorThreshold),
             .init(color: .white.opacity(midpointAlpha), location: midpoint),
             .init(color: .white.opacity(bottomAlpha), location: 1.0),
-        ]
-    }
-
-    /// The normalized vertical position at which `baseAlpha` first reaches the
-    /// above-curve cap, i.e. `baseAlpha(cappedAt) == aboveCurveCap`.
-    static var cappedAt: Double {
-        systemBackgroundTop + (aboveCurveCap / midpointAlpha) * (midpoint - systemBackgroundTop)
-    }
-
-    /// Gradient stops for the reveal ABOVE the plotted curve: `min(baseAlpha, cap)`.
-    /// It follows the base ramp until it hits the cap and then plateaus, so it is
-    /// a true ceiling — the decorative layer stays faint above the curve AND
-    /// still fades to nothing through the top (no hard seam against the system
-    /// background). Shared anchors keep it consistent with `baseAlpha`.
-    static var cappedRampStops: [Gradient.Stop] {
-        [
-            .init(color: .white.opacity(0), location: 0),
-            .init(color: .white.opacity(0), location: systemBackgroundTop),
-            .init(color: .white.opacity(aboveCurveCap), location: cappedAt),
-            .init(color: .white.opacity(aboveCurveCap), location: 1.0),
         ]
     }
 }
@@ -122,7 +107,7 @@ enum LensMask {
 
 /// Persists a small collection of user-chosen photos (copied into Application
 /// Support) and vends a deterministic once-per-day image so the backdrop is
-/// stable across redraws and identical across all six lenses on a given day.
+/// stable across redraws and available to every retained lens on a given day.
 /// The atmospheric gradient is always the robust default; this is purely
 /// additive and fully separable — when disabled or empty it vends `nil`.
 @MainActor

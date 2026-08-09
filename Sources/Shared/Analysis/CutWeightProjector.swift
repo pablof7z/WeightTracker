@@ -180,8 +180,8 @@ public enum CutWeightProjector {
     // MARK: - Anchor (7-reading EMA, matches Today's "7-day avg" subtitle)
 
     /// EMA over the most recent ≤7 raw readings whose date is ≤ `asOf`, with
-    /// α = 2/(N+1) = 0.25 (N=7). Matches `TodayViewModel.computeEMA7Kg` exactly
-    /// so the projection anchors on the number the user already sees on screen.
+    /// α = 2/(N+1) = 0.25 (N=7). This is retained for this legacy/deeper
+    /// physiology projection only; Today uses a seven-calendar-day observed mean.
     /// Returns nil when fewer than 2 readings exist.
     private static func sevenReadingEMA(readings: [Reading], asOf day: Date) -> Double? {
         let eligible = readings

@@ -24,13 +24,10 @@ final class TodayViewModel: ObservableObject {
     @Published var chartModel: CutChartModel?
     @Published var chartDomains: CutChartDomainState?
     @Published var weeklyChartModel: WeeklyCutChartModel?
-    /// Trailing-regression pace lens data (lb/week). `nil` when no active cut.
-    @Published var paceModel: PaceLensModel?
-    /// Current-calendar-week cumulative-change lens data. `nil` when no active cut.
-    @Published var thisWeekModel: ThisWeekModel?
-    /// 7-day EMA of weight in kg, computed over the most recent ≤7 readings on or before
-    /// the currently-selected date. `nil` when fewer than 2 readings are available.
-    @Published var ema7Kg: Double?
+    @Published var analyticsModel: TodayAnalyticsModel?
+    /// Canonical seven-calendar-day observed mean in kg, ending at the latest
+    /// observation on or before the selected date.
+    @Published var trend7Kg: Double?
 
     /// Estimated caloric deficit metrics for the active cut, derived from the
     /// EWMA weight trend. See `CutDeficitEstimator` for the math. `nil` when
@@ -71,7 +68,7 @@ final class TodayViewModel: ObservableObject {
             self.minDate = min(self.minDate, Reading.dayStart(of: earliest.date))
         }
 
-        self.ema7Kg = Self.computeEMA7Kg(readings: allReadings, asOf: day)
+        self.trend7Kg = Self.computeCalendarTrend7Kg(readings: allReadings, asOf: day)
 
         let cut = ActiveCutStore.load()
         self.activeCut = cut
@@ -95,8 +92,7 @@ final class TodayViewModel: ObservableObject {
             self.chartModel = nil
             self.chartDomains = nil
             self.weeklyChartModel = nil
-            self.paceModel = nil
-            self.thisWeekModel = nil
+            self.analyticsModel = nil
         }
 
         // Recompute the deficit estimate. Always uses "today" as `asOf` (not
@@ -223,10 +219,10 @@ final class TodayViewModel: ObservableObject {
             clusterType: active?.classification
         )
 
-        // Refresh the EMA and deficit estimate to reflect the just-saved reading.
+        // Refresh the canonical trend and deficit estimate to reflect the just-saved reading.
         let refreshed = services.repository.allReadings()
         self.allReadings = refreshed
-        self.ema7Kg = Self.computeEMA7Kg(readings: refreshed, asOf: day)
+        self.trend7Kg = Self.computeCalendarTrend7Kg(readings: refreshed, asOf: day)
         let refreshedCut = ActiveCutStore.load()
         self.deficit = CutDeficitEstimator.estimate(
             activeCut: refreshedCut,
@@ -281,12 +277,12 @@ final class TodayViewModel: ObservableObject {
     }
 
     private func refreshChartModels(active: ActiveCut, readings: [Reading]) {
-        weeklyChartModel = WeeklyCutChartModel.prepare(
+        analyticsModel = TodayAnalyticsModel.prepare(
             active: active,
             readings: readings,
             asOf: Date()
         )
-        thisWeekModel = ThisWeekModel.prepare(
+        weeklyChartModel = WeeklyCutChartModel.prepare(
             active: active,
             readings: readings,
             asOf: Date()
@@ -294,7 +290,6 @@ final class TodayViewModel: ObservableObject {
         guard let projection else {
             chartModel = nil
             chartDomains = nil
-            paceModel = nil
             return
         }
         let prepared = CutChartModel.prepare(
@@ -304,28 +299,22 @@ final class TodayViewModel: ObservableObject {
         )
         chartModel = prepared
         chartDomains = CutChartDomainStore.resolve(model: prepared, active: active)
-        paceModel = PaceLensModel.prepare(
-            active: active,
-            readings: readings,
-            projection: projection,
-            asOf: Date()
-        )
     }
 
-    /// 7-day EMA over the most recent ≤7 readings whose date is ≤ `asOf`.
-    /// Smoothing factor α = 2/(N+1) with N=7 → α = 0.25. Uses kg (storage unit);
-    /// the view converts to display units. Returns nil when fewer than 2 readings exist.
-    static func computeEMA7Kg(readings: [Reading], asOf day: Date) -> Double? {
-        let eligible = readings
-            .filter { $0.date <= day }
-            .sorted { $0.date < $1.date }
-        let window = eligible.suffix(7)
-        guard window.count >= 2 else { return nil }
-        let alpha = 0.25 // 2 / (7 + 1)
-        var ema = window.first!.weightKg
-        for r in window.dropFirst() {
-            ema = alpha * r.weightKg + (1.0 - alpha) * ema
-        }
-        return ema
+    static func computeCalendarTrend7Kg(
+        readings: [Reading],
+        asOf day: Date,
+        calendar: Calendar = .current
+    ) -> Double? {
+        let canonical = CanonicalDailyWeightSeries.prepare(
+            readings: readings,
+            through: calendar.startOfDay(for: day),
+            calendar: calendar
+        )
+        guard let latest = canonical.last else { return nil }
+        let lower = calendar.date(byAdding: .day, value: -6, to: latest.date) ?? latest.date
+        let window = canonical.filter { $0.date >= lower && $0.date <= latest.date }
+        guard !window.isEmpty else { return nil }
+        return window.map(\.weightKg).reduce(0, +) / Double(window.count)
     }
 }

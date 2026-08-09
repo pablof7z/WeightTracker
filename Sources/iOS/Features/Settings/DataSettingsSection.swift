@@ -5,13 +5,15 @@ struct DataSettingsSection: View {
 
     @AppStorage(AppPrefKey.autoExportEnabled) private var autoExportEnabled: Bool = false
 
-    @State private var showImport = false
     @State private var showDeleteRange = false
     @State private var showWipe = false
 
     var body: some View {
         Section {
-            Button("Import CSV") { showImport = true }
+            NavigationLink("Import CSV") {
+                ImportCSVSheet()
+                    .environmentObject(appServices)
+            }
             NavigationLink("Export CSV") {
                 ExportCSVSheet()
             }
@@ -22,10 +24,6 @@ struct DataSettingsSection: View {
             Text("Data")
         } footer: {
             Text("Deletes readings, sleep, and macro history. iCloud copies on other devices will sync the deletion.")
-        }
-        .sheet(isPresented: $showImport) {
-            ImportCSVSheet()
-                .environmentObject(appServices)
         }
         .sheet(isPresented: $showDeleteRange) {
             DeleteRangeSheet()

@@ -36,13 +36,13 @@ public enum CanonicalDailyWeightSeries {
         let start = startDate.map { calendar.startOfDay(for: $0) }
         let end = endDate.map { calendar.startOfDay(for: $0) }
         let eligible = readings.filter { reading in
-            let day = calendar.startOfDay(for: reading.date)
+            let day = reading.dayStart(in: calendar)
             let isAfterStart = start.map { day >= $0 } ?? true
             let isBeforeEnd = end.map { day <= $0 } ?? true
             return isAfterStart && isBeforeEnd
         }
         let groups = Dictionary(grouping: eligible) {
-            calendar.startOfDay(for: $0.date)
+            $0.dayStart(in: calendar)
         }
 
         return groups.map { day, values in
@@ -143,7 +143,8 @@ public extension CutChartModel {
                     startDate: start,
                     targetDate: target,
                     startWeight: UnitConvert.kgToLb(active.startWeightKg),
-                    targetWeight: UnitConvert.kgToLb(active.targetWeightKg)
+                    targetWeight: UnitConvert.kgToLb(active.targetWeightKg),
+                    calendar: calendar
                 )
             )
         }
@@ -196,11 +197,16 @@ public extension CutChartModel {
         startDate: Date,
         targetDate: Date,
         startWeight: Double,
-        targetWeight: Double
+        targetWeight: Double,
+        calendar: Calendar = .current
     ) -> Double {
-        let duration = targetDate.timeIntervalSince(startDate)
+        let start = calendar.startOfDay(for: startDate)
+        let target = calendar.startOfDay(for: targetDate)
+        let day = calendar.startOfDay(for: date)
+        let duration = calendar.dateComponents([.day], from: start, to: target).day ?? 0
         guard duration > 0 else { return targetWeight }
-        let progress = min(1, max(0, date.timeIntervalSince(startDate) / duration))
+        let elapsed = calendar.dateComponents([.day], from: start, to: day).day ?? 0
+        let progress = min(1, max(0, Double(elapsed) / Double(duration)))
         return startWeight + progress * (targetWeight - startWeight)
     }
 
@@ -561,7 +567,8 @@ public extension CutChartModel {
             startDate: startDate,
             targetDate: targetDate,
             startWeight: startWeightLb,
-            targetWeight: targetWeightLb
+            targetWeight: targetWeightLb,
+            calendar: .current
         )
     }
 }

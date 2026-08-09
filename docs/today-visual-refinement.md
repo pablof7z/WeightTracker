@@ -1,4 +1,8 @@
-# Today lens — visual refinement brief ("Current Weight First" quality)
+# Today lens — visual refinement brief (historical)
+
+> Superseded on 2026-08-09 by `today-redesign.md` and
+> `today-analytics.md`. This file records the preceding six-view visual design;
+> it is not the current analytics or information architecture specification.
 
 Goal: rebuild the Today lens as ONE continuous, immersive, data-first canvas that
 matches the Current-Weight-First prototype. This is a composition/rendering/visual

@@ -1,90 +1,75 @@
-# Today redesign — the lens carousel
+# Today redesign — three decision views
 
-The Today tab is now a horizontally paged set of six **lenses**, each a single
-mathematical perspective on the active cut. Data leads; there are no verdicts,
-smileys, or motivational copy. One primary number, one full-bleed visual
-explanation, three supporting figures.
+Today is a compact set of three mathematically distinct views. The surface is
+organized around the question: what is the underlying weight trend, how is it
+changing, how does it compare with the configured cut, and what does that imply
+for the target date?
 
-## The six lenses (fixed order)
+The exact formulas, date semantics, previous implementation audit, and
+acceptance fixture live in `docs/today-analytics.md`.
 
-1. **Current Weight** — latest canonical daily reading; 30-day history + 14-day
-   forecast tail; supporting: 7-day avg, this-week change, projection.
-2. **Total Lost** — `start − latest`, charted as cumulative loss from zero over
-   the fixed cut window against the goal-loss reference.
-3. **This Week** — signed cumulative change Mon–Sun vs the last pre-week reading
-   (partial if none); fixed ±4 range around zero; sign and chart always agree.
-4. **Weekly Average** — last 8 completed weeks + the current week-to-date point
-   (hollow), matched-weekday comparison for the change figure.
-5. **Pace** — a genuine rate in lb/week from a trailing 14-day, date-aware
-   least-squares regression, against the required-now reference and zero.
-6. **Forecast** — recent history into the shared anchor, then a typical line and
-   a lower/upper band over the final 60 days to target.
+## The three views
 
-The first lens on every launch is Current Weight; the selection is retained for
-the session but never persisted, so a secondary lens can't become the default.
+1. **Progress vs Plan** — the whole active cut on one coordinate system: raw
+   observations, trailing-seven-calendar-day trend, configured start-to-target
+   plan, today, target, and an optional target-date fitted-trend forecast with an
+   uncertainty interval.
+2. **Recent Trend** — a recent zoom of raw observations and the canonical trend,
+   plus one straight 14-calendar-day OLS fit. The headline is the recent rate;
+   supporting values separate needed-now pace, original planned pace, and the
+   current trend level.
+3. **Weekly Average + Range** — Monday-Sunday observed means, straight connecting
+   segments, observed min/max whiskers, reading coverage, and explicit WTD
+   treatment. A partial current week compares with the prior week through the
+   same weekday.
 
-## What was consolidated / removed
+Progress vs Plan is always the launch view. Old saved carousel preferences are
+migrated to the new identifiers and an empty selection falls back to Progress.
 
-- **Old Today carousel** (`ActiveCutMinichart` + `StableCutChart` variation
-  pages: absolute weight, pounds-remaining, goal-completion %, cumulative loss,
-  ahead/behind pace, plus four weekly modes) is no longer the Today surface.
-  Those are affine restatements of Current Weight / Total Lost, a supporting
-  figure inside Pace, or content for the deeper weekly screen. `StableCutChart`
-  and `LandscapeFocusChart` are retained only for the tap-through / landscape
-  **detail** chart, which reuses the exact same prepared `CutChartModel`.
-- **Stacked Today widgets removed from the canvas**: the cut progress strip +
-  milestone markers, `CutDeficitWidget`, and the `WeightForecastWidget`. The
-  forecast is now the Forecast lens; the deficit belongs in Insights (it is
-  largely a linear transform of trend loss); milestones remain elsewhere in the
-  app (Cuts, coach) but no longer crowd Today.
-- **Horizontal date-swipe gesture deleted.** Horizontal swiping now has one
-  unambiguous meaning — changing lenses. Date navigation lives entirely in the
-  title / date-picker control.
+## What was merged or removed
 
-## What was corrected
+- Raw Current Weight, Total Lost, and Full Cut were merged into Progress vs Plan.
+- The separate Forecast page was integrated into Progress vs Plan because it
+  uses the same displayed recent fit and target-date question.
+- This Week endpoint change and historical rolling Pace were removed from Today;
+  both overemphasized noisy derivatives.
+- Weekly Average and Weekly Range were merged into their useful superset.
+- Weekly Loss bars were removed because they were the first difference of the
+  weekly-mean series and repeated information less clearly.
 
-- **Pace is now a rate.** The previous "rate" page overlaid a normalized weight
-  curve on a rate axis. The new Pace lens plots lb/week from a trailing,
-  date-aware regression (positive = losing), never a differentiated daily
-  reading and never a centered window that peeks at the future.
-- **This Week is new and sign-correct.** Cumulative change within the calendar
-  week against a documented baseline; the headline equals the final charted
-  point exactly.
-- **Full-bleed charts with shared geometry.** A custom `LensPlot` (`Canvas`, not
-  Swift Charts) generates the line and its area fill from *one* path generator,
-  so the fill boundary can never diverge from the line. Fills are gradients
-  anchored to the full plot rectangle — no `AreaMark` bounding-box slab, no
-  left y-axis gutter, no chart card. At most two–three in-canvas date labels.
-- **Shared pipeline preserved and reused.** All lenses consume the existing
-  canonical daily series (one value per day, manual wins), the trailing 7-day
-  trend (adding tomorrow never rewrites yesterday), the single shared forecast
-  anchor, and the persisted stable domains.
+The historical-cut bootstrap forecast, physiology projector, and deficit EWMA
+remain separate deeper analyses. They do not silently define Today's trend,
+recent pace, or forecast.
 
-## Logging & interaction
+## Chart truthfulness
 
-- Tap the hero number → toggle lb ↔ kg. Long-press → the normal decimal keyboard
-  (`LogWeightSheet`), routed through the existing save pipeline (HealthKit,
-  coach, notifications unchanged). A "Log today" affordance appears when there is
-  no reading for today.
-- A deliberate tap on any chart opens the deeper landscape detail chart.
-- Restrained page dots, a one-time swipe hint, and a settle haptic. Reduce
-  Transparency swaps the glass shelf for an opaque accessible surface; each lens
-  exposes a concise VoiceOver summary (name, headline, horizon, three figures).
+- Weight-entry identity is an explicit civil-day key; missing dates are never
+  filled, duplicated, or zeroed.
+- `trailing seven calendar days` and `Monday-based calendar week` are separate
+  windows and are labeled separately.
+- Raw readings are points. Trend, plan, fit, forecast, and weekly means use
+  straight segments. The renderer does not apply decorative curve smoothing.
+- The y domain includes stable numeric references and the cut context so small
+  fluctuations are not made to look enormous.
+- Plan and forecast are different line styles and labels. Needed-now pace uses
+  current trend, not the latest raw reading or a different forecast anchor.
+- Falling weight is a negative internal slope and a consistent `down` loss rate
+  in presentation.
 
-## Deferred (explicitly, per plan)
+## Logging and interaction
 
-- **Photo motivation backdrop** (optional presentation layer).
-- **Deeper-chart upgrades** beyond reusing the current landscape focus chart
-  (point inspection, pan/pinch, raw-vs-trend toggles).
+- Tap the hero value to toggle lb/kg; long-press opens weight entry.
+- If today is unlogged, `Log today` is explicit while the latest recorded value
+  retains its own civil date.
+- Hold and move across a chart to inspect points without changing stored data.
+- Tap a chart to open the deeper detail view.
 
-## Files
+## Verification artifacts
 
-- `Sources/Shared/Analysis/TodayLensModel.swift` — `TodayLens`, `PaceLensModel`,
-  `ThisWeekModel` (pure, unit-tested).
-- `Sources/iOS/Features/Today/LensPlot.swift` — full-bleed plot renderer.
-- `Sources/iOS/Features/Today/TodayLensCarousel.swift` — carousel + shared
-  hero/shelf composition + previews.
-- `Sources/iOS/Features/Today/TodayLensBuilder.swift` — per-lens content.
-- `Sources/iOS/Features/Today/TodayLensSupport.swift` — log sheet + detail cover.
-- `Tests/TodayLensModelTests.swift` — pace/this-week/hero acceptance tests.
-- `Tests/TodayLensSnapshotTests.swift` — exports `docs/today-lenses/*.png`.
+- `Tests/TodayLensModelTests.swift` covers the Aug 2026 acceptance fixture,
+  missing days, duplicates, timezones/DST, sparse samples, goal/deadline edges,
+  spikes/outliers, flat trend, gain, and changed goal inputs.
+- `Tests/TodayLensOrderTests.swift` verifies the reduced view order, preference
+  migration, semantics, and straight-line geometry.
+- `docs/today-lenses/` contains light/lb and dark/kg renderings of all three
+  retained views.

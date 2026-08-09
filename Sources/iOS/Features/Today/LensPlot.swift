@@ -24,7 +24,7 @@ struct LensPlotSpec {
     /// meaningful boundary (e.g. the weekly-loss bars) — those fall back to the
     /// base vertical ramp with no curve modulation.
     var maskBoundary: [DatedValue]? = nil
-    var maskBoundarySmooth: Bool = true
+    var maskBoundarySmooth: Bool = false
 
     struct Series: Identifiable {
         let id = UUID()
@@ -32,7 +32,7 @@ struct LensPlotSpec {
         var color: Color
         var lineWidth: CGFloat = 2.6
         var dash: [CGFloat]?
-        var smooth: Bool = true
+        var smooth: Bool = false
         var opacity: Double = 1
         /// Optional dark halo stroked underneath the line so a white primary
         /// series stays legible over both the pale top and the navy floor of
@@ -47,7 +47,7 @@ struct LensPlotSpec {
         var upper: [DatedValue]
         var color: Color
         var opacity: Double = 0.13
-        var smooth: Bool = true
+        var smooth: Bool = false
     }
 
     struct Reference: Identifiable {
@@ -245,28 +245,28 @@ struct LensBackdrop: View {
                             endPoint: CGPoint(x: full.midX, y: full.maxY)
                         )
                     )
-                    // Curve modulation: above the plotted curve, override the ramp
-                    // with min(ramp, cap) — a true 10% ceiling that still fades to
-                    // nothing through the top, so the reveal is faint above the
-                    // curve with a hard edge at it and no seam against the system
-                    // background. Below the curve the strong ramp is left intact.
+                    // Curve modulation: the entire region ABOVE the plotted curve
+                    // — up to the very top of the app, hero included — is held at a
+                    // stable flat faint value (`aboveCurveCap`), never fading to
+                    // nothing. Below the curve the strong reveal ramp is left
+                    // intact. Hard edge at the curve.
                     if hasPlot,
                        let boundary = spec.maskBoundary,
                        boundary.count >= 2 {
                         let pts = boundary.map(map.point)
                         var above = lensLinePath(pts, smooth: spec.maskBoundarySmooth)
-                        above.addLine(to: CGPoint(x: pts.last!.x, y: inner.minY))
-                        above.addLine(to: CGPoint(x: pts.first!.x, y: inner.minY))
+                        // Extend the "above the line" region to the FULL canvas
+                        // width (and up to the very top) so the faint cap covers
+                        // the endpoint inset on the right and any inset on the
+                        // left — otherwise the strong base ramp shows through as
+                        // a bright vertical strip past the chart's data edge.
+                        above.addLine(to: CGPoint(x: full.maxX, y: pts.last!.y))
+                        above.addLine(to: CGPoint(x: full.maxX, y: full.minY))
+                        above.addLine(to: CGPoint(x: full.minX, y: full.minY))
+                        above.addLine(to: CGPoint(x: full.minX, y: pts.first!.y))
                         above.closeSubpath()
                         mask.blendMode = .copy
-                        mask.fill(
-                            above,
-                            with: .linearGradient(
-                                Gradient(stops: LensMask.cappedRampStops),
-                                startPoint: CGPoint(x: full.midX, y: full.minY),
-                                endPoint: CGPoint(x: full.midX, y: full.maxY)
-                            )
-                        )
+                        mask.fill(above, with: .color(.white.opacity(LensMask.aboveCurveCap)))
                         mask.blendMode = .normal
                     }
                 }

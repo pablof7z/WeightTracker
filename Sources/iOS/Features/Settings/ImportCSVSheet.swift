@@ -5,7 +5,8 @@ struct ImportCSVSheet: View {
     @EnvironmentObject private var appServices: AppServices
     @Environment(\.dismiss) private var dismiss
 
-    @State private var showPicker = true
+    @State private var showPicker = false
+    @State private var didAutoPresent = false
     @State private var preview: CSVImportPreview?
     @State private var error: String?
     @State private var weightOverride: WeightUnit?
@@ -15,37 +16,54 @@ struct ImportCSVSheet: View {
     @State private var isImporting = false
     @State private var imported: Int?
 
+    // Pushed onto Settings' own navigation stack (NOT presented as a nested
+    // sheet). Presenting the document picker from a sheet-within-the-Settings-
+    // sheet collapsed the whole stack back to Today; from a pushed view the
+    // picker is a stable, independent modal.
     var body: some View {
-        NavigationStack {
-            Group {
-                if let preview {
-                    previewView(preview)
-                } else if let error {
-                    VStack(spacing: 12) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.largeTitle)
-                            .foregroundStyle(.orange)
-                        Text(error).multilineTextAlignment(.center)
-                        Button("Pick another file") { showPicker = true }
-                    }
-                    .padding()
-                } else {
-                    ProgressView("Pick a CSV...")
-                        .padding()
+        Group {
+            if let preview {
+                previewView(preview)
+            } else if let error {
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundStyle(.orange)
+                    Text(error).multilineTextAlignment(.center)
+                    Button("Choose another file") { showPicker = true }
+                        .glassButtonStyle(prominent: true)
                 }
-            }
-            .navigationTitle("Import CSV")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                .padding()
+            } else {
+                VStack(spacing: 16) {
+                    Image(systemName: "doc.text")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                    Text("Choose a CSV file to import your weight history.")
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.secondary)
+                    Button("Choose CSV File") { showPicker = true }
+                        .glassButtonStyle(prominent: true)
                 }
+                .padding()
             }
-            .fileImporter(
-                isPresented: $showPicker,
-                allowedContentTypes: [.commaSeparatedText, .plainText, .data]
-            ) { result in
-                handlePick(result)
+        }
+        .navigationTitle("Import CSV")
+        .navigationBarTitleDisplayMode(.inline)
+        .fileImporter(
+            isPresented: $showPicker,
+            allowedContentTypes: [.commaSeparatedText, .plainText, .data]
+        ) { result in
+            handlePick(result)
+        }
+        // Auto-open the picker once this screen has settled after the push. The
+        // "Choose CSV File" button above is the reliable fallback.
+        .task {
+            guard !didAutoPresent else { return }
+            didAutoPresent = true
+            try? await Task.sleep(for: .milliseconds(400))
+            if preview == nil, sourceURL == nil, error == nil {
+                showPicker = true
             }
         }
     }
