@@ -18,6 +18,7 @@ Status: decided
 ## Observations
 
 - The user supplied exact Aug 2026 acceptance values and explicitly requires an audit before implementation.
+- Follow-up product feedback explicitly restored the prior focused visualizations and requested dedicated Week-to-Date Average and Week-over-Week Change charts; the canonical core remains intact rather than using removal as the only way to demote noisy metrics.
 - The existing worktree already contains uncommitted Today backdrop/scrubbing, CSV import, tests, and snapshot updates on top of three local feature commits.
 - Final acceptance includes installing and launching the merged app on the user's connected iPhone.
 
@@ -89,6 +90,7 @@ Status: decided
 - Implement the reduced model, add fixture and edge-case regression coverage, merge to `master`, then run the merged app on the connected iPhone.
 - Persist civil-day identity for new readings and reconstruct it in the analysis calendar.
 - Remove Catmull-Rom smoothing from observation, trend, plan, forecast, and weekly lines.
+- Restore the focused chart collection around the canonical model, keep Progress vs Plan as the launch view, label every first plotted value, and keep hero subtitles to narrow date/window copy without reading counts.
 
 ## Follow-Up Artifacts
 

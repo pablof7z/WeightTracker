@@ -145,22 +145,31 @@ private struct LensSwatch: View {
                 let w = geo.size.width
                 let h = geo.size.height
                 ZStack {
-                    if lens == .weeklySummary {
-                        Path { p in
-                            for x in [w * 0.18, w * 0.46, w * 0.74] {
-                                p.move(to: CGPoint(x: x, y: h * 0.22))
-                                p.addLine(to: CGPoint(x: x, y: h * 0.78))
-                            }
+                    if lens == .weeklyLoss {
+                        Path { path in
+                            path.addRect(CGRect(x: w * 0.14, y: h * 0.44, width: 6, height: h * 0.30))
+                            path.addRect(CGRect(x: w * 0.42, y: h * 0.28, width: 6, height: h * 0.46))
+                            path.addRect(CGRect(x: w * 0.70, y: h * 0.52, width: 6, height: h * 0.22))
                         }
-                        .stroke(lens.accent.opacity(0.45), lineWidth: 1)
+                        .fill(lens.accent.opacity(0.85))
+                    } else {
+                        if lens == .weeklyAverage || lens == .weeklyRange {
+                            Path { path in
+                                for x in [w * 0.18, w * 0.46, w * 0.74] {
+                                    path.move(to: CGPoint(x: x, y: h * 0.22))
+                                    path.addLine(to: CGPoint(x: x, y: h * 0.78))
+                                }
+                            }
+                            .stroke(lens.accent.opacity(0.45), lineWidth: 1)
+                        }
+                        Path { path in
+                            path.move(to: CGPoint(x: 5, y: h * 0.30))
+                            path.addLine(to: CGPoint(x: w * 0.34, y: h * 0.42))
+                            path.addLine(to: CGPoint(x: w * 0.62, y: h * 0.55))
+                            path.addLine(to: CGPoint(x: w - 5, y: h * 0.70))
+                        }
+                        .stroke(lens.accent.opacity(0.9), style: StrokeStyle(lineWidth: 1.7, lineCap: .round))
                     }
-                    Path { p in
-                        p.move(to: CGPoint(x: 5, y: h * 0.30))
-                        p.addLine(to: CGPoint(x: w * 0.34, y: h * 0.42))
-                        p.addLine(to: CGPoint(x: w * 0.62, y: h * 0.55))
-                        p.addLine(to: CGPoint(x: w - 5, y: h * 0.70))
-                    }
-                    .stroke(lens.accent.opacity(0.9), style: StrokeStyle(lineWidth: 1.7, lineCap: .round))
                 }
             }
         }

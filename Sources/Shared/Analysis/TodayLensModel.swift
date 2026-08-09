@@ -1,11 +1,20 @@
 import Foundation
 
-/// The three distinct questions Today answers. Old preferences containing any
-/// of the retired nine-lens raw values decode safely to this canonical order.
+/// The Today chart collection. Progress and Recent Trend provide the canonical
+/// decision views; the restored lenses expose focused transforms and weekly
+/// diagnostics the user explicitly wants available in the carousel.
 public enum TodayLens: String, CaseIterable, Identifiable, Sendable {
     case progress
+    case currentWeight
+    case totalLost
+    case thisWeek
+    case weeklyAverage
     case recentTrend
-    case weeklySummary
+    case pace
+    case forecast
+    case fullCut
+    case weeklyRange
+    case weeklyLoss
 
     public var id: String { rawValue }
 
@@ -18,8 +27,16 @@ public enum TodayLens: String, CaseIterable, Identifiable, Sendable {
     public var label: String {
         switch self {
         case .progress: return "Progress vs Plan"
+        case .currentWeight: return "Current Weight"
+        case .totalLost: return "Total Lost"
+        case .thisWeek: return "This Week"
+        case .weeklyAverage: return "Week-to-Date Average"
         case .recentTrend: return "Recent Trend"
-        case .weeklySummary: return "Weekly Average + Range"
+        case .pace: return "Pace History"
+        case .forecast: return "Forecast"
+        case .fullCut: return "Full Cut"
+        case .weeklyRange: return "Weekly Range"
+        case .weeklyLoss: return "Week-over-Week Change"
         }
     }
 
@@ -27,8 +44,16 @@ public enum TodayLens: String, CaseIterable, Identifiable, Sendable {
     public var detail: String {
         switch self {
         case .progress: return "Raw readings, current trend, plan, target, and fitted forecast"
+        case .currentWeight: return "Recent raw weights with the seven-calendar-day trend"
+        case .totalLost: return "Cumulative loss from the configured start weight"
+        case .thisWeek: return "Observed change from the last reading before Monday"
+        case .weeklyAverage: return "Monday-based weekly means with the current week to date"
         case .recentTrend: return "Fourteen-day fitted pace compared with what is needed now"
-        case .weeklySummary: return "Monday-based means, observed range, and reading coverage"
+        case .pace: return "Historical rolling fourteen-day fitted loss rate"
+        case .forecast: return "Target-date estimate from the current fitted trend"
+        case .fullCut: return "Raw observations and trend across the entire active cut"
+        case .weeklyRange: return "Weekly mean with observed minimum and maximum"
+        case .weeklyLoss: return "Change in comparable weekly means"
         }
     }
 
@@ -268,14 +293,28 @@ public struct TodayAnalyticsModel: Equatable, Sendable {
 /// missing cases are backfilled from the default order, so a stale persisted
 /// string can never yield an empty or ill-typed carousel.
 public enum TodayLensOrder {
-    public static let `default`: [TodayLens] = TodayLens.allCases
+    public static let `default`: [TodayLens] = [
+        .progress,
+        .currentWeight,
+        .totalLost,
+        .thisWeek,
+        .weeklyAverage,
+        .recentTrend,
+        .pace,
+        .forecast,
+        .fullCut,
+        .weeklyRange,
+        .weeklyLoss,
+    ]
 
     public static func decode(_ rawValue: String) -> [TodayLens] {
-        normalized(
-            rawValue
-                .split(separator: ",")
-                .compactMap { TodayLens(rawValue: String($0)) }
-        )
+        normalized(rawValue.split(separator: ",").compactMap { token in
+            let value = String(token)
+            // The reduced three-view release called the weekly mean/range page
+            // `weeklySummary`; retain the user's saved position during restore.
+            if value == "weeklySummary" { return .weeklyAverage }
+            return TodayLens(rawValue: value)
+        })
     }
 
     public static func encode(_ lenses: [TodayLens]) -> String {
@@ -291,7 +330,11 @@ public enum TodayLensOrder {
     // MARK: Hidden set
 
     public static func decodeHidden(_ rawValue: String) -> Set<TodayLens> {
-        Set(rawValue.split(separator: ",").compactMap { TodayLens(rawValue: String($0)) })
+        Set(rawValue.split(separator: ",").compactMap { token in
+            let value = String(token)
+            if value == "weeklySummary" { return .weeklyAverage }
+            return TodayLens(rawValue: value)
+        })
     }
 
     /// Encoded in canonical order so the stored string is stable regardless of

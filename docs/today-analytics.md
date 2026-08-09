@@ -161,7 +161,7 @@ Mathematically defined but misleading or unhelpful:
 - The current week is labeled WTD. Comparison uses the prior week through the same weekday and is labeled provisional/matched-period.
 - Min/max is always called observed range.
 
-## Reduced Today information architecture
+## Today information architecture
 
 1. **Progress vs Plan**
    - Question: where is the trend, how does it compare with the configured cut, and where does the current fitted rate point by the deadline?
@@ -169,11 +169,17 @@ Mathematically defined but misleading or unhelpful:
 2. **Recent Trend**
    - Question: is the recent evidence actually moving down, and is that fitted pace enough from here?
    - Plot: recent raw points; straight-segment trend; straight OLS fit. Supporting values: recent pace, needed now, original plan.
-3. **Weekly Average + Range**
+3. **Week-to-Date Average**
    - Question: are weekly levels moving despite daily noise, and how much observed variability/coverage is behind each mean?
    - Plot: Monday-based means joined with straight segments; observed min/max whiskers; reading counts and explicit WTD state.
 
-Removed from Today as standalone charts: raw Current Weight, Total Lost, This Week endpoint change, historical rolling Pace, separate Forecast, Full Cut, duplicate Weekly Average, and Weekly Loss bars. Their useful facts move into the three retained views.
+The canonical three decision views remain the primary model. Following direct
+product feedback, focused Current Weight, Total Lost, This Week, Pace History,
+Forecast, Full Cut, Weekly Range, and Week-over-Week Change lenses are also
+available. They consume the same canonical observations and definitions rather
+than redefining trend, pace, plan, or forecast. Pace History and Week-over-Week
+Change are explicitly diagnostic/noisy derivative views, not the primary basis
+for a decision.
 
 ## Acceptance fixture
 

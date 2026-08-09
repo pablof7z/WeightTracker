@@ -9,8 +9,16 @@ extension TodayLens {
     var accent: Color {
         switch self {
         case .progress: return Color(red: 0.20, green: 0.48, blue: 0.86)
+        case .currentWeight: return Color(red: 0.18, green: 0.56, blue: 0.76)
+        case .totalLost: return Color(red: 0.26, green: 0.53, blue: 0.39)
+        case .thisWeek: return Color(red: 0.90, green: 0.56, blue: 0.16)
+        case .weeklyAverage: return Color(red: 0.42, green: 0.47, blue: 0.45)
         case .recentTrend: return Color(red: 0.46, green: 0.37, blue: 0.82)
-        case .weeklySummary: return Color(red: 0.26, green: 0.53, blue: 0.39)
+        case .pace: return Color(red: 0.55, green: 0.32, blue: 0.72)
+        case .forecast: return Color(red: 0.38, green: 0.41, blue: 0.83)
+        case .fullCut: return Color(red: 0.16, green: 0.50, blue: 0.55)
+        case .weeklyRange: return Color(red: 0.53, green: 0.35, blue: 0.55)
+        case .weeklyLoss: return Color(red: 0.72, green: 0.40, blue: 0.30)
         }
     }
 }
@@ -621,7 +629,8 @@ private func lensPreview(_ lens: TodayLens, _ unit: WeightUnit) -> some View {
 
 #Preview("1 · Progress vs Plan · lb") { lensPreview(.progress, .lbs) }
 #Preview("2 · Recent Trend · lb") { lensPreview(.recentTrend, .lbs) }
-#Preview("3 · Weekly Summary · lb") { lensPreview(.weeklySummary, .lbs) }
+#Preview("3 · Week-to-Date Average · lb") { lensPreview(.weeklyAverage, .lbs) }
+#Preview("4 · Week-over-Week Change · lb") { lensPreview(.weeklyLoss, .lbs) }
 
 #Preview("Progress · dark · kg") { lensPreview(.progress, .kg).preferredColorScheme(.dark) }
 #Preview("Recent Trend · dark · kg") { lensPreview(.recentTrend, .kg).preferredColorScheme(.dark) }

@@ -16,6 +16,7 @@ struct LensPlotSpec {
     var markerSets: [MarkerSet] = []
     var series: [Series] = []
     var endpoint: Endpoint?
+    var pointLabels: [PointLabel] = []
     var dateLabels: [DateLabel] = []
 
     /// The lens's primary line, expressed in exactly the same points/domain the
@@ -108,6 +109,17 @@ struct LensPlotSpec {
         var date: Date
         var text: String
         var color: Color = .secondary
+    }
+
+    /// A compact value annotation attached to a real plotted point. The first
+    /// point labels use a small positive x offset so they remain inside the
+    /// chart while preserving the point's exact y position.
+    struct PointLabel: Identifiable {
+        let id = UUID()
+        var point: DatedValue
+        var text: String
+        var color: Color = .secondary
+        var xOffset: CGFloat = 7
     }
 }
 
@@ -299,6 +311,7 @@ struct LensBackdrop: View {
             drawMarkers(ctx, map: map)
             drawSeries(ctx, map: map)
             drawEndpoint(ctx, map: map)
+            drawPointLabels(ctx, map: map, plot: inner)
             drawDateLabels(ctx, map: map, plot: inner)
             drawScrub(ctx, map: map, plot: inner)
         }
@@ -540,6 +553,21 @@ struct LensBackdrop: View {
                 anchor = .center; drawX = x
             }
             ctx.draw(text, at: CGPoint(x: drawX, y: plot.maxY + 12), anchor: anchor)
+        }
+    }
+
+    private func drawPointLabels(_ ctx: GraphicsContext, map: LensPlotMap, plot: CGRect) {
+        for label in spec.pointLabels {
+            let point = map.point(label.point)
+            let text = ctx.resolve(
+                Text(label.text)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(label.color)
+            )
+            let size = text.measure(in: CGSize(width: plot.width, height: 30))
+            let x = min(plot.maxX - size.width - 2, point.x + label.xOffset)
+            let y = min(max(point.y, plot.minY + size.height / 2), plot.maxY - size.height / 2)
+            ctx.draw(text, at: CGPoint(x: x, y: y), anchor: .leading)
         }
     }
 }

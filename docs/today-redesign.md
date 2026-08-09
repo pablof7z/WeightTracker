@@ -1,75 +1,48 @@
-# Today redesign — three decision views
+# Today charts — canonical core plus focused lenses
 
-Today is a compact set of three mathematically distinct views. The surface is
-organized around the question: what is the underlying weight trend, how is it
-changing, how does it compare with the configured cut, and what does that imply
-for the target date?
+Today keeps the canonical distinction between observation, trend, pace, plan,
+and forecast while exposing the full set of focused visualizations the user
+wants available. Progress vs Plan remains the cold-launch view; every other
+chart is available in the carousel and can be reordered or hidden in Settings.
 
-The exact formulas, date semantics, previous implementation audit, and
-acceptance fixture live in `docs/today-analytics.md`.
+The exact formulas and civil-date semantics live in `docs/today-analytics.md`.
 
-## The three views
+## Carousel order
 
-1. **Progress vs Plan** — the whole active cut on one coordinate system: raw
-   observations, trailing-seven-calendar-day trend, configured start-to-target
-   plan, today, target, and an optional target-date fitted-trend forecast with an
-   uncertainty interval.
-2. **Recent Trend** — a recent zoom of raw observations and the canonical trend,
-   plus one straight 14-calendar-day OLS fit. The headline is the recent rate;
-   supporting values separate needed-now pace, original planned pace, and the
-   current trend level.
-3. **Weekly Average + Range** — Monday-Sunday observed means, straight connecting
-   segments, observed min/max whiskers, reading coverage, and explicit WTD
-   treatment. A partial current week compares with the prior week through the
-   same weekday.
+1. **Progress vs Plan** — raw observations, seven-calendar-day trend, plan,
+   target, today, and the fitted target-date forecast.
+2. **Current Weight** — recent raw observations and the canonical trend.
+3. **Total Lost** — cumulative change from the configured start weight.
+4. **This Week** — observed change from the last reading before Monday.
+5. **Week-to-Date Average** — Monday-based weekly means, current WTD mean, and
+   observed min/max whiskers. The current comparison is matched by weekday.
+6. **Recent Trend** — the current 14-calendar-day OLS fit and needed-now pace.
+7. **Pace History** — historical rolling 14-day fits, restored as a diagnostic.
+8. **Forecast** — the target-date endpoint and uncertainty from the current fit.
+9. **Full Cut** — raw observations and trend across the active cut.
+10. **Weekly Range** — weekly means with observed min/max variability.
+11. **Week-over-Week Change** — bars of `current comparable weekly mean - prior
+    comparable weekly mean`; falling means plot below zero.
 
-Progress vs Plan is always the launch view. Old saved carousel preferences are
-migrated to the new identifiers and an empty selection falls back to Progress.
+## Presentation rules
 
-## What was merged or removed
-
-- Raw Current Weight, Total Lost, and Full Cut were merged into Progress vs Plan.
-- The separate Forecast page was integrated into Progress vs Plan because it
-  uses the same displayed recent fit and target-date question.
-- This Week endpoint change and historical rolling Pace were removed from Today;
-  both overemphasized noisy derivatives.
-- Weekly Average and Weekly Range were merged into their useful superset.
-- Weekly Loss bars were removed because they were the first difference of the
-  weekly-mean series and repeated information less clearly.
-
-The historical-cut bootstrap forecast, physiology projector, and deficit EWMA
-remain separate deeper analyses. They do not silently define Today's trend,
-recent pace, or forecast.
-
-## Chart truthfulness
-
-- Weight-entry identity is an explicit civil-day key; missing dates are never
-  filled, duplicated, or zeroed.
-- `trailing seven calendar days` and `Monday-based calendar week` are separate
-  windows and are labeled separately.
-- Raw readings are points. Trend, plan, fit, forecast, and weekly means use
-  straight segments. The renderer does not apply decorative curve smoothing.
-- The y domain includes stable numeric references and the cut context so small
-  fluctuations are not made to look enormous.
-- Plan and forecast are different line styles and labels. Needed-now pace uses
-  current trend, not the latest raw reading or a different forecast anchor.
-- Falling weight is a negative internal slope and a consistent `down` loss rate
-  in presentation.
-
-## Logging and interaction
-
-- Tap the hero value to toggle lb/kg; long-press opens weight entry.
-- If today is unlogged, `Log today` is explicit while the latest recorded value
-  retains its own civil date.
-- Hold and move across a chart to inspect points without changing stored data.
-- Tap a chart to open the deeper detail view.
+- Raw observations and weekly aggregates use points and straight segments.
+- The first real value on each chart is labeled just to the right of its point
+  at the same y coordinate.
+- Hero subtitles are intentionally narrow: date/window identity only. Reading
+  counts do not appear beneath the headline.
+- `trailing seven calendar days`, `Monday-based calendar week`, and `WTD` remain
+  distinct labels and calculations.
+- Weekly min/max whiskers are observed ranges, not confidence intervals.
+- Week-over-week bars are changes in comparable weekly means, not directly
+  measured fat loss.
+- Falling weight is negative internally and shown with a down arrow in headline
+  copy.
 
 ## Verification artifacts
 
-- `Tests/TodayLensModelTests.swift` covers the Aug 2026 acceptance fixture,
-  missing days, duplicates, timezones/DST, sparse samples, goal/deadline edges,
-  spikes/outliers, flat trend, gain, and changed goal inputs.
-- `Tests/TodayLensOrderTests.swift` verifies the reduced view order, preference
-  migration, semantics, and straight-line geometry.
-- `docs/today-lenses/` contains light/lb and dark/kg renderings of all three
-  retained views.
+- `Tests/TodayLensModelTests.swift` covers the Aug 2026 fixture and analytics
+  edge cases.
+- `Tests/TodayLensOrderTests.swift` verifies all 11 lenses, preference migration,
+  straight geometry, concise subtitles, and first-point labels.
+- `docs/today-lenses/` contains light/lb and dark/kg renderings of every lens.

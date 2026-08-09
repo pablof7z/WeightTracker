@@ -4,32 +4,38 @@ import SwiftUI
 @testable import WeightTracker
 
 final class TodayLensOrderTests: XCTestCase {
-    func testDefaultIsTheThreeDistinctDecisionViews() {
-        XCTAssertEqual(TodayLensOrder.default, [.progress, .recentTrend, .weeklySummary])
-        XCTAssertEqual(TodayLens.allCases.count, 3)
+    func testDefaultRestoresTheFullChartCollection() {
+        XCTAssertEqual(
+            TodayLensOrder.default,
+            [.progress, .currentWeight, .totalLost, .thisWeek, .weeklyAverage,
+             .recentTrend, .pace, .forecast, .fullCut, .weeklyRange, .weeklyLoss]
+        )
+        XCTAssertEqual(TodayLens.allCases.count, 11)
     }
 
-    func testLegacyNineLensPreferenceMigratesToCanonicalOrder() {
+    func testLegacyPreferencesRestoreTheirChartsAndMigrateWeeklySummary() {
         XCTAssertEqual(
             TodayLensOrder.decode("currentWeight,pace,forecast,weeklyLoss"),
-            TodayLensOrder.default
+            [.currentWeight, .pace, .forecast, .weeklyLoss, .progress, .totalLost,
+             .thisWeek, .weeklyAverage, .recentTrend, .fullCut, .weeklyRange]
         )
+        XCTAssertEqual(TodayLensOrder.decode("progress,weeklySummary").prefix(2), [.progress, .weeklyAverage])
     }
 
     func testOrderHiddenAndFallbackRemainStable() {
-        let order = TodayLensOrder.encode([.recentTrend, .progress, .weeklySummary])
-        XCTAssertEqual(TodayLensOrder.decode(order), [.recentTrend, .progress, .weeklySummary])
+        let order = TodayLensOrder.encode([.recentTrend, .progress, .weeklyAverage])
+        XCTAssertEqual(TodayLensOrder.decode(order).prefix(3), [.recentTrend, .progress, .weeklyAverage])
         let hidden = TodayLensOrder.encodeHidden([.progress])
-        XCTAssertEqual(TodayLensOrder.enabled(orderRaw: order, hiddenRaw: hidden), [.recentTrend, .weeklySummary])
+        XCTAssertEqual(TodayLensOrder.enabled(orderRaw: order, hiddenRaw: hidden).first, .recentTrend)
         let allHidden = TodayLensOrder.encodeHidden(Set(TodayLens.allCases))
         XCTAssertEqual(TodayLensOrder.enabled(orderRaw: order, hiddenRaw: allHidden), [.progress])
-        XCTAssertEqual(TodayLensOrder.launchLens(in: [.recentTrend, .weeklySummary]), .recentTrend)
+        XCTAssertEqual(TodayLensOrder.launchLens(in: [.recentTrend, .weeklyAverage]), .recentTrend)
     }
 }
 
 @MainActor
 final class TodayLensRenderingTests: XCTestCase {
-    func testAllThreeLensesHaveScaleStraightGeometryStatsAndScrub() throws {
+    func testEveryLensHasStraightGeometryStatsScrubAndInitialValueLabel() throws {
         let builder = LensPreviewFixture.builder(.lbs)
         for lens in TodayLens.allCases {
             let rendered = builder.render(lens)
@@ -42,6 +48,8 @@ final class TodayLensRenderingTests: XCTestCase {
             XCTAssertTrue(rendered.plot.series.allSatisfy { !$0.smooth })
             XCTAssertTrue(rendered.plot.bands.allSatisfy { !$0.smooth })
             XCTAssertFalse(try XCTUnwrap(rendered.scrub).points.isEmpty)
+            XCTAssertEqual(rendered.plot.pointLabels.count, 1, "\(lens.rawValue) needs its first value label")
+            XCTAssertFalse(rendered.heroContext?.localizedCaseInsensitiveContains("readings") ?? false)
         }
     }
 
@@ -58,11 +66,20 @@ final class TodayLensRenderingTests: XCTestCase {
         XCTAssertEqual(rendered.stats.map(\.label), ["Needed now", "Original plan", "Current trend"])
     }
 
-    func testWeeklySummaryOwnsMeansRangesAndCoverageTogether() {
-        let rendered = LensPreviewFixture.builder(.lbs).render(.weeklySummary)
+    func testWeekToDateAverageOwnsMeansAndObservedRanges() {
+        let rendered = LensPreviewFixture.builder(.lbs).render(.weeklyAverage)
         let visible = Array(LensPreviewFixture.weekly.points.suffix(9))
         XCTAssertEqual(rendered.plot.whiskers.count, visible.count)
         XCTAssertEqual(rendered.stats.map(\.label).first, "Observed range")
+        XCTAssertTrue(rendered.heroContext?.contains("WTD") == true)
+    }
+
+    func testWeekOverWeekUsesSignedMeanChangeBars() throws {
+        let rendered = LensPreviewFixture.builder(.lbs).render(.weeklyLoss)
+        let bars = try XCTUnwrap(rendered.plot.bars.first).points
+        XCTAssertFalse(bars.isEmpty)
+        XCTAssertEqual(rendered.plot.series.count, 0)
+        XCTAssertEqual(Array(rendered.stats.map(\.label).suffix(2)), ["Current mean", "Planned change"])
     }
 }
 #endif
